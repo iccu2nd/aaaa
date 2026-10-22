@@ -3,6 +3,13 @@ import { state } from '../state.js';
 import { bookmarks, history } from '../store.js';
 import { state as msg } from '../components/section.js';
 import { esc, img, link } from '../utils.js';
+import { ico, ring } from '../icons.js';
+import { watchThumbs, thumbBox } from '../thumbs.js';
+import { supported, isDownloaded, downloadChapter, removeChapter } from '../download.js';
+
+const SORT_KEY = 'rimwa:chsort';
+const getSort = () => { try { return localStorage.getItem(SORT_KEY) === 'asc' ? 'asc' : 'desc'; } catch { return 'desc'; } };
+const setSort = (v) => { try { localStorage.setItem(SORT_KEY, v); } catch { /* ignore */ } };
 
 function relative(iso) {
   if (!iso) return '';
@@ -42,17 +49,32 @@ export async function detail({ root, alive }, url) {
   const year = d.release_year || '';
   const rate = d.user_rate != null && d.user_rate > 0 ? String(d.user_rate) : '';
 
-  const chapterRows = d.chapters.map((c, idx) => {
-    const letter = (d.title || 'K').charAt(0).toUpperCase();
+  const letter = (d.title || 'K').charAt(0).toUpperCase();
+  let order = getSort(); // desc = terbaru dulu (default)
+  const sorted = () => (order === 'desc' ? d.chapters.slice() : d.chapters.slice().reverse());
+
+  const dlBtn = (c) => {
+    const done = isDownloaded(c.url);
+    return `<button type="button" class="ch-dl${done ? ' is-done' : ''}" data-dl="${esc(c.url)}"
+      aria-label="${done ? 'Hapus unduhan' : 'Unduh chapter'}">${done ? ico.done() : ico.download()}</button>`;
+  };
+
+  const rowHtml = (c) => {
     const time = relative(c.release_date);
-    return `<a class="${readSet.has(c.url) ? 'is-read' : ''}" href="${link('read', c.url)}" data-ch="${esc(c.title)}">
-      <div class="chapters__thumb">${esc(letter)}</div>
-      <div class="chapters__info">
-        <div class="chapters__name">${esc(c.title)}</div>
-        ${time ? `<div class="chapters__time">${esc(time)}</div>` : ''}
-      </div>
-    </a>`;
-  }).join('');
+    return `<div class="ch-row${readSet.has(c.url) ? ' is-read' : ''}" data-ch="${esc(c.title)}">
+      <a class="ch-row__link" href="${link('read', c.url)}">
+        ${thumbBox(c.url, letter)}
+        <div class="ch-row__info">
+          <div class="ch-row__name">${esc(c.title)}</div>
+          ${time ? `<div class="ch-row__time">${esc(time)}</div>` : ''}
+        </div>
+      </a>
+      ${dlBtn(c)}
+    </div>`;
+  };
+
+  const sortLabel = () => (order === 'desc' ? 'Terbaru' : 'Terlama');
+  const sortIcon = () => (order === 'desc' ? ico.arrowDown() : ico.arrowUp());
 
   root.innerHTML = `
     <article class="detail">
@@ -100,9 +122,18 @@ export async function detail({ root, alive }, url) {
           <span style="font-size:12px;color:var(--dim)">${d.total_chapters || 0}</span>
         </div>
         <div class="detail__ch-search">
-          <input type="search" id="ch-filter" placeholder="Cari chapter…" autocomplete="off">
+          <label class="ch-search">
+            ${ico.search(16)}
+            <input type="search" id="ch-filter" placeholder="Cari chapter…" autocomplete="off">
+          </label>
+          <button type="button" class="ch-tool" id="ch-sort" aria-label="Urutkan chapter" title="Urutkan">
+            ${sortIcon()}<span>${sortLabel()}</span>
+          </button>
+          <button type="button" class="ch-tool ch-tool--icon" id="ch-dl-all" aria-label="Unduh semua chapter" title="Unduh semua">
+            ${ico.downloadAll()}
+          </button>
         </div>
-        <div class="chapters" id="ch-list">${chapterRows}</div>
+        <div class="chapters" id="ch-list"></div>
 
         ${startUrl ? `
           <div class="detail__start">
@@ -134,15 +165,96 @@ export async function detail({ root, alive }, url) {
     });
   }
 
-  const filter = document.getElementById('ch-filter');
   const list = document.getElementById('ch-list');
-  if (filter && list) {
-    filter.addEventListener('input', () => {
-      const q = filter.value.trim().toLowerCase();
-      list.querySelectorAll('a').forEach((a) => {
-        const t = (a.dataset.ch || '').toLowerCase();
-        a.style.display = !q || t.includes(q) ? '' : 'none';
-      });
+  const filter = document.getElementById('ch-filter');
+  const sortBtn = document.getElementById('ch-sort');
+  const allBtn = document.getElementById('ch-dl-all');
+  let io = null;
+
+  const applyFilter = () => {
+    const q = filter.value.trim().toLowerCase();
+    list.querySelectorAll('.ch-row').forEach((r) => {
+      r.style.display = !q || (r.dataset.ch || '').toLowerCase().includes(q) ? '' : 'none';
     });
-  }
+  };
+
+  const renderList = () => {
+    if (io) io.disconnect();
+    list.innerHTML = sorted().map(rowHtml).join('');
+    applyFilter();
+    io = watchThumbs(list, alive);
+  };
+  renderList();
+
+  sortBtn.addEventListener('click', () => {
+    order = order === 'desc' ? 'asc' : 'desc';
+    setSort(order);
+    sortBtn.innerHTML = `${sortIcon()}<span>${sortLabel()}</span>`;
+    renderList();
+  });
+  filter.addEventListener('input', applyFilter);
+
+  // ---- Download ----
+  const jobs = new Map(); // url -> AbortController
+  const paintDl = (url, st, pct = 0) => {
+    const b = list.querySelector(`[data-dl="${CSS.escape(url)}"]`);
+    if (!b) return;
+    b.classList.toggle('is-busy', st === 'busy');
+    b.classList.toggle('is-done', st === 'done');
+    b.innerHTML = st === 'busy' ? ring(pct) : st === 'done' ? ico.done() : ico.download();
+    b.setAttribute('aria-label', st === 'done' ? 'Hapus unduhan' : st === 'busy' ? 'Batalkan unduhan' : 'Unduh chapter');
+  };
+
+  const run = async (url) => {
+    const ctl = new AbortController();
+    jobs.set(url, ctl);
+    paintDl(url, 'busy', 0);
+    try {
+      await downloadChapter(url, (p) => paintDl(url, 'busy', p), ctl.signal);
+      paintDl(url, 'done');
+      return true;
+    } catch (e) {
+      await removeChapter(url);
+      paintDl(url, 'idle');
+      if (e.name !== 'AbortError') alert(e.message || 'Gagal mengunduh');
+      return false;
+    } finally {
+      jobs.delete(url);
+    }
+  };
+
+  list.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-dl]');
+    if (!b) return;
+    const url = b.dataset.dl;
+    if (!supported()) { alert('Download butuh HTTPS atau localhost.'); return; }
+    if (jobs.has(url)) { jobs.get(url).abort(); return; }
+    if (isDownloaded(url)) {
+      if (confirm('Hapus unduhan chapter ini?')) { await removeChapter(url); paintDl(url, 'idle'); }
+      return;
+    }
+    run(url);
+  });
+
+  let bulk = null;
+  allBtn.addEventListener('click', async () => {
+    if (bulk) { bulk.cancel = true; jobs.forEach((c) => c.abort()); return; }
+    if (!supported()) { alert('Download butuh HTTPS atau localhost.'); return; }
+    const todo = sorted().filter((c) => !isDownloaded(c.url));
+    if (!todo.length) { alert('Semua chapter sudah diunduh.'); return; }
+    if (!confirm(`Unduh ${todo.length} chapter? Ini bisa memakan banyak penyimpanan.`)) return;
+    bulk = { cancel: false };
+    allBtn.classList.add('is-busy');
+    let n = 0;
+    for (const c of todo) {
+      if (bulk.cancel || !alive()) break;
+      allBtn.innerHTML = `<span class="ch-tool__count">${n}/${todo.length}</span>`;
+      // eslint-disable-next-line no-await-in-loop
+      await run(c.url);
+      n += 1;
+    }
+    bulk = null;
+    allBtn.classList.remove('is-busy');
+    allBtn.innerHTML = ico.downloadAll();
+  });
 }

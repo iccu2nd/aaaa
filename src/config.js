@@ -37,6 +37,8 @@ module.exports = {
     search: 5 * MIN,
     detail: 10 * MIN,
     read: 30 * MIN,
+    all: 30 * MIN,
+    thumb: 24 * 60 * MIN,
   },
-  rateLimit: { windowMs: MIN, max: 120 },
+  rateLimit: { windowMs: MIN, max: 400 },
 };

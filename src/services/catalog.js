@@ -101,6 +101,42 @@ const search = async (query) => {
   return { status: true, data: dedupeCards([a, b]) };
 };
 
+/** Semua manhwa dari kedua sumber (tanpa limit), kartu ringkas. */
+const all = async (query = '') => {
+  const q = String(query || '').trim();
+  const [a, b] = await Promise.all([
+    settle(shinigami.all(q)),
+    settle(voratoon.all(q)),
+  ]);
+  const data = dedupeCards([a, b]).map((c) => ({
+    title: c.title,
+    poster: c.poster,
+    url: c.url,
+    chapter: c.chapter || '',
+    meta: c.meta || '',
+    source: c.source,
+  }));
+  return { status: data.length > 0, data, message: data.length ? undefined : 'Daftar kosong' };
+};
+
+/** Gambar cuplikan chapter (acak tapi stabil per chapter) untuk thumbnail. */
+const thumb = async (chapterUrl) => {
+  const r = await read(chapterUrl);
+  if (!r.status) return r;
+  const imgs = (r.data.images || []).filter(Boolean);
+  if (!imgs.length) return { status: false, message: 'Tidak ada gambar' };
+  let h = 0;
+  for (const ch of String(chapterUrl)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  // hindari halaman pertama/terakhir (biasanya logo/credit) bila chapter cukup panjang
+  const lo = imgs.length > 6 ? 1 : 0;
+  const hi = imgs.length > 6 ? imgs.length - 2 : imgs.length - 1;
+  const pick = lo + (h % (hi - lo + 1));
+  return {
+    status: true,
+    data: { url: imgs[pick], pos: 8 + (h % 50) /* % posisi crop vertikal */ },
+  };
+};
+
 const detail = async (url) => {
   const src = detectSource(url);
   const client = src === 'voratoon' ? voratoon : shinigami;
@@ -113,4 +149,4 @@ const read = async (url) => {
   return client.read(url);
 };
 
-module.exports = { home, search, update, detail, read, detectSource, normTitle };
+module.exports = { home, search, update, detail, read, all, thumb, detectSource, normTitle };

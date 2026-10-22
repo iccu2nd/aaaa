@@ -53,8 +53,7 @@ const home = safe(async () => {
   return out;
 });
 
-const search = safe(async (query = '') => {
-  const $ = await load(`${baseUrl}/browse?q=${encodeURIComponent(query)}`);
+function parseBrowse($) {
   const out = [];
   $('.card-image-wrapper').each((_, el) => {
     const url = abs($(el).attr('href'));
@@ -67,16 +66,33 @@ const search = safe(async (query = '') => {
       parent.find('.card-chapter-text').text().trim() ||
       parent.find('.card-chapter').text().trim();
     if (title && url) {
-      out.push({
-        title,
-        poster,
-        url,
-        chapter,
-        meta: chapter || '',
-        source: 'voratoon',
-      });
+      out.push({ title, poster, url, chapter, meta: chapter || '', source: 'voratoon' });
     }
   });
+  return out;
+}
+
+const search = safe(async (query = '') => {
+  const $ = await load(`${baseUrl}/browse?q=${encodeURIComponent(query)}`);
+  return parseBrowse($);
+});
+
+/** Semua judul: telusuri ?page=N sampai tidak ada judul baru. */
+const all = safe(async (query = '') => {
+  const out = [];
+  const seen = new Set();
+  for (let page = 1; page <= 80; page += 1) {
+    let items;
+    try {
+      const $ = await load(`${baseUrl}/browse?q=${encodeURIComponent(query)}&page=${page}`);
+      items = parseBrowse($);
+    } catch {
+      break;
+    }
+    const fresh = items.filter((i) => !seen.has(i.url));
+    if (!fresh.length) break; // halaman kosong / server mengulang halaman 1
+    fresh.forEach((i) => { seen.add(i.url); out.push(i); });
+  }
   return out;
 });
 
@@ -168,4 +184,4 @@ const read = safe(async (url) => {
   };
 });
 
-module.exports = { home, search, update, detail, read };
+module.exports = { home, search, update, detail, read, all };

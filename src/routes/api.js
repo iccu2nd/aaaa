@@ -7,8 +7,21 @@ const source = require('../services/catalog');
 const { sourceUrl } = require('../middleware/validate');
 
 const router = Router();
-const handler = (key, ttl, fn) => async (req, res) =>
-  res.json(await cache.wrap(key(req), ttl, () => fn(req)));
+const handler = (key, ttl, fn) => async (req, res) => {
+  const out = await cache.wrap(key(req), ttl, () => fn(req));
+  // browser boleh pakai ulang sebentar, lalu revalidate di belakang layar
+  if (out && out.status) {
+    res.set('Cache-Control', `public, max-age=${Math.min(300, Math.floor(ttl / 2000))}, stale-while-revalidate=600`);
+  }
+  res.json(out);
+};
+
+const EXPLORE_SIZE = 60;
+const allKey = (q) => 'all:' + q;
+const loadAll = (q) => cache.wrap(allKey(q), cfg.ttl.all, () => source.all(q));
+
+/** Dipanggil saat server start supaya Explore pertama sudah siap. */
+router.warm = () => loadAll('').catch(() => {});
 
 router.get('/home', handler(() => 'home', cfg.ttl.home, () => source.home()));
 router.get('/update', handler(() => 'update', cfg.ttl.update, () => source.update()));
@@ -20,6 +33,33 @@ router.get(
     (r) => source.search(String(r.query.q || '').slice(0, 100)),
   ),
 );
+// Explore: SEMUA judul dari kedua sumber, dikirim per potongan (tanpa batas total)
+router.get('/explore', async (req, res) => {
+  const q = String(req.query.q || '').trim().slice(0, 100);
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const size = Math.min(200, Math.max(10, parseInt(req.query.size, 10) || EXPLORE_SIZE));
+  const full = await loadAll(q);
+  if (!full || !full.status) return res.json(full || { status: false, message: 'Gagal memuat daftar' });
+  const list = full.data;
+  res.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
+  res.json({
+    status: true,
+    data: {
+      items: list.slice((page - 1) * size, page * size),
+      total: list.length,
+      page,
+      pages: Math.max(1, Math.ceil(list.length / size)),
+    },
+  });
+});
+
+// Thumbnail chapter: potongan gambar acak dari isi chapter
+router.get(
+  '/thumb',
+  sourceUrl,
+  handler((r) => 't:' + r.query.url, cfg.ttl.thumb, (r) => source.thumb(String(r.query.url))),
+);
+
 router.get(
   '/detail',
   sourceUrl,

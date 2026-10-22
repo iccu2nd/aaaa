@@ -188,6 +188,38 @@ const search = safe(async (query = '') => {
   return data.map(mapMangaCard);
 });
 
+/** Ambil SEMUA judul (semua halaman), tanpa limit. */
+const all = safe(async (query = '') => {
+  const q = String(query).trim();
+  const pageSize = 100;
+  const fetchPage = async (page) => {
+    const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+    if (q) params.set('q', q);
+    return api(`/manga/list?${params}`);
+  };
+
+  const first = await fetchPage(1);
+  const out = [...(Array.isArray(first.data) ? first.data : [])];
+  let totalPage = Number(first.meta?.total_page) || 1;
+  if (first.meta?.total_record && out.length) {
+    totalPage = Math.max(totalPage, Math.ceil(Number(first.meta.total_record) / out.length));
+  }
+  totalPage = Math.min(totalPage, 300);
+
+  const BATCH = 5;
+  for (let start = 2; start <= totalPage; start += BATCH) {
+    const pages = [];
+    for (let p = start; p < start + BATCH && p <= totalPage; p += 1) pages.push(p);
+    const results = await Promise.all(pages.map((p) => fetchPage(p).catch(() => null)));
+    for (const r of results) if (r && Array.isArray(r.data)) out.push(...r.data);
+  }
+
+  const seen = new Set();
+  return out
+    .filter((m) => m && m.manga_id && !seen.has(m.manga_id) && seen.add(m.manga_id))
+    .map(mapMangaCard);
+});
+
 async function fetchAllChapters(mangaId) {
   const pageSize = 100;
   let page = 1;
@@ -317,4 +349,4 @@ const read = safe(async (input) => {
   };
 });
 
-module.exports = { home, search, update, detail, read };
+module.exports = { home, search, update, detail, read, all };
