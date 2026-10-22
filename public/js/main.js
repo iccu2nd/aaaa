@@ -8,6 +8,7 @@ import { reader } from './pages/reader.js';
 
 route(/^\/$/, home);
 route(/^\/update$/, update);
+route(/^\/explore\/genre\/(.+)$/, (ctx, genre) => explore(ctx, '', genre));
 route(/^\/explore$/, explore);
 route(/^\/search\/?(.*)$/, explore);
 route(/^\/library$/, library);

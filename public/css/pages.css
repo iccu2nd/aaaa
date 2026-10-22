@@ -1,5 +1,9 @@
 /* ========== DETAIL ========== */
 .detail { margin: calc(-1 * var(--s4)) calc(-1 * var(--page-x)) 0; width: calc(100% + 2 * var(--page-x)); max-width: calc(100% + 2 * var(--page-x)); overflow-x: hidden; }
+@media (min-width: 600px) {
+  .rail--wrap { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
 @media (min-width: 720px) {
   .detail { margin-left: 0; margin-right: 0; }
 }
@@ -142,6 +146,8 @@
   border: 1px solid var(--line);
   color: var(--muted);
 }
+.tag--link { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; transition: background .16s ease, color .16s ease, border-color .16s ease; }
+.tag--link:hover, .tag--link:focus-visible { color: var(--red); border-color: rgba(229, 62, 93, .55); background: rgba(229, 62, 93, .09); outline: none; }
 
 .detail__chapters-head {
   display: flex;
@@ -467,6 +473,20 @@
   padding: 0;
   gap: 10px;
   touch-action: auto;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Recommendation grid must never inherit the fixed width used by horizontal rails. */
+.rail--wrap > .rail-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  flex: initial;
+  scroll-snap-align: none;
+}
+.rail--wrap > .rail-card .rail-card__cover {
+  width: 100%;
 }
 
 .rail-card {
@@ -591,7 +611,7 @@
 @media (min-width: 480px) {
   .rail-card { width: 132px; }
   .rail-card--continue { width: 144px; }
-  .rail--wrap { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .rail--wrap { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .spotlight__art { width: min(36vw, 160px); max-width: 160px; }
 }
 @media (min-width: 720px) {
@@ -759,13 +779,16 @@
 .detail-loading__chapters i { display: block; height: 78px; }
 .reader-loading { display: flex; flex-direction: column; gap: 0; width: 100%; min-height: 100vh; background: #151518; }
 .reader-loading__page { display: block; width: 100%; height: min(145vw, 760px); min-height: 440px; border-radius: 0; background-color: #202024; }
-.explore-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+/* Explore cards follow the same compact proportions as Home recommendations. */
+.explore-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 10px; }
+.explore-grid > .card { min-width: 0; width: 100%; }
+.explore-grid .card__cover { aspect-ratio: 3 / 4; }
 .explore-skeleton { aspect-ratio: 3 / 4; width: 100%; }
 @media (min-width: 600px) {
   .explore-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (min-width: 900px) {
-  .explore-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .explore-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
 @media (max-width: 420px) {
   .detail__ch-search { gap: 6px; }

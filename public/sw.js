@@ -1,5 +1,5 @@
 /* RiMwa Service Worker — cache gambar, API, aset; mendukung chapter offline */
-const V = 'v3';
+const V = 'v5';
 const STATIC = `rimwa-static-${V}`;
 const IMG = `rimwa-img-${V}`;
 const API = `rimwa-api-${V}`;

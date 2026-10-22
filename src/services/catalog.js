@@ -114,6 +114,7 @@ const all = async (query = '') => {
     url: c.url,
     chapter: c.chapter || '',
     meta: c.meta || '',
+    genres: Array.isArray(c.genres) ? c.genres : [],
     source: c.source,
   }));
   return { status: data.length > 0, data, message: data.length ? undefined : 'Daftar kosong' };

@@ -42,7 +42,7 @@ export async function detail({ root, alive }, url) {
     ? esc(resume.chapterTitle || '')
     : (first ? esc(first.title) : '');
 
-  const genres = (d.genres || []).map((g) => `<span class="tag">${esc(g)}</span>`).join('');
+  const genres = (d.genres || []).map((g) => `<a class="tag tag--link" href="#/explore/genre/${encodeURIComponent(g)}" aria-label="Lihat manhwa genre ${esc(g)}">${esc(g)}</a>`).join('');
   const authors = (d.authors || []).join(', ');
   const status = d.status || '';
   const year = d.release_year || '';

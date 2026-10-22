@@ -7,11 +7,11 @@ const SIZE = 24;
 const fmt = (n) => Number(n).toLocaleString('id-ID');
 
 /** Explore: SEMUA judul, dimuat bertahap saat scroll (tanpa batas total). */
-export async function explore({ root, alive }, q = '') {
+export async function explore({ root, alive }, q = '', genre = '') {
   const input = document.getElementById('search-input');
   if (input) input.value = q;
-  const title = q ? `Hasil: ${q}` : 'Explore';
-  const url = (page) => `/api/explore?q=${encodeURIComponent(q)}&page=${page}&size=${SIZE}`;
+  const title = genre ? `Genre: ${genre}` : q ? `Hasil: ${q}` : 'Explore';
+  const url = (page) => `/api/explore?q=${encodeURIComponent(q)}&genre=${encodeURIComponent(genre)}&page=${page}&size=${SIZE}`;
 
   root.innerHTML = section(title, `<div class="grid explore-grid">${'<div class="explore-skeleton loading-surface"></div>'.repeat(8)}</div>`);
   let first;
@@ -20,13 +20,13 @@ export async function explore({ root, alive }, q = '') {
   } catch (e) {
     if (!alive()) return;
     root.innerHTML = section(title, `<div class="state state--error">${esc(e.message)} · <a href="#" id="ex-first-retry">Coba lagi</a></div>`);
-    document.getElementById('ex-first-retry')?.addEventListener('click', (ev) => { ev.preventDefault(); explore({ root, alive }, q); });
+    document.getElementById('ex-first-retry')?.addEventListener('click', (ev) => { ev.preventDefault(); explore({ root, alive }, q, genre); });
     return;
   }
   if (!alive()) return;
 
   if (!first.items.length) {
-    root.innerHTML = section(title, msg('Tidak ada hasil.'));
+    root.innerHTML = section(title, msg(genre ? `Belum ada data manhwa dengan genre ${esc(genre)} dari katalog yang tersedia.` : 'Tidak ada hasil.'));
     return;
   }
 
