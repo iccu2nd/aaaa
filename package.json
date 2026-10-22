@@ -1,0 +1,16 @@
+{
+  "name": "rimwa",
+  "version": "1.0.0",
+  "description": "RiMwa — baca komik online",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
