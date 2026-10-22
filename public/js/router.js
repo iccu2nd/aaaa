@@ -12,6 +12,7 @@ export function start(root) {
     // Reader mode mengikuti URL aktif. Jangan reset ke mode biasa saat berpindah
     // langsung dari satu chapter ke chapter berikutnya.
     document.body.classList.toggle('is-reader', /^\/read\//.test(hash));
+    document.body.classList.toggle('is-detail', /^\/detail\//.test(hash));
     const ctx = { root, alive: () => token === current };
     markActive(hash);
     for (const { pattern, handler } of routes) {

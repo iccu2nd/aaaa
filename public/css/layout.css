@@ -16,7 +16,8 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
   border-bottom: 1px solid var(--glass-border);
 }
-body.is-reader .topbar { display: none; }
+body.is-reader .topbar,
+body.is-detail .topbar { display: none !important; }
 
 .topbar__inner {
   display: flex;

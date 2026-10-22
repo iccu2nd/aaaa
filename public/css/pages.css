@@ -808,3 +808,39 @@
   .detail__ch-search #ch-sort span { font-size: 11px; }
   .ch-thumb { width: 116px; height: 78px; }
 }
+
+
+/* Reader toolbar: previous, settings, auto-scroll, chapter list, next. */
+.reader__bottom {
+  gap: clamp(5px, 2vw, 14px);
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
+  justify-content: space-evenly;
+  background: linear-gradient(to top, rgba(0,0,0,.94), rgba(0,0,0,.68));
+}
+.reader__bottom .reader__icon { width: clamp(40px, 11vw, 48px); height: clamp(40px, 11vw, 48px); }
+.reader__bottom .reader__icon.is-active { color: var(--accent); background: rgba(225,29,72,.16); border-color: rgba(225,29,72,.35); }
+.reader__autoscroll { color: #fff; }
+.reader__autoscroll.is-active { color: var(--accent); background: rgba(225,29,72,.18); border-color: rgba(225,29,72,.4); }
+.reader-settings {
+  position: fixed; z-index: 55; left: 12px; right: 12px;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  max-width: 420px; margin: 0 auto; padding: 14px;
+  color: var(--white); background: rgba(28,28,32,.97);
+  border: 1px solid rgba(255,255,255,.12); border-radius: 16px;
+  box-shadow: 0 12px 36px rgba(0,0,0,.36);
+}
+.reader-settings[hidden] { display: none !important; }
+.reader-settings__title { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.reader-settings__options { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; }
+.reader-settings__options button { min-width: 0; padding: 9px 4px; border-radius: 10px; border: 1px solid var(--line); background: var(--char); color: var(--muted); font: inherit; font-size: 11px; }
+.reader-settings__options button.is-selected { color: var(--white); background: rgba(225,29,72,.18); border-color: var(--accent); }
+.reader__end-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.reader__end-nav { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--char); color: var(--white); font-size: 13px; font-weight: 600; }
+.reader__end-nav--next { margin-left: auto; }
+.reader__end-nav.is-disabled { opacity: .35; }
+@media (max-width: 360px) {
+  .reader__bottom { gap: 4px; padding-left: 6px; padding-right: 6px; }
+  .reader__bottom .reader__icon { width: 38px; height: 38px; }
+  .reader-settings__options { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}

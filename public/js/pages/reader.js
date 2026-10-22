@@ -9,6 +9,9 @@ const ICO = {
   next: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   list: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
   close: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+  settings: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" stroke="currentColor" stroke-width="1.8"/><path d="m19.4 15 .1.1 1.1.9-1.5 2.6-1.4-.6a7.7 7.7 0 0 1-1.5.9l-.2 1.5h-3l-.3-1.5a7.7 7.7 0 0 1-1.5-.9l-1.4.6-1.5-2.6 1.2-.9a7 7 0 0 1 0-1.8l-1.2-.9 1.5-2.6 1.4.6a7.7 7.7 0 0 1 1.5-.9l.3-1.5h3l.2 1.5a7.7 7.7 0 0 1 1.5.9l1.4-.6 1.5 2.6-1.1.9a7 7 0 0 1 0 1.8Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
+  play: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.1 5.2a1 1 0 0 1 0 1.8l-9.1 5.2a1 1 0 0 1-1.6-.9V5.8Z"/></svg>`,
+  pause: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>`,
 };
 
 export async function reader({ root, alive }, url) {
@@ -78,21 +81,27 @@ export async function reader({ root, alive }, url) {
 
       <div class="reader__end" id="reader-end">
         <div class="reader__end-label">Akhir chapter</div>
-        ${next
-          ? `<a class="btn btn--brand btn--pill" href="${link('read', next.url)}">Chapter selanjutnya</a>`
-          : s
-            ? `<a class="btn btn--secondary btn--pill" href="${backHref}">Selesai</a>`
-            : ''}
+        <div class="reader__end-actions">
+          ${prev ? `<a class="reader__end-nav" href="${link('read', prev.url)}">${ICO.prev}<span>Previous</span></a>` : '<span class="reader__end-nav is-disabled">'+ICO.prev+'<span>Previous</span></span>'}
+          ${next ? `<a class="reader__end-nav reader__end-nav--next" href="${link('read', next.url)}"><span>Next chapter</span>${ICO.next}</a>` : s ? `<a class="reader__end-nav reader__end-nav--next" href="${backHref}"><span>Back to detail</span>${ICO.next}</a>` : '<span class="reader__end-nav reader__end-nav--next is-disabled"><span>Next chapter</span>'+ICO.next+'</span>'}
+        </div>
       </div>
 
       <div class="reader__ui reader__bottom" id="reader-bottom">
-        ${prev
-          ? `<a class="reader__icon reader__icon--lg" href="${link('read', prev.url)}" aria-label="Sebelumnya">${ICO.prev}</a>`
-          : `<span class="reader__icon reader__icon--lg is-disabled" aria-hidden="true">${ICO.prev}</span>`}
+        ${prev ? `<a class="reader__icon reader__icon--lg" href="${link('read', prev.url)}" aria-label="Previous chapter">${ICO.prev}</a>` : `<span class="reader__icon reader__icon--lg is-disabled" aria-label="Tidak ada chapter sebelumnya">${ICO.prev}</span>`}
+        <button type="button" class="reader__icon reader__icon--lg" id="btn-reader-settings" aria-label="Pengaturan auto-scroll" aria-expanded="false">${ICO.settings}</button>
+        <button type="button" class="reader__icon reader__icon--lg reader__autoscroll" id="btn-autoscroll" aria-label="Mulai auto-scroll" aria-pressed="false">${ICO.play}</button>
         <button type="button" class="reader__icon reader__icon--lg" id="btn-list-2" aria-label="Daftar chapter">${ICO.list}</button>
-        ${next
-          ? `<a class="reader__icon reader__icon--lg" href="${link('read', next.url)}" aria-label="Selanjutnya">${ICO.next}</a>`
-          : `<span class="reader__icon reader__icon--lg is-disabled" aria-hidden="true">${ICO.next}</span>`}
+        ${next ? `<a class="reader__icon reader__icon--lg" href="${link('read', next.url)}" aria-label="Next chapter">${ICO.next}</a>` : `<span class="reader__icon reader__icon--lg is-disabled" aria-label="Tidak ada chapter berikutnya">${ICO.next}</span>`}
+      </div>
+      <div class="reader-settings" id="reader-settings" hidden>
+        <div class="reader-settings__title">Kecepatan auto-scroll</div>
+        <div class="reader-settings__options" role="group" aria-label="Kecepatan auto-scroll">
+          <button type="button" data-scroll-speed="15">Lambat</button>
+          <button type="button" data-scroll-speed="30" class="is-selected">Normal</button>
+          <button type="button" data-scroll-speed="55">Cepat</button>
+          <button type="button" data-scroll-speed="85">Sangat cepat</button>
+        </div>
       </div>
 
       <div class="reader-drawer" id="reader-drawer" hidden>
@@ -116,10 +125,17 @@ export async function reader({ root, alive }, url) {
   const bottom = document.getElementById('reader-bottom');
   const readerEl = document.getElementById('reader');
   const drawer = document.getElementById('reader-drawer');
+  const settings = document.getElementById('reader-settings');
+  const settingsBtn = document.getElementById('btn-reader-settings');
+  const autoBtn = document.getElementById('btn-autoscroll');
   let uiVisible = false;
   let scrollTimer = null;
   let lastScrollY = window.scrollY;
   let scrolling = false;
+  let autoScrollFrame = 0;
+  let autoScrolling = false;
+  let autoScrollSpeed = 30;
+  let previousFrameTime = 0;
 
   const showUI = () => {
     uiVisible = true;
@@ -147,6 +163,53 @@ export async function reader({ root, alive }, url) {
 
   document.getElementById('btn-list').addEventListener('click', (e) => { e.stopPropagation(); openDrawer(); });
   document.getElementById('btn-list-2').addEventListener('click', (e) => { e.stopPropagation(); openDrawer(); });
+
+  const stopAutoScroll = () => {
+    autoScrolling = false;
+    cancelAnimationFrame(autoScrollFrame);
+    autoScrollFrame = 0;
+    previousFrameTime = 0;
+    autoBtn.innerHTML = ICO.play;
+    autoBtn.setAttribute('aria-label', 'Mulai auto-scroll');
+    autoBtn.setAttribute('aria-pressed', 'false');
+    autoBtn.classList.remove('is-active');
+  };
+  const autoScrollTick = (time) => {
+    if (!autoScrolling) return;
+    if (!previousFrameTime) previousFrameTime = time;
+    const delta = Math.min(time - previousFrameTime, 50);
+    previousFrameTime = time;
+    const maxY = document.documentElement.scrollHeight - window.innerHeight;
+    if (window.scrollY >= maxY - 1) { stopAutoScroll(); return; }
+    window.scrollBy(0, autoScrollSpeed * delta / 1000);
+    autoScrollFrame = requestAnimationFrame(autoScrollTick);
+  };
+  autoBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (autoScrolling) { stopAutoScroll(); return; }
+    autoScrolling = true;
+    autoBtn.innerHTML = ICO.pause;
+    autoBtn.setAttribute('aria-label', 'Jeda auto-scroll');
+    autoBtn.setAttribute('aria-pressed', 'true');
+    autoBtn.classList.add('is-active');
+    previousFrameTime = 0;
+    autoScrollFrame = requestAnimationFrame(autoScrollTick);
+  });
+  settingsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const opening = settings.hidden;
+    settings.hidden = !opening;
+    settingsBtn.setAttribute('aria-expanded', String(opening));
+    settingsBtn.classList.toggle('is-active', opening);
+    showUI();
+  });
+  settings.querySelectorAll('[data-scroll-speed]').forEach((button) => {
+    button.addEventListener('click', () => {
+      autoScrollSpeed = Number(button.dataset.scrollSpeed) || 30;
+      settings.querySelectorAll('[data-scroll-speed]').forEach((b) => b.classList.toggle('is-selected', b === button));
+      if (autoScrolling) { cancelAnimationFrame(autoScrollFrame); previousFrameTime = 0; autoScrollFrame = requestAnimationFrame(autoScrollTick); }
+    });
+  });
   document.getElementById('drawer-close').addEventListener('click', closeDrawer);
   document.getElementById('drawer-backdrop').addEventListener('click', closeDrawer);
 
@@ -160,7 +223,7 @@ export async function reader({ root, alive }, url) {
   });
 
   readerEl.addEventListener('click', (e) => {
-    if (e.target.closest('a, button, .reader__end, .reader-drawer')) return;
+    if (e.target.closest('a, button, .reader__end, .reader-drawer, .reader-settings')) return;
     if (scrolling) return;
     if (uiVisible) hideUI();
     else showUI();
@@ -181,6 +244,7 @@ export async function reader({ root, alive }, url) {
   const cleanup = () => {
     window.removeEventListener('scroll', onScroll);
     clearTimeout(scrollTimer);
+    stopAutoScroll();
   };
   const onHash = () => {
     cleanup();
