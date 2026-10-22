@@ -1,29 +1,30 @@
 import { route, start } from './router.js';
 import { home } from './pages/home.js';
-import { update } from './pages/update.js';
 import { explore } from './pages/explore.js';
 import { library } from './pages/library.js';
+import { profile } from './pages/profile.js';
 import { detail } from './pages/detail.js';
 import { reader } from './pages/reader.js';
+import { update } from './pages/update.js';
 
 route(/^\/$/, home);
-route(/^\/update$/, update);
+route(/^\/update$/, update); // legacy route; updates remain accessible from Home
 route(/^\/explore\/genre\/(.+)$/, (ctx, genre) => explore(ctx, '', genre));
-route(/^\/explore$/, explore);
-route(/^\/search\/?(.*)$/, explore);
+route(/^\/explore$/, (ctx) => explore(ctx));
+route(/^\/search(?:\?(.*))?$/, (ctx, params = '') => {
+  const query = new URLSearchParams(params);
+  return explore(ctx, query.get('q') || '', query.get('genre') || '', query.get('sort') || 'popular');
+});
 route(/^\/library$/, library);
+route(/^\/profile$/, profile);
 route(/^\/detail\/(.+)$/, detail);
 route(/^\/read\/(.+)$/, reader);
 
-const input = document.getElementById('search-input');
-document.getElementById('search-form').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const q = input.value.trim();
-  location.hash = q ? '#/search/' + encodeURIComponent(q) : '#/explore';
-  input.blur();
-});
-addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); input.focus(); input.select(); }
+// Install prompt is optional; the app remains usable when the browser doesn't expose it.
+window.rimwaInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  window.rimwaInstallPrompt = event;
 });
 
 start(document.getElementById('app'));

@@ -115,11 +115,20 @@ export async function home({ root, alive }) {
     ${spotlight(feature)}
     ${hist.length ? rail('Continue reading', contHtml, '#/library') : ''}
     ${rail('Update', `<div class="rail">${updateRail.map(updateCard).join('')}</div>`, '#/update')}
+    <section class="install-promo" id="install-promo"><div class="install-promo__mark"><svg viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M5 17v3h14v-3"/></svg></div><div class="install-promo__copy"><strong>RiMwa di layar utama</strong><span>Akses manhwa favorit lebih cepat, tanpa mencari situs lagi.</span></div><button type="button" class="install-promo__button" id="install-rimwa">Pasang</button></section>
     ${rail('Rekomendasi', `<div class="rail rail--wrap">${popular.slice(0, 24).map(updateCard).join('')}</div>`, '#/explore')}
   `;
 
   // Lightweight spotlight rotation: update existing DOM instead of rerendering Home.
   startSpotlightRotation(dedupeByUrl([...popular, ...updates]).filter((item) => item?.url && item?.poster).slice(0, 8), root, alive);
+  const installButton = root.querySelector('#install-rimwa');
+  const installPromo = root.querySelector('#install-promo');
+  if (window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone) installPromo?.remove();
+  else installButton?.addEventListener('click', async () => {
+    const promptEvent = window.rimwaInstallPrompt;
+    if (promptEvent) { promptEvent.prompt(); await promptEvent.userChoice.catch(() => null); window.rimwaInstallPrompt = null; installPromo?.classList.add('is-done'); if (installPromo) installPromo.querySelector('.install-promo__button').textContent = 'Selesai'; }
+    else { const copy = installPromo?.querySelector('.install-promo__copy span'); if (copy) copy.textContent = 'Buka menu browser ⋮ lalu pilih “Tambahkan ke layar utama” atau “Install aplikasi”.'; installButton.textContent = 'Mengerti'; }
+  });
 }
 
 function startSpotlightRotation(items, root, alive) {

@@ -24,3 +24,12 @@ npm start
 - Replaced the auto-scroll settings icon with a cleaner gear icon.
 - Auto-scroll speed now uses a touch-friendly range slider from 0.5× to 1.5× with a live value label.
 - Updated the service-worker cache version to v8 so browsers can fetch the new reader assets.
+
+
+## Navigation update (v10)
+- Removed the global topbar to give the content more room.
+- Bottom navigation is now Home, Search, Library, and Profile.
+- Search opens an inline search field beside the search icon; genre filters are available in a bottom sheet.
+- Updates remain in the Home feed instead of taking a bottom-navigation slot.
+- Home includes a compact install recommendation with a native install prompt when supported and browser instructions as fallback.
+- Profile currently shows a lightweight “coming in a future update” page with Library shortcuts and local reading counts.

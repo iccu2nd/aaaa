@@ -19,7 +19,8 @@ export function start(root) {
       const m = hash.match(pattern);
       if (!m) continue;
       try {
-        await handler(ctx, ...m.slice(1).map((p) => decodeURIComponent(p || '')));
+        const params = m.slice(1).map((p) => (pattern.source.startsWith('^\\/search') ? (p || '') : decodeURIComponent(p || '')));
+        await handler(ctx, ...params);
       } catch (e) {
         if (ctx.alive()) {
           document.body.classList.remove('is-reader');
@@ -35,8 +36,8 @@ export function start(root) {
 }
 
 function markActive(hash) {
-  const seg = hash.split('/')[1] || 'home';
-  const active = seg === 'search' ? 'explore' : seg === 'detail' || seg === 'read' ? '' : seg;
+  const seg = (hash.split('/')[1] || 'home').split('?')[0];
+  const active = seg === 'explore' ? 'search' : seg === 'detail' || seg === 'read' || seg === 'update' ? '' : seg;
   document.querySelectorAll('[data-nav]').forEach((a) => {
     if (active && a.dataset.nav === active) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
