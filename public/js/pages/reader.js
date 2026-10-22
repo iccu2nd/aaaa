@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { state } from '../state.js';
-import { history } from '../store.js';
+import { history, readingProgress } from '../store.js';
 import { esc, img, link } from '../utils.js';
 
 const ICO = {
@@ -116,11 +116,17 @@ export async function reader({ root, alive }, url) {
       </div>
     </div>`;
 
-  window.scrollTo(0, 0);
+  const savedProgress = readingProgress.get(url);
 
   const top = document.getElementById('reader-top');
   const bottom = document.getElementById('reader-bottom');
   const readerEl = document.getElementById('reader');
+  const progressBar = document.createElement('div');
+  progressBar.className = 'reader-progress';
+  progressBar.setAttribute('aria-hidden', 'true');
+  progressBar.innerHTML = '<span></span>';
+  readerEl.prepend(progressBar);
+  const progressFill = progressBar.firstElementChild;
   const drawer = document.getElementById('reader-drawer');
   const settings = document.getElementById('reader-settings');
   const settingsBtn = document.getElementById('btn-reader-settings');
@@ -240,7 +246,33 @@ export async function reader({ root, alive }, url) {
     else showUI();
   });
 
+  let progressSaveTimer = null;
+  const updateReadingProgress = () => {
+    const maxY = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    const ratio = Math.max(0, Math.min(1, window.scrollY / maxY));
+    progressFill.style.transform = `scaleX(${ratio})`;
+    readingProgress.set(url, ratio);
+  };
+  const restoreReadingProgress = () => {
+    if (!savedProgress || savedProgress < 0.01) return;
+    const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    if (maxY > 0) window.scrollTo(0, maxY * savedProgress);
+  };
+  const pageImages = Array.from(document.querySelectorAll('#reader-pages img'));
+  Promise.all(pageImages.slice(0, 3).map((image) => image.complete ? Promise.resolve() :
+    new Promise((resolve) => {
+      image.addEventListener('load', resolve, { once: true });
+      image.addEventListener('error', resolve, { once: true });
+      setTimeout(resolve, 1800);
+    }))).then(() => {
+      if (alive()) {
+        if (savedProgress > 0.01) restoreReadingProgress();
+        updateReadingProgress();
+      }
+    });
   const onScroll = () => {
+    clearTimeout(progressSaveTimer);
+    progressSaveTimer = setTimeout(updateReadingProgress, 180);
     const y = window.scrollY;
     if (Math.abs(y - lastScrollY) > 4) {
       scrolling = true;
@@ -258,6 +290,8 @@ export async function reader({ root, alive }, url) {
     document.removeEventListener('visibilitychange', onVisibilityChange);
     window.removeEventListener('rimwa:routechange', cleanup);
     clearTimeout(scrollTimer);
+    clearTimeout(progressSaveTimer);
+    updateReadingProgress();
     stopAutoScroll();
   };
   document.addEventListener('visibilitychange', onVisibilityChange);
