@@ -1,6 +1,6 @@
 # RiMwa
 
-Baca komik online. Sumber: Shinigami + Voratoon (dedupe otomatis).
+RiMwa — platform baca komik dengan katalog terintegrasi.
 
 ## Jalankan
 ```bash
@@ -33,3 +33,11 @@ npm start
 - Updates remain in the Home feed instead of taking a bottom-navigation slot.
 - Home includes a compact install recommendation with a native install prompt when supported and browser instructions as fallback.
 - Profile currently shows a lightweight “coming in a future update” page with Library shortcuts and local reading counts.
+
+
+## Clean URL routing (v13)
+- Detail and reader pages use clean `/detail/{token}` and `/read/{token}` routes without hash fragments. Source URLs are Base64URL-obfuscated in the address bar; this is not encryption.
+- Search filters are represented in the query string, e.g. `/search?q=...&genre=...`.
+- Legacy `/#/detail/...` and other hash routes are migrated to clean paths on startup.
+- Client-side navigation supports browser Back/Forward and direct deep links.
+- Express and Vercel rewrites serve the SPA entry point for application routes while leaving `/api/*` unchanged.

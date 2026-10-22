@@ -56,7 +56,7 @@ export async function reader({ root, alive }, url) {
     });
   }
 
-  const backHref = s ? link('detail', s.url) : '#/';
+  const backHref = s ? link('detail', s.url) : '/';
   const readSet = s ? history.readChapters(s.url) : new Set();
 
   const drawerList = list.length

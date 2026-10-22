@@ -1,3 +1,4 @@
+import { navigate as navigateTo } from '../router.js';
 import { api } from '../api.js';
 import { card } from '../components/card.js';
 import { esc } from '../utils.js';
@@ -88,8 +89,9 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
     if (currentQuery) params.set('q', currentQuery);
     if (currentGenre) params.set('genre', currentGenre);
     if (sort === 'title') params.set('sort', 'title');
-    const next = '#/search' + (params.size ? '?' + params.toString() : '');
-    if (location.hash === next) loadResults(); else location.hash = next;
+    const next = '/search' + (params.size ? '?' + params.toString() : '');
+    const current = location.pathname + location.search;
+    if (current === next) loadResults(); else navigateTo(next, { scroll: false });
   }
 
   async function loadResults() {

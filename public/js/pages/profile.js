@@ -7,6 +7,6 @@ export function profile({ root }) {
       <h1>Profile</h1>
       <p class="profile-page__copy">Halaman profil sedang disiapkan dan akan hadir pada pembaruan berikutnya.</p>
       <div class="profile-page__stats"><div><strong>${bookmarks.list().length}</strong><span>Bookmark</span></div><div><strong>${history.list().length}</strong><span>Riwayat baca</span></div></div>
-      <a class="btn btn--secondary profile-page__library" href="#/library">Buka Library</a>
+      <a class="btn btn--secondary profile-page__library" href="/library">Buka Library</a>
     </section>`;
 }

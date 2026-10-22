@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/detail/:path*", "destination": "/index.html" },
+    { "source": "/read/:path*", "destination": "/index.html" },
+    { "source": "/search", "destination": "/index.html" },
+    { "source": "/explore/:path*", "destination": "/index.html" },
+    { "source": "/library", "destination": "/index.html" },
+    { "source": "/profile", "destination": "/index.html" },
+    { "source": "/update", "destination": "/index.html" }
+  ]
+}

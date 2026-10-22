@@ -11,8 +11,8 @@ route(/^\/$/, home);
 route(/^\/update$/, update); // legacy route; updates remain accessible from Home
 route(/^\/explore\/genre\/(.+)$/, (ctx, genre) => explore(ctx, '', genre));
 route(/^\/explore$/, (ctx) => explore(ctx));
-route(/^\/search(?:\?(.*))?$/, (ctx, params = '') => {
-  const query = new URLSearchParams(params);
+route(/^\/search$/, (ctx) => {
+  const query = new URLSearchParams(location.search);
   return explore(ctx, query.get('q') || '', query.get('genre') || '', query.get('sort') || 'popular');
 });
 route(/^\/library$/, library);
@@ -20,12 +20,6 @@ route(/^\/profile$/, profile);
 route(/^\/detail\/(.+)$/, detail);
 route(/^\/read\/(.+)$/, reader);
 
-// Install prompt is optional; the app remains usable when the browser doesn't expose it.
-window.rimwaInstallPrompt = null;
-window.addEventListener('beforeinstallprompt', (event) => {
-  event.preventDefault();
-  window.rimwaInstallPrompt = event;
-});
 
 start(document.getElementById('app'));
 

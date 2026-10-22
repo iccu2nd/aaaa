@@ -15,6 +15,11 @@ app.use(express.static(path.join(__dirname, '..', 'public'), {
   },
 }));
 
+// SPA fallback for clean URLs; keep API routes and static assets untouched.
+app.get(['/detail/*', '/read/*', '/search', '/explore', '/explore/*', '/library', '/profile', '/update'], (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
 app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
   console.error(err);
   res.status(500).json({ status: false, message: 'Terjadi kesalahan server' });

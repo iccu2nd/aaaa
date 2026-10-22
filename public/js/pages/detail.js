@@ -42,7 +42,7 @@ export async function detail({ root, alive }, url) {
     ? esc(resume.chapterTitle || '')
     : (first ? esc(first.title) : '');
 
-  const genres = (d.genres || []).map((g) => `<a class="tag tag--link" href="#/explore/genre/${encodeURIComponent(g)}" aria-label="Lihat manhwa genre ${esc(g)}">${esc(g)}</a>`).join('');
+  const genres = (d.genres || []).map((g) => `<a class="tag tag--link" href="/search?genre=${encodeURIComponent(g)}" aria-label="Lihat manhwa genre ${esc(g)}">${esc(g)}</a>`).join('');
   const authors = (d.authors || []).join(', ');
   const status = d.status || '';
   const year = d.release_year || '';
@@ -81,7 +81,7 @@ export async function detail({ root, alive }, url) {
         <img class="detail__hero-bg" src="${esc(img(d.poster))}" alt="" aria-hidden="true">
         <div class="detail__hero-fade"></div>
         <div class="detail__hero-actions">
-          <a class="detail__icon-btn" href="#/" aria-label="Kembali">
+          <a class="detail__icon-btn" href="/" aria-label="Kembali">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </a>
           <button class="detail__icon-btn" id="bm" type="button" aria-label="Simpan">
@@ -97,7 +97,6 @@ export async function detail({ root, alive }, url) {
             <div class="detail__badges">
               ${status ? `<span class="detail__badge">${esc(status)}</span>` : ''}
               ${year ? `<span class="detail__badge">${esc(String(year))}</span>` : ''}
-              ${d.source ? `<span class="detail__badge">${esc(d.source === 'shinigami' ? 'Shinigami' : 'Voratoon')}</span>` : ''}
             </div>
             <h1 class="detail__title">${esc(d.title)}</h1>
             ${authors ? `<div class="detail__row">

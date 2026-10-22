@@ -33,7 +33,6 @@ function updateCard(item) {
       <div class="rail-card__cover">
         <img loading="lazy" src="${esc(img(item.poster))}" alt="">
         ${rate ? `<span class="rail-card__rate"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9L22 10l-5 4.7L18.2 22 12 18.2 5.8 22 7 14.7 2 10l7.1-1.1L12 2z"/></svg> ${esc(String(rate))}</span>` : ''}
-        ${item.source ? `<span class="rail-card__flag">${esc(item.source === 'shinigami' ? 'SG' : 'VT')}</span>` : ''}
       </div>
       <div class="rail-card__title">${esc(item.title)}</div>
       <div class="rail-card__sub">${esc(ch || time || '\u00A0')}</div>
@@ -113,9 +112,9 @@ export async function home({ root, alive }) {
 
   root.innerHTML = `
     ${spotlight(feature)}
-    ${hist.length ? rail('Continue reading', contHtml, '#/library') : ''}
-    ${rail('Update', `<div class="rail">${updateRail.map(updateCard).join('')}</div>`, '#/update')}
-    ${rail('Rekomendasi', `<div class="rail rail--wrap">${popular.slice(0, 24).map(updateCard).join('')}</div>`, '#/explore')}
+    ${hist.length ? rail('Continue reading', contHtml, '/library') : ''}
+    ${rail('Update', `<div class="rail">${updateRail.map(updateCard).join('')}</div>`, '/update')}
+    ${rail('Rekomendasi', `<div class="rail rail--wrap">${popular.slice(0, 24).map(updateCard).join('')}</div>`, '/search')}
   `;
 
   // Lightweight spotlight rotation: update existing DOM instead of rerendering Home.
