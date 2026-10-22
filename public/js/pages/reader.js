@@ -9,7 +9,7 @@ const ICO = {
   next: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   list: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
   close: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
-  settings: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 13.5a7.8 7.8 0 0 0 0-3l1.4-1.1-1.6-2.8-1.7.7a7.5 7.5 0 0 0-2.5-1.4L14.7 4h-3.4l-.3 1.9a7.5 7.5 0 0 0-2.5 1.4l-1.7-.7-1.6 2.8 1.4 1.1a7.8 7.8 0 0 0 0 3l-1.4 1.1 1.6 2.8 1.7-.7a7.5 7.5 0 0 0 2.5 1.4l.3 1.9h3.4l.3-1.9a7.5 7.5 0 0 0 2.5-1.4l1.7.7 1.6-2.8-1.4-1.1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
+  settings: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8.8a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 0 0 0-6.4Z" stroke="currentColor" stroke-width="1.8"/><path d="m19.4 13.4 1.1.9-1.6 2.8-1.4-.5a7.8 7.8 0 0 1-1.8 1l-.3 1.5h-3.2l-.3-1.5a7.8 7.8 0 0 1-1.8-1l-1.4.5-1.6-2.8 1.1-.9a7.4 7.4 0 0 1 0-2.8l-1.1-.9 1.6-2.8 1.4.5a7.8 7.8 0 0 1 1.8-1l.3-1.5h3.2l.3 1.5a7.8 7.8 0 0 1 1.8 1l1.4-.5 1.6 2.8-1.1.9a7.4 7.4 0 0 1 0 2.8Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
   play: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.1 5.2a1 1 0 0 1 0 1.8l-9.1 5.2a1 1 0 0 1-1.6-.9V5.8Z"/></svg>`,
   pause: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>`,
 };
@@ -131,7 +131,12 @@ export async function reader({ root, alive }, url) {
   let scrolling = false;
   let autoScrollFrame = 0;
   let autoScrolling = false;
-  let autoScrollSpeed = 36;
+  let autoScrollSpeed = 60 * (Number(localStorage.getItem('rimwa:auto-speed')) || 1);
+  const initialSpeed = Math.min(1.5, Math.max(0.5, Number(localStorage.getItem('rimwa:auto-speed')) || 1));
+  speedInput.value = String(initialSpeed);
+  speedValue.value = `${initialSpeed.toFixed(2).replace(/0$/, '')}×`;
+  speedValue.textContent = speedValue.value;
+  speedInput.style.setProperty('--speed-progress', `${((initialSpeed - 0.5) / 1) * 100}%`);
   const speedInput = document.getElementById('reader-speed');
   const speedValue = document.getElementById('reader-speed-value');
   let previousFrameTime = 0;
@@ -178,9 +183,10 @@ export async function reader({ root, alive }, url) {
     if (!previousFrameTime) previousFrameTime = time;
     const delta = Math.min(time - previousFrameTime, 50);
     previousFrameTime = time;
-    const maxY = document.documentElement.scrollHeight - window.innerHeight;
-    if (window.scrollY >= maxY - 1) { stopAutoScroll(); return; }
+    const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    if (maxY <= 0 || window.scrollY >= maxY - 2) { stopAutoScroll(); return; }
     window.scrollBy(0, autoScrollSpeed * delta / 1000);
+    if (window.scrollY >= maxY - 2) { stopAutoScroll(); return; }
     autoScrollFrame = requestAnimationFrame(autoScrollTick);
   };
   autoBtn.addEventListener('click', (e) => {
@@ -203,8 +209,9 @@ export async function reader({ root, alive }, url) {
     showUI();
   });
   speedInput.addEventListener('input', () => {
-    const multiplier = Number(speedInput.value) || 1;
-    autoScrollSpeed = 36 * multiplier;
+    const multiplier = Math.min(1.5, Math.max(0.5, Number(speedInput.value) || 1));
+    autoScrollSpeed = 60 * multiplier;
+    try { localStorage.setItem('rimwa:auto-speed', String(multiplier)); } catch { /* storage may be unavailable */ }
     speedValue.value = `${multiplier.toFixed(2).replace(/0$/, '')}×`;
     speedValue.textContent = speedValue.value;
     speedInput.style.setProperty('--speed-progress', `${((multiplier - 0.5) / 1) * 100}%`);
@@ -245,14 +252,14 @@ export async function reader({ root, alive }, url) {
   };
   window.addEventListener('scroll', onScroll, { passive: true });
 
+  const onVisibilityChange = () => { if (document.hidden) stopAutoScroll(); };
   const cleanup = () => {
     window.removeEventListener('scroll', onScroll);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    window.removeEventListener('rimwa:routechange', cleanup);
     clearTimeout(scrollTimer);
     stopAutoScroll();
   };
-  const onHash = () => {
-    cleanup();
-    window.removeEventListener('hashchange', onHash);
-  };
-  window.addEventListener('hashchange', onHash);
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  window.addEventListener('rimwa:routechange', cleanup, { once: true });
 }

@@ -1,6 +1,6 @@
 {
   "name": "rimwa",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "RiMwa — baca komik online",
   "main": "src/server.js",
   "scripts": {

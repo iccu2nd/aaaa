@@ -50,6 +50,8 @@ export function navigate(to, { replace = false, scroll = true } = {}) {
 
 async function runRoute({ scroll = false } = {}) {
   if (!rootElement) return;
+  // Notify active pages before replacing their DOM so reader timers/RAF are always stopped.
+  window.dispatchEvent(new Event('rimwa:routechange'));
   const token = ++current;
   const pathname = location.pathname || '/';
   const pathWithQuery = `${pathname}${location.search}`;
