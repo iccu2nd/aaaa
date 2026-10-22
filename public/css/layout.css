@@ -16,8 +16,7 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
   border-bottom: 1px solid var(--glass-border);
 }
-body.is-reader .topbar,
-body.is-detail .topbar { display: none !important; }
+body.is-reader .topbar { display: none !important; }
 
 .topbar__inner {
   display: flex;
@@ -165,10 +164,24 @@ body.is-reader .bottom-nav { display: none !important; }
 body.is-reader #app { padding: 0; margin: 0; width: 100%; max-width: none; }
 body.is-reader .container { max-width: none; }
 
-/* Halaman detail memakai ruang penuh tanpa navigasi global bawah. */
+/* Detail keeps the global text header, but hides the bottom navigation. */
 body.is-detail .bottom-nav { display: none !important; }
 body.is-detail #app { padding-bottom: 0; }
 
-
-/* v10: no global topbar; bottom navigation is Home, Search, Library, Profile. */
-body:not(.is-reader):not(.is-detail) #app { padding-top: max(12px, env(safe-area-inset-top)); }
+.topbar__inner {
+  min-height: 54px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.topbar__title {
+  display: inline-flex;
+  align-items: center;
+  color: var(--white);
+  font-size: 19px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  text-decoration: none;
+}
+.topbar__title:hover { color: var(--white); }
+body:not(.is-reader) #app { padding-top: max(12px, env(safe-area-inset-top)); }

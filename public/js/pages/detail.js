@@ -136,8 +136,17 @@ export async function detail({ root, alive }, url) {
 
         ${startUrl ? `
           <div class="detail__start">
-            <a class="btn btn--brand" href="${link('read', startUrl)}">
-              ${startLabel}${startSub ? ' · ' + startSub : ''}
+            <a class="detail__start-link" href="${link('read', startUrl)}" aria-label="${startLabel}: ${startSub || d.title}">
+              <span class="detail__start-play" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.2 5.3a1 1 0 0 1 0 1.7l-9.2 5.3c-.7.4-1.6-.1-1.6-.9V5.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+              </span>
+              <span class="detail__start-copy">
+                <span class="detail__start-title">${startLabel === 'Mulai Baca' ? 'Mulai Membaca' : startLabel}</span>
+                <span class="detail__start-sub">${startSub || 'Mulai dari chapter pertama'}</span>
+              </span>
+              <span class="detail__start-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
             </a>
           </div>
         ` : ''}

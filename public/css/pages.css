@@ -179,17 +179,43 @@
 
 .detail__start {
   position: sticky;
-  bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
+  bottom: calc(var(--safe-b) + 16px);
   z-index: 15;
-  margin: 16px 0 8px;
+  margin: 18px 0 12px;
 }
-.detail__start .btn {
+.detail__start-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   width: 100%;
-  border-radius: 999px;
-  min-height: 48px;
-  font-weight: 600;
-  box-shadow: 0 8px 28px rgba(225, 29, 72, 0.35);
+  min-height: 78px;
+  padding: 13px 18px;
+  color: var(--white);
+  background: rgba(42, 40, 45, .97);
+  border: 1px solid rgba(255,255,255,.045);
+  border-radius: 24px;
+  box-shadow: 0 8px 26px rgba(0,0,0,.24);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .16s ease, transform .16s ease;
 }
+.detail__start-link:hover { color: var(--white); background: #302e34; }
+.detail__start-link:active { transform: scale(.99); }
+.detail__start-play {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 38px;
+  color: #79c989;
+}
+.detail__start-play svg { width: 27px; height: 27px; }
+.detail__start-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; }
+.detail__start-title { color: #f5f4f6; font-size: 14px; line-height: 1.25; font-weight: 700; }
+.detail__start-sub { overflow: hidden; color: #aaa7b0; font-size: 12px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.detail__start-arrow { display: grid; place-items: center; flex: 0 0 22px; color: #aaa7b0; }
+.detail__start-arrow svg { width: 20px; height: 20px; }
+@media (prefers-reduced-motion: reduce) { .detail__start-link { transition: none; } }
 
 @media (min-width: 640px) {
   .detail__hero { height: 280px; }
@@ -911,14 +937,6 @@
 .genre-sheet__actions { position:sticky; bottom:0; display:grid; grid-template-columns:1fr 1fr; gap:10px; padding-top:12px; background:#1b1b1e; }
 .text-action { color:var(--accent); font:inherit; }
 
-.install-promo { display:flex; align-items:center; gap:12px; margin:22px 0 28px; padding:13px 14px; border:1px solid var(--line); border-radius:14px; background:linear-gradient(110deg, #171719, #131315); }
-.install-promo__mark { flex:0 0 38px; width:38px; height:38px; display:grid; place-items:center; color:var(--muted); background:#242428; border-radius:11px; }
-.install-promo__mark svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
-.install-promo__copy { display:flex; flex-direction:column; gap:3px; flex:1; min-width:0; }
-.install-promo__copy strong { font-size:12px; font-weight:600; }
-.install-promo__copy span { color:var(--muted); font-size:10px; line-height:1.45; }
-.install-promo__button { flex:0 0 auto; padding:8px 12px; border-radius:9px; background:var(--char); color:var(--white); font-size:11px; font-weight:600; }
-.install-promo.is-done { opacity:.65; }
 .profile-page { min-height:55vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:28px 18px 54px; }
 .profile-page__avatar { width:72px; height:72px; display:grid; place-items:center; border-radius:50%; background:var(--near); color:var(--muted); margin-bottom:16px; }
 .profile-page__avatar svg { width:34px; height:34px; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; }
