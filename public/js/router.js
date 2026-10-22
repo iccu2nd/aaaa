@@ -8,10 +8,11 @@ export const route = (pattern, handler) => routes.push({ pattern, handler });
 export function start(root) {
   const run = async () => {
     const token = ++current;
-    // selalu reset reader mode saat navigasi
-    document.body.classList.remove('is-reader');
-    const ctx = { root, alive: () => token === current };
     const hash = location.hash.slice(1) || '/';
+    // Reader mode mengikuti URL aktif. Jangan reset ke mode biasa saat berpindah
+    // langsung dari satu chapter ke chapter berikutnya.
+    document.body.classList.toggle('is-reader', /^\/read\//.test(hash));
+    const ctx = { root, alive: () => token === current };
     markActive(hash);
     for (const { pattern, handler } of routes) {
       const m = hash.match(pattern);
@@ -19,7 +20,10 @@ export function start(root) {
       try {
         await handler(ctx, ...m.slice(1).map((p) => decodeURIComponent(p || '')));
       } catch (e) {
-        if (ctx.alive()) root.innerHTML = `<div class="state state--error">${esc(e.message)}</div>`;
+        if (ctx.alive()) {
+          document.body.classList.remove('is-reader');
+          root.innerHTML = `<div class="state state--error">${esc(e.message)}</div>`;
+        }
       }
       return;
     }

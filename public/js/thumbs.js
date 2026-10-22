@@ -46,5 +46,5 @@ export function watchThumbs(container, alive = () => true) {
   return io;
 }
 
-export const thumbBox = (chapterUrl, letter) =>
-  `<div class="ch-thumb" data-thumb="${esc(chapterUrl)}"><span>${esc(letter)}</span></div>`;
+export const thumbBox = (chapterUrl) =>
+  `<div class="ch-thumb" data-thumb="${esc(chapterUrl)}"><span aria-hidden="true">Preview unavailable</span></div>`;

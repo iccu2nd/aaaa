@@ -20,7 +20,6 @@ export async function reader({ root, alive }, url) {
   try {
     d = await api('/api/read?url=' + encodeURIComponent(url));
   } catch (e) {
-    document.body.classList.remove('is-reader');
     throw e;
   }
   if (!alive()) return;
@@ -75,7 +74,7 @@ export async function reader({ root, alive }, url) {
       </div>
 
       <div class="reader__pages" id="reader-pages">
-        ${d.images.map((src) => `<img loading="lazy" src="${esc(img(src))}" alt="">`).join('')}
+        ${d.images.map((src, index) => `<img loading="${index < 2 ? 'eager' : 'lazy'}" fetchpriority="${index === 0 ? 'high' : 'auto'}" decoding="async" src="${esc(img(src))}" alt=""${index === 0 ? ' data-first-page' : ''}>`).join('')}
       </div>
 
       <div class="reader__end" id="reader-end">
@@ -181,8 +180,8 @@ export async function reader({ root, alive }, url) {
   window.addEventListener('scroll', onScroll, { passive: true });
 
   const cleanup = () => {
-    document.body.classList.remove('is-reader');
     window.removeEventListener('scroll', onScroll);
+    clearTimeout(scrollTimer);
   };
   const onHash = () => {
     cleanup();

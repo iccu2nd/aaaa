@@ -156,3 +156,10 @@ body.is-reader .bottom-nav { display: none; }
 @media (hover: none), (max-width: 720px) {
   .searchbox kbd { display: none; }
 }
+
+/* Reader route owns the full viewport; global app chrome stays hidden across chapter changes. */
+body.is-reader { overflow-x: clip; }
+body.is-reader .topbar,
+body.is-reader .bottom-nav { display: none !important; }
+body.is-reader #app { padding: 0; margin: 0; width: 100%; max-width: none; }
+body.is-reader .container { max-width: none; }
