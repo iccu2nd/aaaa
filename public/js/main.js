@@ -1,4 +1,5 @@
 import { route, start } from './router.js';
+import { initChrome } from './chrome.js';
 import { home } from './pages/home.js';
 import { explore } from './pages/explore.js';
 import { library } from './pages/library.js';
@@ -21,6 +22,7 @@ route(/^\/detail\/(.+)$/, detail);
 route(/^\/read\/(.+)$/, reader);
 
 
+initChrome();
 start(document.getElementById('app'));
 
 if ('serviceWorker' in navigator) {

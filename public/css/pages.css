@@ -26,7 +26,8 @@
 .detail__hero-fade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(9,9,11,0.15) 0%, rgba(9,9,11,0.85) 70%, var(--ink) 100%);
+  bottom: -1px;
+  background: linear-gradient(to bottom, rgba(9,9,11,0.12) 0%, rgba(9,9,11,0.3) 35%, rgba(9,9,11,0.78) 62%, rgba(9,9,11,0.96) 84%, var(--ink) 100%);
 }
 .detail__hero-actions {
   position: absolute;
@@ -897,11 +898,11 @@
 }
 
 /* v9: detail hero sedikit lebih tinggi setelah topbar dihilangkan */
-.detail__hero { height: 264px; }
-.detail__body { margin-top: -78px; }
-.detail-loading__hero { height: 264px; }
+.detail__hero { height: 280px; }
+.detail__body { margin-top: -92px; }
+.detail-loading__hero { height: 280px; }
 @media (min-width: 720px) {
-  .detail__hero { height: 300px; }
+  .detail__hero { height: 316px; }
 }
 
 

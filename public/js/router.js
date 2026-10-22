@@ -59,6 +59,7 @@ async function runRoute({ scroll = false } = {}) {
   document.body.classList.toggle('is-detail', /^\/detail\//.test(pathname));
   markActive(pathname);
   if (scroll) window.scrollTo({ top: 0, behavior: 'auto' });
+  window.dispatchEvent(new Event('rimwa:chrome-reset'));
 
   const ctx = { root: rootElement, alive: () => token === current };
   for (const { pattern, handler } of routes) {
@@ -69,7 +70,7 @@ async function runRoute({ scroll = false } = {}) {
       await handler(ctx, ...params);
     } catch (error) {
       if (ctx.alive()) {
-        document.body.classList.remove('is-reader');
+        document.body.classList.remove('is-reader', 'is-detail');
         rootElement.innerHTML = `<div class="state state--error">${esc(error?.message || 'Terjadi kesalahan. Coba lagi.')}</div>`;
       }
     }
