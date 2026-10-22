@@ -1,75 +1,82 @@
 const { Router } = require('express');
-const https = require('https');
-const http = require('http');
 const cfg = require('../config');
 const cache = require('../services/cache');
-const source = require('../services/shinigami');
+const shinigami = require('../services/shinigami');
+const voratoon = require('../services/voratoon');
+const { mergeAndDeduplicate } = require('../utils/deduplicate');
 const { sourceUrl } = require('../middleware/validate');
 
 const router = Router();
 const handler = (key, ttl, fn) => async (req, res) =>
   res.json(await cache.wrap(key(req), ttl, () => fn(req)));
 
-router.get('/home', handler(() => 'home', cfg.ttl.home, () => source.home()));
-router.get('/update', handler(() => 'update', cfg.ttl.update, () => source.update()));
-router.get(
-  '/search',
-  handler(
-    (r) => 's:' + String(r.query.q || '').slice(0, 100),
-    cfg.ttl.search,
-    (r) => source.search(String(r.query.q || '').slice(0, 100)),
-  ),
-);
-router.get(
-  '/detail',
-  sourceUrl,
-  handler((r) => 'd:' + r.query.url, cfg.ttl.detail, (r) => source.detail(String(r.query.url))),
-);
-router.get(
-  '/read',
-  sourceUrl,
-  handler((r) => 'r:' + r.query.url, cfg.ttl.read, (r) => source.read(String(r.query.url))),
-);
+router.get('/home', handler(() => 'home_v2', cfg.ttl.home, async () => {
+  const [shiniRes, voraRes] = await Promise.allSettled([
+    shinigami.home(),
+    voratoon.home()
+  ]);
 
-router.get('/img', async (req, res) => {
-  try {
-    const u = new URL(String(req.query.url || ''));
-    const ok =
-      u.protocol === 'https:' &&
-      cfg.imgHosts.some((h) => u.hostname === h || u.hostname.endsWith('.' + h));
-    if (!ok) return res.status(400).send('Host tidak diizinkan');
+  const listA = (shiniRes.status === 'fulfilled' && Array.isArray(shiniRes.value)) ? shiniRes.value : [];
+  const listB = (voraRes.status === 'fulfilled' && voraRes.value.status) ? voraRes.value.data : [];
 
-    const lib = u.protocol === 'https:' ? https : http;
-    const proxyReq = lib.get(
-      u.href,
-      {
-        timeout: 20000,
-        headers: {
-          Referer: cfg.baseUrl + '/',
-          'User-Agent': 'Mozilla/5.0 (Android 14; Mobile; rv:153.0) Gecko/153.0 Firefox/153.0',
-        },
-      },
-      (proxyRes) => {
-        if (proxyRes.statusCode < 200 || proxyRes.statusCode >= 300) {
-          res.status(502).send('Gagal memuat gambar');
-          proxyRes.resume();
-          return;
-        }
-        res.set('Content-Type', proxyRes.headers['content-type'] || 'image/jpeg');
-        res.set('Cache-Control', 'public, max-age=86400');
-        proxyRes.pipe(res);
-      },
-    );
-    proxyReq.on('timeout', () => {
-      proxyReq.destroy();
-      if (!res.headersSent) res.status(504).send('Timeout gambar');
-    });
-    proxyReq.on('error', () => {
-      if (!res.headersSent) res.status(502).send('Gagal memuat gambar');
-    });
-  } catch {
-    res.status(502).send('Gagal memuat gambar');
+  return mergeAndDeduplicate(listA, listB);
+}));
+
+router.get('/update', handler(() => 'update_v2', cfg.ttl.update, async () => {
+  const [shiniRes, voraRes] = await Promise.allSettled([
+    shinigami.update(),
+    voratoon.update()
+  ]);
+
+  const listA = (shiniRes.status === 'fulfilled' && Array.isArray(shiniRes.value)) ? shiniRes.value : [];
+  const listB = (voraRes.status === 'fulfilled' && voraRes.value.status) ? voraRes.value.data : [];
+
+  return mergeAndDeduplicate(listA, listB);
+}));
+
+router.get('/search', handler(
+  (r) => 's:' + String(r.query.q || '').slice(0, 100),
+  cfg.ttl.search,
+  async (r) => {
+    const q = String(r.query.q || '').slice(0, 100);
+    const [shiniRes, voraRes] = await Promise.allSettled([
+      shinigami.search(q),
+      voratoon.search(q)
+    ]);
+
+    const listA = (shiniRes.status === 'fulfilled' && Array.isArray(shiniRes.value)) ? shiniRes.value : [];
+    const listB = (voraRes.status === 'fulfilled' && voraRes.value.status) ? voraRes.value.data : [];
+
+    return mergeAndDeduplicate(listA, listB);
   }
-});
+));
+
+router.get('/detail', sourceUrl, handler(
+  (r) => 'd:' + r.query.url,
+  cfg.ttl.detail,
+  async (r) => {
+    const url = String(r.query.url);
+    if (url.includes('voratoon.com')) {
+      const res = await voratoon.detail(url);
+      if (!res.status) throw new Error(res.message);
+      return res.data;
+    }
+    return await shinigami.detail(url);
+  }
+));
+
+router.get('/read', sourceUrl, handler(
+  (r) => 'r:' + r.query.url,
+  cfg.ttl.read,
+  async (r) => {
+    const url = String(r.query.url);
+    if (url.includes('voratoon.com')) {
+      const res = await voratoon.read(url);
+      if (!res.status) throw new Error(res.message);
+      return res.data;
+    }
+    return await shinigami.read(url);
+  }
+));
 
 module.exports = router;

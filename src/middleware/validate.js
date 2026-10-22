@@ -1,6 +1,14 @@
 const { sourceHost } = require('../config');
 
-/** Pastikan ?url= mengarah ke situs sumber (cegah SSRF). Terima juga UUID murni. */
+const ALLOWED_HOSTS = [
+  sourceHost,
+  'shinigami.id',
+  'shngm.io',
+  '11.shinigami.asia',
+  'voratoon.com',
+  'v2.voratoon.com'
+];
+
 exports.sourceUrl = (req, res, next) => {
   const raw = String(req.query.url || '').trim();
   if (!raw) {
@@ -13,7 +21,7 @@ exports.sourceUrl = (req, res, next) => {
 
   try {
     const host = new URL(raw).hostname;
-    if (host === sourceHost || host.endsWith('.' + sourceHost)) return next();
+    if (ALLOWED_HOSTS.some(h => host === h || host.endsWith('.' + h))) return next();
   } catch {
     /* jatuh ke 400 */
   }

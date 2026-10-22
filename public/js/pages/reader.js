@@ -6,24 +6,30 @@ import { esc, img, link } from '../utils.js';
 
 export async function reader({ root, alive }, url) {
   root.innerHTML = msg('Memuat chapter…');
-  const d = await api('/api/read?url=' + encodeURIComponent(url));
+  const d = await api('/api/read?url=' + encodeURIComponent(url)).catch(err => ({ error: err.message }));
+
   if (!alive()) return;
+
+  if (d.error) {
+    root.innerHTML = msg('Gagal memuat chapter: ' + d.error, true);
+    return;
+  }
 
   const s = state.series;
   const list = s ? s.chapters : [];
   const i = list.findIndex((c) => c.url === url || c.chapter_id === d.chapter_id);
 
-  let prev = null;
-  let next = null;
-  if (d.prev_chapter_id) {
-    prev = { url: `https://shinigami.id/chapter/${d.prev_chapter_id}` };
-  } else if (i >= 0 && i < list.length - 1) {
-    prev = list[i + 1];
+  let prevUrl = d.prevChapterUrl || null;
+  let nextUrl = d.nextChapterUrl || null;
+
+  if (!prevUrl) {
+    if (d.prev_chapter_id) prevUrl = `https://shinigami.id/chapter/${d.prev_chapter_id}`;
+    else if (i >= 0 && i < list.length - 1) prevUrl = list[i + 1].url;
   }
-  if (d.next_chapter_id) {
-    next = { url: `https://shinigami.id/chapter/${d.next_chapter_id}` };
-  } else if (i > 0) {
-    next = list[i - 1];
+
+  if (!nextUrl) {
+    if (d.next_chapter_id) nextUrl = `https://shinigami.id/chapter/${d.next_chapter_id}`;
+    else if (i > 0) nextUrl = list[i - 1].url;
   }
 
   if (s) {
@@ -39,14 +45,53 @@ export async function reader({ root, alive }, url) {
     });
   }
 
-  const bar = `<div class="reader__bar">
-    ${prev ? `<a class="btn btn--secondary" href="${link('read', prev.url)}">Sebelumnya</a>` : ''}
-    ${s ? `<a class="btn btn--secondary" href="${link('detail', s.url)}">Daftar</a>` : ''}
-    ${next ? `<a class="btn btn--brand" href="${link('read', next.url)}">Selanjutnya</a>` : ''}
-  </div>`;
-
   root.innerHTML = `
-    <h1 class="reader__title">${esc(d.title)}</h1>${bar}
-    <div class="reader__pages">${d.images.map((src) => `<img loading="lazy" src="${esc(img(src))}" alt="">`).join('')}</div>${bar}`;
+    <div class="reader-container" id="readerContainer">
+      <div class="reader-top-controls" id="readerControls">
+        <a class="reader-back-btn" href="javascript:history.back()" aria-label="Kembali">←</a>
+        <h1 class="reader-title">${esc(d.title)}</h1>
+      </div>
+
+      <div class="reader-pages-wrap">
+        ${d.images.map((src, idx) => `<img loading="lazy" src="${esc(img(src))}" alt="Page ${idx + 1}" class="reader-img">`).join('')}
+      </div>
+
+      <!-- Tombol Navigasi Chapter di bagian bawah komik -->
+      <div class="reader-bottom-nav">
+        ${prevUrl ? `<a class="btn-chapter-nav" href="${link('read', prevUrl)}">← Chapter Sebelumnya</a>` : '<div></div>'}
+        ${s ? `<a class="btn-chapter-nav btn-list" href="${link('detail', s.url)}">📋 Daftar Chapter</a>` : ''}
+        ${nextUrl ? `<a class="btn-chapter-nav primary" href="${link('read', nextUrl)}">Next Chapter Selanjutnya →</a>` : '<div></div>'}
+      </div>
+    </div>
+  `;
+
   window.scrollTo(0, 0);
+
+  let lastScroll = window.scrollY;
+  const bottomNav = document.getElementById('bottomNav');
+  const controls = document.getElementById('readerControls');
+
+  const onScroll = () => {
+    const curr = window.scrollY;
+    if (curr > lastScroll && curr > 60) {
+      bottomNav?.classList.add('bottom-nav--hidden');
+      controls?.classList.add('hidden');
+    } else {
+      bottomNav?.classList.remove('bottom-nav--hidden');
+      controls?.classList.remove('hidden');
+    }
+    lastScroll = curr;
+  };
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  const container = document.getElementById('readerContainer');
+  if (container) {
+    container.addEventListener('click', (e) => {
+      if (!e.target.closest('a') && !e.target.closest('button')) {
+        bottomNav?.classList.toggle('bottom-nav--hidden');
+        controls?.classList.toggle('hidden');
+      }
+    });
+  }
 }
