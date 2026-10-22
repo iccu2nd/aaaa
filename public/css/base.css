@@ -6,9 +6,9 @@
   --white: #FAFAFA;
   --muted: #A1A1AA;
   --dim: #71717A;
-  --red: #EF4444;
-  --violet: #8B5CF6;
-  --violet-dim: #6D28D9;
+  --red: #F43F5E;
+  --accent: #E11D48;
+  --accent-dim: #BE123C;
 
   --glass: rgba(20, 20, 22, 0.72);
   --glass-border: rgba(255, 255, 255, 0.06);
@@ -46,8 +46,8 @@ h1, h2, h3, p { margin: 0; }
 h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
 h2 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
 button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
-:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
-::selection { background: var(--violet); color: var(--white); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+::selection { background: var(--accent); color: var(--white); }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

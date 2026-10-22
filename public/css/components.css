@@ -6,7 +6,7 @@
   gap: var(--s3);
   margin-bottom: var(--s3);
   padding-left: 10px;
-  border-left: 3px solid var(--violet);
+  border-left: 3px solid var(--accent);
 }
 .section__more {
   font-size: 12px;
@@ -32,10 +32,10 @@
   -webkit-tap-highlight-color: transparent;
 }
 .btn:hover { background: var(--char); border-color: var(--line); color: var(--white); }
-.btn--brand { background: var(--violet); border-color: var(--violet); }
-.btn--brand:hover { background: var(--violet-dim); border-color: var(--violet-dim); }
+.btn--brand { background: var(--accent); border-color: var(--accent); }
+.btn--brand:hover { background: var(--accent-dim); border-color: var(--accent-dim); }
 .btn--secondary { background: var(--char); }
-.btn--active { border-color: var(--violet); color: var(--violet); }
+.btn--active { border-color: var(--accent); color: var(--accent); }
 .btn--block { width: 100%; }
 .btn--pill { border-radius: 999px; }
 

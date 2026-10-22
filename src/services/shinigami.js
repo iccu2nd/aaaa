@@ -162,6 +162,7 @@ const update = safe(async () => {
       poster: manga.cover_portrait_url || manga.cover_image_url || null,
       url: seriesUrl(manga.manga_id),
       manga_id: manga.manga_id,
+      user_rate: manga.user_rate,
       source: 'shinigami',
       chapters: chNum != null
         ? [
@@ -187,6 +188,54 @@ const search = safe(async (query = '') => {
   return data.map(mapMangaCard);
 });
 
+async function fetchAllChapters(mangaId) {
+  const pageSize = 100;
+  let page = 1;
+  let totalPage = 1;
+  const all = [];
+  const seen = new Set();
+
+  while (page <= totalPage && page <= 50) {
+    const params = new URLSearchParams({
+      page: String(page),
+      page_size: String(pageSize),
+      sort_by: 'chapter_number',
+      sort_order: 'desc',
+    });
+    const res = await api(`/chapter/${mangaId}/list?${params}`);
+    const batch = Array.isArray(res.data) ? res.data : [];
+    totalPage = Number(res.meta?.total_page) || page;
+    if (res.meta?.total_record && page === 1) {
+      totalPage = Math.max(totalPage, Math.ceil(Number(res.meta.total_record) / pageSize));
+    }
+    for (const ch of batch) {
+      const cid = ch.chapter_id;
+      if (!cid || seen.has(cid)) continue;
+      seen.add(cid);
+      const num = ch.chapter_number;
+      const extra = (ch.chapter_title || '').trim();
+      // Judul jelas: "Chapter 12" atau "Chapter 12: Title"
+      let title = `Chapter ${num}`;
+      if (extra && extra.toLowerCase() !== String(num).toLowerCase() && !/^ch(apter)?\s*\.?\s*\d+/i.test(extra)) {
+        title = `Chapter ${num}: ${extra}`;
+      }
+      all.push({
+        title,
+        chapter_number: num,
+        url: chapterUrl(cid),
+        chapter_id: cid,
+        release_date: ch.release_date,
+      });
+    }
+    if (!batch.length) break;
+    page += 1;
+  }
+
+  // Pastikan urutan terbaru → lama
+  all.sort((a, b) => Number(b.chapter_number) - Number(a.chapter_number));
+  return all;
+}
+
 const detail = safe(async (input) => {
   let id = getId(input);
 
@@ -198,31 +247,14 @@ const detail = safe(async (input) => {
     id = found.data[0].manga_id;
   }
 
-  const params = new URLSearchParams({
-    page: '1',
-    page_size: '100',
-    sort_by: 'chapter_number',
-    sort_order: 'desc',
-  });
-
-  const [detailRes, chapterRes] = await Promise.all([
+  const [detailRes, chapters] = await Promise.all([
     api(`/manga/detail/${id}`),
-    api(`/chapter/${id}/list?${params}`),
+    fetchAllChapters(id),
   ]);
 
   if (!detailRes?.data) throw new Error('Gagal mengambil detail manga');
 
   const d = detailRes.data;
-  const chapters = (chapterRes.data || []).map((ch) => ({
-    title: ch.chapter_title
-      ? `Ch. ${ch.chapter_number} — ${ch.chapter_title}`
-      : `Ch. ${ch.chapter_number}`,
-    chapter_number: ch.chapter_number,
-    url: chapterUrl(ch.chapter_id),
-    chapter_id: ch.chapter_id,
-    release_date: ch.release_date,
-  }));
-
   const tax = getTaxonomy(d.taxonomy);
 
   return {
@@ -266,9 +298,14 @@ const read = safe(async (input) => {
   });
 
   return {
-    title: d.chapter_title
-      ? `Ch. ${d.chapter_number} — ${d.chapter_title}`
-      : `Chapter ${d.chapter_number}`,
+    title: (() => {
+      const num = d.chapter_number;
+      const extra = (d.chapter_title || '').trim();
+      if (extra && extra.toLowerCase() !== String(num).toLowerCase() && !/^ch(apter)?\s*\.?\s*\d+/i.test(extra)) {
+        return `Chapter ${num}: ${extra}`;
+      }
+      return `Chapter ${num}`;
+    })(),
     chapter_number: d.chapter_number,
     chapter_id: d.chapter_id,
     manga_id: d.manga_id,
