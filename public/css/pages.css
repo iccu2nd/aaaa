@@ -324,6 +324,17 @@
   -webkit-tap-highlight-color: transparent;
 }
 .spotlight:hover { color: inherit; }
+.spotlight__bg, .spotlight__phone img, .spotlight__title, .spotlight__desc {
+  transition: opacity 180ms ease;
+}
+.spotlight.is-changing .spotlight__bg,
+.spotlight.is-changing .spotlight__phone img,
+.spotlight.is-changing .spotlight__title,
+.spotlight.is-changing .spotlight__desc { opacity: .35; }
+@media (prefers-reduced-motion: reduce) {
+  .spotlight__bg, .spotlight__phone img, .spotlight__title, .spotlight__desc { transition: none; }
+}
+
 .spotlight__bg {
   position: absolute;
   inset: 0;
@@ -451,7 +462,8 @@
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
-  touch-action: pan-x;
+  /* Allow both vertical page scrolling and horizontal rail gestures on touch screens. */
+  touch-action: auto;
   scrollbar-width: none;
   width: calc(100% + 2 * var(--page-x));
   max-width: calc(100% + 2 * var(--page-x));

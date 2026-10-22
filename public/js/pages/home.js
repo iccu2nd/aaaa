@@ -44,7 +44,7 @@ function spotlight(item) {
   if (!item) return '';
   const blurb = item.meta || item.chapter || 'Rekomendasi pilihan untukmu.';
   return `
-    <a class="spotlight" href="${link('detail', item.url)}">
+    <a class="spotlight" data-spotlight href="${link('detail', item.url)}" aria-label="Lihat ${esc(item.title)}">
       <div class="spotlight__bg" style="background-image:url('${esc(img(item.poster))}')"></div>
       <div class="spotlight__fade"></div>
       <div class="spotlight__content">
@@ -117,6 +117,60 @@ export async function home({ root, alive }) {
     ${rail('Update', `<div class="rail">${updateRail.map(updateCard).join('')}</div>`, '#/update')}
     ${rail('Rekomendasi', `<div class="rail rail--wrap">${popular.slice(0, 24).map(updateCard).join('')}</div>`, '#/explore')}
   `;
+
+  // Lightweight spotlight rotation: update existing DOM instead of rerendering Home.
+  startSpotlightRotation(dedupeByUrl([...popular, ...updates]).filter((item) => item?.url && item?.poster).slice(0, 8), root, alive);
+}
+
+function startSpotlightRotation(items, root, alive) {
+  if (items.length < 2) return;
+  const hero = root.querySelector('[data-spotlight]');
+  if (!hero) return;
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  let index = 0;
+  let timer = null;
+  const change = () => {
+    if (!alive() || !root.contains(hero)) {
+      if (timer) clearInterval(timer);
+      return;
+    }
+    if (document.hidden) return;
+    index = (index + 1) % items.length;
+    const item = items[index];
+    const bg = hero.querySelector('.spotlight__bg');
+    const cover = hero.querySelector('.spotlight__phone img');
+    const title = hero.querySelector('.spotlight__title');
+    const desc = hero.querySelector('.spotlight__desc');
+    hero.classList.add('is-changing');
+    // Decode the next cover before switching to avoid flashing an empty image.
+    const nextUrl = img(item.poster);
+    const preload = new Image();
+    preload.onload = () => {
+      if (!alive() || !root.contains(hero)) return;
+      hero.href = link('detail', item.url);
+      hero.setAttribute('aria-label', `Lihat ${item.title}`);
+      bg.style.backgroundImage = `url("${nextUrl.replace(/["\\]/g, '')}")`;
+      cover.src = nextUrl;
+      cover.alt = item.title || '';
+      title.textContent = item.title || '';
+      desc.textContent = item.meta || item.chapter || 'Rekomendasi pilihan untukmu.';
+      hero.classList.remove('is-changing');
+    };
+    preload.onerror = () => hero.classList.remove('is-changing');
+    preload.src = nextUrl;
+  };
+  timer = window.setInterval(change, reducedMotion ? 10000 : 6500);
+  const onVisibility = () => {
+    if (!alive() || !root.contains(hero)) {
+      if (timer) clearInterval(timer);
+      timer = null;
+      document.removeEventListener('visibilitychange', onVisibility);
+      return;
+    }
+    if (document.hidden && timer) { clearInterval(timer); timer = null; }
+    else if (!document.hidden && !timer) timer = window.setInterval(change, reducedMotion ? 10000 : 6500);
+  };
+  document.addEventListener('visibilitychange', onVisibility);
 }
 
 function dedupeByUrl(list) {
