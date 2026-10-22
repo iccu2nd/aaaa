@@ -164,3 +164,7 @@ body.is-reader .topbar,
 body.is-reader .bottom-nav { display: none !important; }
 body.is-reader #app { padding: 0; margin: 0; width: 100%; max-width: none; }
 body.is-reader .container { max-width: none; }
+
+/* Halaman detail memakai ruang penuh tanpa navigasi global bawah. */
+body.is-detail .bottom-nav { display: none !important; }
+body.is-detail #app { padding-bottom: 0; }

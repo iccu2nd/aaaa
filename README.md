@@ -18,3 +18,9 @@ npm start
 - Cache: server (memori + disk `data/cache.json`, stale-on-error), klien (localStorage, stale-while-revalidate), Service Worker (gambar & API)
 
 > Download offline & Service Worker butuh HTTPS atau `localhost`.
+
+## Reader UI update (v8)
+- Chapter-end navigation is now minimal text-and-icon links without borders or card backgrounds; removed the “Akhir chapter” label.
+- Replaced the auto-scroll settings icon with a cleaner gear icon.
+- Auto-scroll speed now uses a touch-friendly range slider from 0.5× to 1.5× with a live value label.
+- Updated the service-worker cache version to v8 so browsers can fetch the new reader assets.

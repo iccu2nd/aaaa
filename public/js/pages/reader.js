@@ -9,7 +9,7 @@ const ICO = {
   next: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   list: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
   close: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
-  settings: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" stroke="currentColor" stroke-width="1.8"/><path d="m19.4 15 .1.1 1.1.9-1.5 2.6-1.4-.6a7.7 7.7 0 0 1-1.5.9l-.2 1.5h-3l-.3-1.5a7.7 7.7 0 0 1-1.5-.9l-1.4.6-1.5-2.6 1.2-.9a7 7 0 0 1 0-1.8l-1.2-.9 1.5-2.6 1.4.6a7.7 7.7 0 0 1 1.5-.9l.3-1.5h3l.2 1.5a7.7 7.7 0 0 1 1.5.9l1.4-.6 1.5 2.6-1.1.9a7 7 0 0 1 0 1.8Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
+  settings: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 13.5a7.8 7.8 0 0 0 0-3l1.4-1.1-1.6-2.8-1.7.7a7.5 7.5 0 0 0-2.5-1.4L14.7 4h-3.4l-.3 1.9a7.5 7.5 0 0 0-2.5 1.4l-1.7-.7-1.6 2.8 1.4 1.1a7.8 7.8 0 0 0 0 3l-1.4 1.1 1.6 2.8 1.7-.7a7.5 7.5 0 0 0 2.5 1.4l.3 1.9h3.4l.3-1.9a7.5 7.5 0 0 0 2.5-1.4l1.7.7 1.6-2.8-1.4-1.1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
   play: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.1 5.2a1 1 0 0 1 0 1.8l-9.1 5.2a1 1 0 0 1-1.6-.9V5.8Z"/></svg>`,
   pause: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>`,
 };
@@ -79,11 +79,10 @@ export async function reader({ root, alive }, url) {
         ${d.images.map((src, index) => `<img loading="${index < 2 ? 'eager' : 'lazy'}" fetchpriority="${index === 0 ? 'high' : 'auto'}" decoding="async" src="${esc(img(src))}" alt=""${index === 0 ? ' data-first-page' : ''}>`).join('')}
       </div>
 
-      <div class="reader__end" id="reader-end">
-        <div class="reader__end-label">Akhir chapter</div>
+      <div class="reader__end" id="reader-end" aria-label="Navigasi chapter">
         <div class="reader__end-actions">
-          ${prev ? `<a class="reader__end-nav" href="${link('read', prev.url)}">${ICO.prev}<span>Previous</span></a>` : '<span class="reader__end-nav is-disabled">'+ICO.prev+'<span>Previous</span></span>'}
-          ${next ? `<a class="reader__end-nav reader__end-nav--next" href="${link('read', next.url)}"><span>Next chapter</span>${ICO.next}</a>` : s ? `<a class="reader__end-nav reader__end-nav--next" href="${backHref}"><span>Back to detail</span>${ICO.next}</a>` : '<span class="reader__end-nav reader__end-nav--next is-disabled"><span>Next chapter</span>'+ICO.next+'</span>'}
+          ${prev ? `<a class="reader__end-nav" href="${link('read', prev.url)}">${ICO.prev}<span>Previous</span></a>` : '<span class="reader__end-nav is-disabled" aria-disabled="true">'+ICO.prev+'<span>Previous</span></span>'}
+          ${next ? `<a class="reader__end-nav reader__end-nav--next" href="${link('read', next.url)}"><span>Next</span>${ICO.next}</a>` : s ? `<a class="reader__end-nav reader__end-nav--next" href="${backHref}"><span>Back to detail</span>${ICO.next}</a>` : '<span class="reader__end-nav reader__end-nav--next is-disabled" aria-disabled="true"><span>Next</span>'+ICO.next+'</span>'}
         </div>
       </div>
 
@@ -96,11 +95,9 @@ export async function reader({ root, alive }, url) {
       </div>
       <div class="reader-settings" id="reader-settings" hidden>
         <div class="reader-settings__title">Kecepatan auto-scroll</div>
-        <div class="reader-settings__options" role="group" aria-label="Kecepatan auto-scroll">
-          <button type="button" data-scroll-speed="15">Lambat</button>
-          <button type="button" data-scroll-speed="30" class="is-selected">Normal</button>
-          <button type="button" data-scroll-speed="55">Cepat</button>
-          <button type="button" data-scroll-speed="85">Sangat cepat</button>
+        <div class="reader-settings__range-wrap">
+          <input id="reader-speed" class="reader-settings__range" type="range" min="0.5" max="1.5" step="0.05" value="1" aria-label="Kecepatan auto-scroll">
+          <div class="reader-settings__range-labels"><span>0.5×</span><output id="reader-speed-value" for="reader-speed">1.0×</output><span>1.5×</span></div>
         </div>
       </div>
 
@@ -134,7 +131,9 @@ export async function reader({ root, alive }, url) {
   let scrolling = false;
   let autoScrollFrame = 0;
   let autoScrolling = false;
-  let autoScrollSpeed = 30;
+  let autoScrollSpeed = 36;
+  const speedInput = document.getElementById('reader-speed');
+  const speedValue = document.getElementById('reader-speed-value');
   let previousFrameTime = 0;
 
   const showUI = () => {
@@ -203,12 +202,17 @@ export async function reader({ root, alive }, url) {
     settingsBtn.classList.toggle('is-active', opening);
     showUI();
   });
-  settings.querySelectorAll('[data-scroll-speed]').forEach((button) => {
-    button.addEventListener('click', () => {
-      autoScrollSpeed = Number(button.dataset.scrollSpeed) || 30;
-      settings.querySelectorAll('[data-scroll-speed]').forEach((b) => b.classList.toggle('is-selected', b === button));
-      if (autoScrolling) { cancelAnimationFrame(autoScrollFrame); previousFrameTime = 0; autoScrollFrame = requestAnimationFrame(autoScrollTick); }
-    });
+  speedInput.addEventListener('input', () => {
+    const multiplier = Number(speedInput.value) || 1;
+    autoScrollSpeed = 36 * multiplier;
+    speedValue.value = `${multiplier.toFixed(2).replace(/0$/, '')}×`;
+    speedValue.textContent = speedValue.value;
+    speedInput.style.setProperty('--speed-progress', `${((multiplier - 0.5) / 1) * 100}%`);
+    if (autoScrolling) {
+      cancelAnimationFrame(autoScrollFrame);
+      previousFrameTime = 0;
+      autoScrollFrame = requestAnimationFrame(autoScrollTick);
+    }
   });
   document.getElementById('drawer-close').addEventListener('click', closeDrawer);
   document.getElementById('drawer-backdrop').addEventListener('click', closeDrawer);
