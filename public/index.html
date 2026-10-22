@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#09090B">
-  <meta name="description" content="RiMwa — baca komik online (Voratoon & Shinigami)">
-  <title>RiMwa — Comic Reader</title>
+  <meta name="description" content="RiMwa — baca komik online">
+  <title>RiMwa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="css/pages.css">
 </head>
 <body>
-  <header class="topbar">
+  <header class="topbar" id="topbar">
     <div class="topbar__inner container">
       <a class="logo" href="#/" aria-label="RiMwa">
         <svg class="logo__mark" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -25,43 +25,31 @@
         </svg>
         <span class="logo__text">RiMwa</span>
       </a>
-      <nav class="nav" aria-label="Menu utama">
-        <a href="#/" data-nav="home">Home</a>
-        <a href="#/update" data-nav="update">Update</a>
-        <a href="#/explore" data-nav="explore">Explore</a>
-        <a href="#/library" data-nav="library">Library</a>
-      </nav>
       <form class="searchbox" id="search-form" role="search">
         <svg class="searchbox__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.75"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
-        <input id="search-input" type="search" placeholder="Cari judul komik…" autocomplete="off" aria-label="Cari komik">
+        <input id="search-input" type="search" placeholder="Cari judul…" autocomplete="off" aria-label="Cari komik">
+        <kbd>Ctrl K</kbd>
       </form>
     </div>
   </header>
 
   <main id="app" class="container"></main>
 
-  <footer class="footer container">
-    <span class="footer__brand">RiMwa Scraper</span>
-    <span class="footer__sep" aria-hidden="true"></span>
-    <span>Multi-server Voratoon & Shinigami</span>
-  </footer>
-
-  <!-- Bottom Navigation cum Glassmorphism -->
-  <nav class="bottom-nav" id="bottomNav" aria-label="Navigasi Bawah">
-    <a href="#/" class="bottom-nav__item active" data-nav="home">
-      <svg class="bottom-nav__icon" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+  <nav class="bottom-nav" id="bottom-nav" aria-label="Navigasi">
+    <a href="#/" data-nav="home">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></svg>
       <span>Home</span>
     </a>
-    <a href="#/update" class="bottom-nav__item" data-nav="update">
-      <svg class="bottom-nav__icon" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 0 1 13.66-5.66M20 12a8 8 0 0 1-13.66 5.66" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M17 3v4h4M7 21v-4H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <a href="#/update" data-nav="update">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.66-5.66M20 12a8 8 0 0 1-13.66 5.66" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><path d="M17 3v4h4M7 21v-4H3" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Update</span>
     </a>
-    <a href="#/explore" class="bottom-nav__item" data-nav="explore">
-      <svg class="bottom-nav__icon" width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <a href="#/explore" data-nav="explore">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.75"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
       <span>Explore</span>
     </a>
-    <a href="#/library" class="bottom-nav__item" data-nav="library">
-      <svg class="bottom-nav__icon" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 4h11a1 1 0 0 1 1 1v15l-6.5-3.5L5 20V5a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+    <a href="#/library" data-nav="library">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 4h11a1 1 0 0 1 1 1v15l-6.5-3.5L5 20V5a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></svg>
       <span>Library</span>
     </a>
   </nav>

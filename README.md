@@ -1,7 +1,6 @@
 # RiMwa
 
-Baca komik online. Express + API + frontend vanilla ES modules.
-Dark UI, flat, padat, Poppins.
+Baca komik online. Sumber: Shinigami + Voratoon (dedupe otomatis).
 
 ## Jalankan
 ```bash
@@ -9,10 +8,8 @@ npm install
 npm start
 ```
 
-Env opsional: `PORT`, `IMG_HOSTS` (lihat `.env.example`).
-
-## Struktur
-```
-├── src/          # server, routes, services, middleware
-└── public/       # html, css, js
-```
+## Fitur
+- Bottom navigation (mobile)
+- Dual source + dedupe judul
+- Detail dengan sinopsis, genre, daftar chapter
+- Reader immersive: scroll = full layar, tap = kontrol, next di akhir chapter

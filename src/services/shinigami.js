@@ -1,7 +1,9 @@
 'use strict';
 
 const https = require('https');
-const { baseUrl, apiBase } = require('../config');
+const cfg = require('../config');
+const baseUrl = cfg.shinigami.baseUrl;
+const apiBase = cfg.shinigami.apiBase;
 
 const DEFAULT_HEADERS = {
   Accept: 'application/json, text/plain, */*',
@@ -135,18 +137,19 @@ function mapMangaCard(manga) {
     user_rate: manga.user_rate,
     latest_chapter: ch,
     latest_chapter_time: manga.latest_chapter_time,
+    source: 'shinigami',
   };
 }
 
 const home = safe(async () => {
-  const params = new URLSearchParams({ page: '1', page_size: '24' });
+  const params = new URLSearchParams({ page: '1', page_size: '48' });
   const res = await api(`/manga/list?${params}`);
   const data = Array.isArray(res.data) ? res.data : [];
   return data.map(mapMangaCard);
 });
 
 const update = safe(async () => {
-  const params = new URLSearchParams({ page: '1', page_size: '30' });
+  const params = new URLSearchParams({ page: '1', page_size: '50' });
   const res = await api(`/manga/list?${params}`);
   const data = Array.isArray(res.data) ? res.data : [];
   return data.map((manga) => {
@@ -159,6 +162,7 @@ const update = safe(async () => {
       poster: manga.cover_portrait_url || manga.cover_image_url || null,
       url: seriesUrl(manga.manga_id),
       manga_id: manga.manga_id,
+      source: 'shinigami',
       chapters: chNum != null
         ? [
             {
@@ -176,7 +180,7 @@ const update = safe(async () => {
 
 const search = safe(async (query = '') => {
   const q = String(query).trim();
-  const params = new URLSearchParams({ page: '1', page_size: '24' });
+  const params = new URLSearchParams({ page: '1', page_size: '48' });
   if (q) params.set('q', q);
   const res = await api(`/manga/list?${params}`);
   const data = Array.isArray(res.data) ? res.data : [];
@@ -235,6 +239,7 @@ const detail = safe(async (input) => {
     authors: tax.author,
     total_chapters: chapters.length,
     chapters,
+    source: 'shinigami',
   };
 });
 
@@ -271,6 +276,7 @@ const read = safe(async (input) => {
     next_chapter_id: d.next_chapter_id || null,
     total_pages: resolved.length,
     images: resolved,
+    source: 'shinigami',
   };
 });
 

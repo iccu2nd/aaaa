@@ -4,16 +4,18 @@ import { feed } from '../components/feed.js';
 import { section, skeletonGrid } from '../components/section.js';
 
 export async function home({ root, alive }) {
-  root.innerHTML = section('Rekomendasi Populer', skeletonGrid(12));
-  const [popular, updates] = await Promise.all([
-    api('/api/home').catch(() => []),
-    api('/api/update').catch(() => [])
-  ]);
+  root.innerHTML =
+    section('Rekomendasi', skeletonGrid(12)) +
+    section('Update Terbaru', '<div class="state">Memuat…</div>');
 
+  const [popular, updates] = await Promise.all([
+    api('/api/home'),
+    api('/api/update').catch(() => []),
+  ]);
   if (!alive()) return;
 
-  // Tampilkan semua data komik tanpa dibatasi
+  // Tampilkan semua, tanpa potong
   root.innerHTML =
-    section('Rekomendasi Populer', cardGrid(popular), '#/explore') +
+    section('Rekomendasi', cardGrid(popular), '#/explore') +
     section('Update Terbaru', feed(updates), '#/update');
 }

@@ -1,14 +1,12 @@
-const { sourceHost } = require('../config');
+const cfg = require('../config');
 
-const ALLOWED_HOSTS = [
-  sourceHost,
-  'shinigami.id',
-  'shngm.io',
-  '11.shinigami.asia',
-  'voratoon.com',
-  'v2.voratoon.com'
+const allowedHosts = [
+  cfg.shinigami.host,
+  cfg.voratoon.host,
+  'v2.voratoon.com',
 ];
 
+/** Pastikan ?url= ke host sumber atau UUID. */
 exports.sourceUrl = (req, res, next) => {
   const raw = String(req.query.url || '').trim();
   if (!raw) {
@@ -21,9 +19,10 @@ exports.sourceUrl = (req, res, next) => {
 
   try {
     const host = new URL(raw).hostname;
-    if (ALLOWED_HOSTS.some(h => host === h || host.endsWith('.' + h))) return next();
+    const ok = allowedHosts.some((h) => host === h || host.endsWith('.' + h));
+    if (ok) return next();
   } catch {
-    /* jatuh ke 400 */
+    /* fallthrough */
   }
   res.status(400).json({ status: false, message: 'URL tidak valid' });
 };

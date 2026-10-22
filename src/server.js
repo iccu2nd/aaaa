@@ -12,11 +12,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
   console.error(err);
-  res.status(500).json({ status: false, message: err.message || 'Terjadi kesalahan server' });
+  res.status(500).json({ status: false, message: 'Terjadi kesalahan server' });
 });
 
-if (require.main === module) {
-  app.listen(port, () => console.log(`RiMwa http://localhost:${port}`));
-}
-
-module.exports = app;
+app.listen(port, () => console.log(`RiMwa http://localhost:${port}`));

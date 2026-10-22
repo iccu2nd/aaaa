@@ -8,6 +8,8 @@ export const route = (pattern, handler) => routes.push({ pattern, handler });
 export function start(root) {
   const run = async () => {
     const token = ++current;
+    // selalu reset reader mode saat navigasi
+    document.body.classList.remove('is-reader');
     const ctx = { root, alive: () => token === current };
     const hash = location.hash.slice(1) || '/';
     markActive(hash);
@@ -29,8 +31,9 @@ export function start(root) {
 
 function markActive(hash) {
   const seg = hash.split('/')[1] || 'home';
-  const active = seg === 'search' ? 'explore' : seg;
+  const active = seg === 'search' ? 'explore' : seg === 'detail' || seg === 'read' ? '' : seg;
   document.querySelectorAll('[data-nav]').forEach((a) => {
-    if (a.dataset.nav === active) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    if (active && a.dataset.nav === active) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
   });
 }

@@ -5,9 +5,10 @@ export const card = (c) => `
     <div class="card__cover">
       <img loading="lazy" src="${esc(img(c.poster))}" alt="">
       ${c.chapter ? `<span class="card__badge">${esc(c.chapter)}</span>` : ''}
+      ${c.source ? `<span class="card__src">${esc(c.source === 'shinigami' ? 'SG' : 'VT')}</span>` : ''}
     </div>
     <div class="card__title">${esc(c.title)}</div>
-    <div class="card__meta">${esc([c.reads, c.star].filter(Boolean).join(' • ') || c.meta || '\u00A0')}</div>
+    <div class="card__meta">${esc(c.meta || '\u00A0')}</div>
   </a>`;
 
 export const cardGrid = (items) =>

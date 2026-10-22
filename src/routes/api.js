@@ -3,100 +3,41 @@ const https = require('https');
 const http = require('http');
 const cfg = require('../config');
 const cache = require('../services/cache');
-const shinigami = require('../services/shinigami');
-const voratoon = require('../services/voratoon');
-const { mergeAndDeduplicate } = require('../utils/deduplicate');
+const source = require('../services/catalog');
 const { sourceUrl } = require('../middleware/validate');
 
 const router = Router();
-const handler = (key, ttl, fn) => async (req, res) => {
-  try {
-    const result = await cache.wrap(key(req), ttl, () => fn(req));
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ status: false, message: err.message || 'Gagal memproses permintaan' });
-  }
-};
+const handler = (key, ttl, fn) => async (req, res) =>
+  res.json(await cache.wrap(key(req), ttl, () => fn(req)));
 
-router.get('/home', handler(() => 'home_v2', cfg.ttl.home, async () => {
-  const [shiniRes, voraRes] = await Promise.allSettled([
-    shinigami.home(),
-    voratoon.home()
-  ]);
-
-  const listA = (shiniRes.status === 'fulfilled' && shiniRes.value?.status) ? shiniRes.value.data : [];
-  const listB = (voraRes.status === 'fulfilled' && voraRes.value?.status) ? voraRes.value.data : [];
-
-  const merged = mergeAndDeduplicate(listA, listB);
-  return { status: true, data: merged };
-}));
-
-router.get('/update', handler(() => 'update_v2', cfg.ttl.update, async () => {
-  const [shiniRes, voraRes] = await Promise.allSettled([
-    shinigami.update(),
-    voratoon.update()
-  ]);
-
-  const listA = (shiniRes.status === 'fulfilled' && shiniRes.value?.status) ? shiniRes.value.data : [];
-  const listB = (voraRes.status === 'fulfilled' && voraRes.value?.status) ? voraRes.value.data : [];
-
-  const merged = mergeAndDeduplicate(listA, listB);
-  return { status: true, data: merged };
-}));
-
-router.get('/search', handler(
-  (r) => 's:' + String(r.query.q || '').slice(0, 100),
-  cfg.ttl.search,
-  async (r) => {
-    const q = String(r.query.q || '').slice(0, 100);
-    const [shiniRes, voraRes] = await Promise.allSettled([
-      shinigami.search(q),
-      voratoon.search(q)
-    ]);
-
-    const listA = (shiniRes.status === 'fulfilled' && shiniRes.value?.status) ? shiniRes.value.data : [];
-    const listB = (voraRes.status === 'fulfilled' && voraRes.value?.status) ? voraRes.value.data : [];
-
-    const merged = mergeAndDeduplicate(listA, listB);
-    return { status: true, data: merged };
-  }
-));
-
-router.get('/detail', sourceUrl, handler(
-  (r) => 'd:' + r.query.url,
-  cfg.ttl.detail,
-  async (r) => {
-    const url = String(r.query.url);
-    if (url.includes('voratoon.com')) {
-      return await voratoon.detail(url);
-    }
-    return await shinigami.detail(url);
-  }
-));
-
-router.get('/read', sourceUrl, handler(
-  (r) => 'r:' + r.query.url,
-  cfg.ttl.read,
-  async (r) => {
-    const url = String(r.query.url);
-    if (url.includes('voratoon.com')) {
-      return await voratoon.read(url);
-    }
-    return await shinigami.read(url);
-  }
-));
+router.get('/home', handler(() => 'home', cfg.ttl.home, () => source.home()));
+router.get('/update', handler(() => 'update', cfg.ttl.update, () => source.update()));
+router.get(
+  '/search',
+  handler(
+    (r) => 's:' + String(r.query.q || '').slice(0, 100),
+    cfg.ttl.search,
+    (r) => source.search(String(r.query.q || '').slice(0, 100)),
+  ),
+);
+router.get(
+  '/detail',
+  sourceUrl,
+  handler((r) => 'd:' + r.query.url, cfg.ttl.detail, (r) => source.detail(String(r.query.url))),
+);
+router.get(
+  '/read',
+  sourceUrl,
+  handler((r) => 'r:' + r.query.url, cfg.ttl.read, (r) => source.read(String(r.query.url))),
+);
 
 router.get('/img', async (req, res) => {
   try {
-    const rawUrl = String(req.query.url || '');
-    if (!rawUrl) return res.status(400).send('URL gambar wajib diisi');
-
-    const u = new URL(rawUrl);
+    const u = new URL(String(req.query.url || ''));
     const ok =
-      (u.protocol === 'https:' || u.protocol === 'http:') &&
+      u.protocol === 'https:' &&
       cfg.imgHosts.some((h) => u.hostname === h || u.hostname.endsWith('.' + h));
-
-    if (!ok) return res.status(400).send('Host gambar tidak diizinkan');
+    if (!ok) return res.status(400).send('Host tidak diizinkan');
 
     const lib = u.protocol === 'https:' ? https : http;
     const proxyReq = lib.get(
@@ -104,8 +45,8 @@ router.get('/img', async (req, res) => {
       {
         timeout: 20000,
         headers: {
-          Referer: u.origin + '/',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Referer: 'https://shinigami.id/',
+          'User-Agent': 'Mozilla/5.0 (Android 14; Mobile; rv:153.0) Gecko/153.0 Firefox/153.0',
         },
       },
       (proxyRes) => {

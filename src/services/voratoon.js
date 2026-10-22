@@ -2,77 +2,107 @@
 
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { voratoon: cfg } = require('../config');
 
-const VORA_BASE_URL = 'https://v2.voratoon.com';
+const baseUrl = cfg.baseUrl;
 
 const reqOptions = {
   headers: {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'id-ID,id;q=0.9,en;q=0.8',
   },
   timeout: 15000,
 };
 
-const abs = (p) => (p ? (p.startsWith('http') ? p : VORA_BASE_URL + (p.startsWith('/') ? '' : '/') + p) : '');
-
-const load = async (url) => {
-  const res = await axios.get(url, reqOptions);
-  return cheerio.load(res.data);
-};
+const abs = (p) => (p ? (p.startsWith('http') ? p : baseUrl + p) : '');
+const load = async (url) => cheerio.load((await axios.get(url, reqOptions)).data);
 
 const safe = (fn) => async (...args) => {
   try {
     return { status: true, data: await fn(...args) };
   } catch (e) {
-    return { status: false, message: e.message };
+    return { status: false, message: e.message || 'Terjadi kesalahan' };
   }
 };
 
 const home = safe(async () => {
-  const $ = await load(VORA_BASE_URL);
+  const $ = await load(baseUrl);
   const out = [];
   $('.comic-card, .popular-card, .new-series-card').each((_, el) => {
     const url = abs($(el).attr('href') || $(el).find('a').attr('href'));
     const title = $(el).find('.comic-title').text().trim();
     const poster = $(el).find('img').first().attr('src');
-    const [reads = '', star = ''] = $(el).find('.comic-stats').text().trim().split('•').map((s) => s.trim());
+    const [reads = '', star = ''] = $(el)
+      .find('.comic-stats')
+      .text()
+      .trim()
+      .split('•')
+      .map((s) => s.trim());
     if (title && url && !out.find((r) => r.url === url)) {
-      out.push({ title, poster, reads, star, url, source: 'voratoon' });
+      out.push({
+        title,
+        poster,
+        url,
+        chapter: '',
+        meta: [reads, star].filter(Boolean).join(' · '),
+        source: 'voratoon',
+      });
     }
   });
   return out;
 });
 
 const search = safe(async (query = '') => {
-  const $ = await load(`${VORA_BASE_URL}/browse?q=${encodeURIComponent(query)}`);
+  const $ = await load(`${baseUrl}/browse?q=${encodeURIComponent(query)}`);
   const out = [];
   $('.card-image-wrapper').each((_, el) => {
     const url = abs($(el).attr('href'));
     const poster = $(el).find('img').attr('src');
     const parent = $(el).parent();
-    const title = parent.find('.card-title').text().trim() || parent.find('a').not('.card-image-wrapper').first().text().trim();
-    const chapter = parent.find('.card-chapter-text').text().trim() || parent.find('.card-chapter').text().trim();
-    if (title && url) out.push({ title, poster, chapter, url, source: 'voratoon' });
+    const title =
+      parent.find('.card-title').text().trim() ||
+      parent.find('a').not('.card-image-wrapper').first().text().trim();
+    const chapter =
+      parent.find('.card-chapter-text').text().trim() ||
+      parent.find('.card-chapter').text().trim();
+    if (title && url) {
+      out.push({
+        title,
+        poster,
+        url,
+        chapter,
+        meta: chapter || '',
+        source: 'voratoon',
+      });
+    }
   });
   return out;
 });
 
 const update = safe(async () => {
-  const $ = await load(`${VORA_BASE_URL}/updates`);
+  const $ = await load(`${baseUrl}/updates`);
   const out = [];
   $('[class*="update-series-card_card"]').each((_, el) => {
     const url = abs($(el).find('a').first().attr('href'));
     const poster = $(el).find('img').first().attr('src');
     const title = $(el).find('[class*="update-series-card_title"]').text().trim();
     const chapters = [];
-    $(el).find('[class*="update-series-card_chapter__"]').each((__, c) => {
-      const chUrl = abs($(c).attr('href'));
-      const chapter = $(c).find('[class*="update-series-card_chapterLeft"]').text().replace('UP', '').trim();
-      const time = $(c).find('[class*="update-series-card_time"]').text().trim();
-      if (chUrl && chapter) chapters.push({ chapter, time, url: chUrl });
-    });
-    if (title && url) out.push({ title, poster, chapters, url, source: 'voratoon' });
+    $(el)
+      .find('[class*="update-series-card_chapter__"]')
+      .each((__, c) => {
+        const chUrl = abs($(c).attr('href'));
+        const chapter = $(c)
+          .find('[class*="update-series-card_chapterLeft"]')
+          .text()
+          .replace('UP', '')
+          .trim();
+        const time = $(c).find('[class*="update-series-card_time"]').text().trim();
+        if (chUrl && chapter) chapters.push({ chapter, time, url: chUrl });
+      });
+    if (title && url) {
+      out.push({ title, poster, chapters, url, source: 'voratoon' });
+    }
   });
   return out;
 });
@@ -80,62 +110,62 @@ const update = safe(async () => {
 const detail = safe(async (url) => {
   const $ = await load(abs(url));
   const title = $('h1').first().text().trim();
-  const poster = $('img[src*="cover"]').first().attr('src') || $('img').first().attr('src');
+  const poster =
+    $('img[src*="cover"]').first().attr('src') || $('img').first().attr('src');
+  const description =
+    $('[class*="description"], .synopsis, .summary').first().text().trim() || '';
   const chapters = [];
   $('a[href*="/chapter/"]').each((_, el) => {
     const chUrl = abs($(el).attr('href'));
-    const chTitle = $(el).find('.chapter-title').text().trim() || $(el).text().trim();
+    const chTitle =
+      $(el).find('.chapter-title').text().trim() || $(el).text().trim();
     if (chUrl && !chapters.find((c) => c.url === chUrl)) {
       chapters.push({ title: chTitle, url: chUrl });
     }
   });
-
-  const synopsis = $('.synopsis, .description, [class*="synopsis"]').text().trim() || '';
-  const author = $('.author, [class*="author"]').text().trim() || 'Voratoon Creator';
-  const views = $('.views, [class*="views"]').text().trim() || '';
-  const status = $('.status, [class*="status"]').text().trim() || 'Ongoing';
-  const genres = [];
-  $('.genre, .genres a, [class*="genre"]').each((_, el) => {
-    const g = $(el).text().trim();
-    if (g && !genres.includes(g)) genres.push(g);
-  });
-
   if (!title) throw new Error('Gagal mendapatkan informasi detail');
   return {
     title,
     poster,
-    synopsis,
-    author,
-    views,
-    status,
-    genres: genres.length ? genres : ['Action', 'Fantasy', 'Sci-Fi'],
+    url: abs(url),
+    description,
+    status: '',
+    alternative_title: '',
+    release_year: '',
+    user_rate: null,
+    genres: [],
+    authors: [],
     total_chapters: chapters.length,
     chapters,
-    url: abs(url),
-    source: 'voratoon'
+    source: 'voratoon',
   };
 });
 
 const read = safe(async (url) => {
   const $ = await load(abs(url));
-  const title = $('title').text().replace('| VoraToon', '').trim();
+  const title = $('title').text().replace(/\|.*$/, '').trim();
   const images = [];
   $('img[class*="reader-screen_chapterPage"]').each((_, el) => {
     const src = $(el).attr('data-chapter-page') || $(el).attr('src');
     if (src) images.push(src);
   });
-
-  let prevChapterUrl = '';
-  let nextChapterUrl = '';
-  $('a[href*="/chapter/"]').each((_, el) => {
-    const href = abs($(el).attr('href'));
-    const text = $(el).text().toLowerCase();
-    if (text.includes('prev') || text.includes('sebelum')) prevChapterUrl = href;
-    if (text.includes('next') || text.includes('selanjut')) nextChapterUrl = href;
-  });
-
+  if (!images.length) {
+    $('img').each((_, el) => {
+      const src = $(el).attr('src') || '';
+      if (/chapter|page|cdn|storage/i.test(src) && !/logo|icon|avatar/i.test(src)) {
+        images.push(src);
+      }
+    });
+  }
   if (!images.length) throw new Error('Tidak ada gambar komik yang ditemukan');
-  return { title, total_pages: images.length, images, prevChapterUrl, nextChapterUrl, source: 'voratoon' };
+  return {
+    title,
+    total_pages: images.length,
+    images,
+    prev_chapter_id: null,
+    next_chapter_id: null,
+    source: 'voratoon',
+  };
 });
 
 module.exports = { home, search, update, detail, read };
