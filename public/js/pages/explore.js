@@ -1,9 +1,9 @@
 import { api } from '../api.js';
 import { card } from '../components/card.js';
-import { section, skeletonGrid, state as msg } from '../components/section.js';
+import { section } from '../components/section.js';
 import { esc } from '../utils.js';
 
-const SIZE = 60;
+const SIZE = 24;
 const fmt = (n) => Number(n).toLocaleString('id-ID');
 
 /** Explore: SEMUA judul, dimuat bertahap saat scroll (tanpa batas total). */
@@ -13,8 +13,16 @@ export async function explore({ root, alive }, q = '') {
   const title = q ? `Hasil: ${q}` : 'Explore';
   const url = (page) => `/api/explore?q=${encodeURIComponent(q)}&page=${page}&size=${SIZE}`;
 
-  root.innerHTML = section(title, skeletonGrid(18)) + msg('Memuat semua judul…');
-  const first = await api(url(1));
+  root.innerHTML = section(title, `<div class="grid explore-grid">${'<div class="explore-skeleton loading-surface"></div>'.repeat(8)}</div>`);
+  let first;
+  try {
+    first = await api(url(1));
+  } catch (e) {
+    if (!alive()) return;
+    root.innerHTML = section(title, `<div class="state state--error">${esc(e.message)} · <a href="#" id="ex-first-retry">Coba lagi</a></div>`);
+    document.getElementById('ex-first-retry')?.addEventListener('click', (ev) => { ev.preventDefault(); explore({ root, alive }, q); });
+    return;
+  }
   if (!alive()) return;
 
   if (!first.items.length) {
@@ -28,7 +36,7 @@ export async function explore({ root, alive }, q = '') {
         <h2>${esc(title)}</h2>
         <span class="section__count" id="ex-count"></span>
       </div>
-      <div class="grid" id="ex-grid"></div>
+      <div class="grid explore-grid" id="ex-grid"></div>
       <div class="state" id="ex-end"></div>
     </section>`;
 
@@ -50,7 +58,7 @@ export async function explore({ root, alive }, q = '') {
   const next = async () => {
     if (loading || page >= pages) return;
     loading = true;
-    end.textContent = 'Memuat…';
+    end.innerHTML = '<div class="inline-loading" aria-label="Memuat judul"><i></i><i></i><i></i></div>';
     try {
       const data = page === 0 ? first : await api(url(page + 1));
       if (!alive()) { if (io) io.disconnect(); return; }
@@ -78,6 +86,6 @@ export async function explore({ root, alive }, q = '') {
   io = new IntersectionObserver((entries) => {
     if (!alive()) { io.disconnect(); return; }
     if (entries.some((e) => e.isIntersecting)) next();
-  }, { rootMargin: '1200px 0px' });
+  }, { rootMargin: '500px 0px' });
   io.observe(end);
 }

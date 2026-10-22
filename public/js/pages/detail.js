@@ -1,7 +1,6 @@
 import { api } from '../api.js';
 import { state } from '../state.js';
 import { bookmarks, history } from '../store.js';
-import { state as msg } from '../components/section.js';
 import { esc, img, link } from '../utils.js';
 import { ico, ring } from '../icons.js';
 import { watchThumbs, thumbBox } from '../thumbs.js';
@@ -26,7 +25,7 @@ function relative(iso) {
 }
 
 export async function detail({ root, alive }, url) {
-  root.innerHTML = msg('Memuat…');
+  root.innerHTML = `<section class="detail-loading" aria-label="Memuat detail manhwa"><div class="loading-surface detail-loading__hero"></div><div class="detail-loading__head"><div class="loading-surface detail-loading__cover"></div><div class="detail-loading__copy"><i class="loading-surface"></i><i class="loading-surface"></i><i class="loading-surface"></i><i class="loading-surface"></i></div></div><i class="loading-surface detail-loading__line"></i><i class="loading-surface detail-loading__line detail-loading__line--short"></i><div class="detail-loading__chapters">${'<i class="loading-surface"></i>'.repeat(5)}</div></section>`;
   const d = await api('/api/detail?url=' + encodeURIComponent(url));
   if (!alive()) return;
 

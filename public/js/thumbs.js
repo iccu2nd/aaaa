@@ -23,12 +23,13 @@ async function load(el) {
     im.alt = '';
     im.decoding = 'async';
     im.style.objectPosition = `50% ${Number(t.pos) || 30}%`;
-    im.onload = () => { el.classList.add('is-ready'); el.dataset.state = 'done'; };
-    im.onerror = () => { im.remove(); el.dataset.state = 'error'; };
+    im.onload = () => { el.classList.add('is-ready'); el.classList.remove('loading-surface'); el.dataset.state = 'done'; };
+    im.onerror = () => { im.remove(); el.dataset.state = 'error'; el.classList.remove('loading-surface'); };
     im.src = img(t.url);
     el.appendChild(im);
   } catch {
     el.dataset.state = 'error';
+    el.classList.remove('loading-surface');
   }
 }
 
@@ -47,4 +48,4 @@ export function watchThumbs(container, alive = () => true) {
 }
 
 export const thumbBox = (chapterUrl) =>
-  `<div class="ch-thumb" data-thumb="${esc(chapterUrl)}"><span aria-hidden="true">Preview unavailable</span></div>`;
+  `<div class="ch-thumb loading-surface" data-thumb="${esc(chapterUrl)}" aria-label="Preview chapter"></div>`;

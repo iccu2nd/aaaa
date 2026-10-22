@@ -1,7 +1,6 @@
 import { api } from '../api.js';
 import { state } from '../state.js';
 import { history } from '../store.js';
-import { state as msg } from '../components/section.js';
 import { esc, img, link } from '../utils.js';
 
 const ICO = {
@@ -14,7 +13,7 @@ const ICO = {
 
 export async function reader({ root, alive }, url) {
   document.body.classList.add('is-reader');
-  root.innerHTML = msg('Memuat chapter…');
+  root.innerHTML = `<div class="reader-loading" aria-label="Memuat halaman chapter">${'<div class="reader-loading__page loading-surface"></div>'.repeat(3)}</div>`;
 
   let d;
   try {

@@ -347,3 +347,42 @@
   .ch-row__link { gap: 10px; }
   .ch-row__name { font-size: 13px; }
 }
+
+/* Shared diagonal shimmer used by page and image loading states. */
+.loading-surface,
+.explore-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #1b1b1f;
+  border-radius: 8px;
+  isolation: isolate;
+}
+.loading-surface::after,
+.explore-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: -40% -70%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,.055) 43%, rgba(255,255,255,.12) 50%, rgba(255,255,255,.055) 57%, transparent 65%);
+  transform: translateX(-55%);
+  animation: diagonal-shimmer 1.45s ease-in-out infinite;
+}
+@keyframes diagonal-shimmer {
+  to { transform: translateX(55%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-surface::after, .explore-skeleton::after { animation: none; }
+}
+
+/* More readable chapter rows and previews on narrow screens. */
+.chapters { gap: 12px; }
+.ch-row { min-height: 82px; }
+.ch-row__link { gap: 14px; }
+.ch-thumb { width: 112px; height: 76px; border-radius: 8px; padding: 0; }
+.ch-thumb span { display: none; }
+.inline-loading { display: flex; justify-content: center; gap: 6px; padding: 16px; }
+.inline-loading i { display: block; width: 7px; height: 7px; border-radius: 50%; background: #3b3b40; animation: loading-dot 1s ease-in-out infinite alternate; }
+.inline-loading i:nth-child(2) { animation-delay: .16s; }
+.inline-loading i:nth-child(3) { animation-delay: .32s; }
+@keyframes loading-dot { to { background: #8b8b93; transform: translateY(-3px); } }
