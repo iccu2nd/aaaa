@@ -137,15 +137,21 @@ export async function reader({ root, alive }, url) {
   let scrolling = false;
   let autoScrollFrame = 0;
   let autoScrolling = false;
-  let autoScrollSpeed = 60 * (Number(localStorage.getItem('rimwa:auto-speed')) || 1);
-  const initialSpeed = Math.min(1.5, Math.max(0.5, Number(localStorage.getItem('rimwa:auto-speed')) || 1));
-  speedInput.value = String(initialSpeed);
-  speedValue.value = `${initialSpeed.toFixed(2).replace(/0$/, '')}×`;
-  speedValue.textContent = speedValue.value;
-  speedInput.style.setProperty('--speed-progress', `${((initialSpeed - 0.5) / 1) * 100}%`);
   const speedInput = document.getElementById('reader-speed');
   const speedValue = document.getElementById('reader-speed-value');
+  const initialSpeed = Math.min(1.5, Math.max(0.5, Number(localStorage.getItem('rimwa:auto-speed')) || 1));
+  let autoScrollSpeed = 60 * initialSpeed;
   let previousFrameTime = 0;
+
+  if (speedInput) {
+    speedInput.value = String(initialSpeed);
+    speedInput.style.setProperty('--speed-progress', `${((initialSpeed - 0.5) / 1) * 100}%`);
+  }
+  if (speedValue) {
+    const label = `${initialSpeed.toFixed(2).replace(/0$/, '')}×`;
+    if ('value' in speedValue) speedValue.value = label;
+    speedValue.textContent = label;
+  }
 
   const showUI = () => {
     uiVisible = true;
@@ -214,19 +220,24 @@ export async function reader({ root, alive }, url) {
     settingsBtn.classList.toggle('is-active', opening);
     showUI();
   });
-  speedInput.addEventListener('input', () => {
-    const multiplier = Math.min(1.5, Math.max(0.5, Number(speedInput.value) || 1));
-    autoScrollSpeed = 60 * multiplier;
-    try { localStorage.setItem('rimwa:auto-speed', String(multiplier)); } catch { /* storage may be unavailable */ }
-    speedValue.value = `${multiplier.toFixed(2).replace(/0$/, '')}×`;
-    speedValue.textContent = speedValue.value;
-    speedInput.style.setProperty('--speed-progress', `${((multiplier - 0.5) / 1) * 100}%`);
-    if (autoScrolling) {
-      cancelAnimationFrame(autoScrollFrame);
-      previousFrameTime = 0;
-      autoScrollFrame = requestAnimationFrame(autoScrollTick);
-    }
-  });
+  if (speedInput) {
+    speedInput.addEventListener('input', () => {
+      const multiplier = Math.min(1.5, Math.max(0.5, Number(speedInput.value) || 1));
+      autoScrollSpeed = 60 * multiplier;
+      try { localStorage.setItem('rimwa:auto-speed', String(multiplier)); } catch { /* storage may be unavailable */ }
+      const label = `${multiplier.toFixed(2).replace(/0$/, '')}×`;
+      if (speedValue) {
+        if ('value' in speedValue) speedValue.value = label;
+        speedValue.textContent = label;
+      }
+      speedInput.style.setProperty('--speed-progress', `${((multiplier - 0.5) / 1) * 100}%`);
+      if (autoScrolling) {
+        cancelAnimationFrame(autoScrollFrame);
+        previousFrameTime = 0;
+        autoScrollFrame = requestAnimationFrame(autoScrollTick);
+      }
+    });
+  }
   document.getElementById('drawer-close').addEventListener('click', closeDrawer);
   document.getElementById('drawer-backdrop').addEventListener('click', closeDrawer);
 
