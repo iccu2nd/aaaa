@@ -6,7 +6,7 @@ module.exports = {
   baseUrl: 'https://shinigami.id',
   apiBase: 'https://api.shngm.io/v1',
   imgHosts: (process.env.IMG_HOSTS ||
-    'shinigami.id,shngm.io,shngm.id,assets.shngm.id,11.shinigami.asia,cdn.shinigami.id')
+    'shinigami.id,shngm.io,assets.shngm.id,11.shinigami.asia,cdn.shinigami.id,voratoon.com,v2.voratoon.com,cdn.voratoon.com')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),
