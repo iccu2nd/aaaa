@@ -31,7 +31,11 @@ export async function detail({ root, alive }, url) {
 
   const seriesUrl = d.url || url;
   state.series = { url: seriesUrl, title: d.title, poster: d.poster, chapters: d.chapters };
-  const first = d.chapters[d.chapters.length - 1];
+  // Chapter 1 = nomor terkecil (bukan asumsi urutan array)
+  const byNum = [...(d.chapters || [])].sort(
+    (a, b) => Number(a.chapter_number || 0) - Number(b.chapter_number || 0),
+  );
+  const first = byNum[0] || d.chapters[d.chapters.length - 1];
   const resume = history.lastFor(seriesUrl);
   const readSet = history.readChapters(seriesUrl);
   const item = { url: seriesUrl, title: d.title, poster: d.poster, meta: `${d.total_chapters} chapter` };
@@ -39,8 +43,8 @@ export async function detail({ root, alive }, url) {
   const startUrl = resume ? resume.chapterUrl : (first && first.url);
   const startLabel = resume ? 'Lanjut Baca' : 'Mulai Baca';
   const startSub = resume
-    ? esc(resume.chapterTitle || '')
-    : (first ? esc(first.title) : '');
+    ? (resume.chapterTitle || '')
+    : (first ? (first.title || 'Chapter 1') : '');
 
   const genres = (d.genres || []).map((g) => `<a class="tag tag--link" href="/search?genre=${encodeURIComponent(g)}" aria-label="Lihat manhwa genre ${esc(g)}">${esc(g)}</a>`).join('');
   const authors = (d.authors || []).join(', ');
@@ -109,8 +113,14 @@ export async function detail({ root, alive }, url) {
         </div>
 
         ${d.description ? `
-          <p class="detail__desc is-clamp" id="desc">${esc(d.description)}</p>
-          <button type="button" class="detail__desc-toggle" id="desc-toggle">Selengkapnya</button>
+          <div class="detail__desc-wrap" id="desc-wrap">
+            <p class="detail__desc is-clamp" id="desc">${esc(d.description)}</p>
+            <button type="button" class="detail__desc-toggle" id="desc-toggle" aria-expanded="false" aria-label="Selengkapnya" hidden>
+              <svg class="detail__desc-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m7 10 5 5 5-5" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
         ` : ''}
 
         ${genres ? `<div class="detail__tags">${genres}</div>` : ''}
@@ -141,7 +151,7 @@ export async function detail({ root, alive }, url) {
               </span>
               <span class="detail__start-copy">
                 <span class="detail__start-title">${startLabel === 'Mulai Baca' ? 'Mulai Membaca' : startLabel}</span>
-                <span class="detail__start-sub">${startSub || 'Mulai dari chapter pertama'}</span>
+                <span class="detail__start-sub">${esc(startSub || 'Chapter 1')}</span>
               </span>
               <span class="detail__start-arrow" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none"><path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -165,10 +175,18 @@ export async function detail({ root, alive }, url) {
 
   const desc = document.getElementById('desc');
   const descToggle = document.getElementById('desc-toggle');
+  const descWrap = document.getElementById('desc-wrap');
   if (desc && descToggle) {
+    requestAnimationFrame(() => {
+      const clipped = desc.scrollHeight > desc.clientHeight + 4;
+      descToggle.hidden = !clipped;
+      if (clipped) descWrap?.classList.add('has-toggle');
+    });
     descToggle.addEventListener('click', () => {
-      const open = desc.classList.toggle('is-clamp');
-      descToggle.textContent = open ? 'Selengkapnya' : 'Sembunyikan';
+      const clamped = desc.classList.toggle('is-clamp');
+      descToggle.setAttribute('aria-expanded', String(!clamped));
+      descToggle.setAttribute('aria-label', clamped ? 'Selengkapnya' : 'Sembunyikan');
+      descWrap?.classList.toggle('is-open', !clamped);
     });
   }
 
