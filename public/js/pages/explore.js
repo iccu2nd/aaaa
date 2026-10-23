@@ -15,10 +15,16 @@ const fmt = (n) => Number(n || 0).toLocaleString('id-ID');
 
 export async function explore({ root, alive }, q = '', genre = '', sortMode = 'popular') {
   let currentQuery = q;
-  let currentGenre = genre;
+  let currentGenres = String(genre || '')
+    .split(',')
+    .map((g) => g.trim())
+    .filter(Boolean);
   let sort = sortMode;
-  const title = () => currentGenre ? `Genre: ${currentGenre}` : currentQuery ? 'Hasil pencarian' : 'Jelajahi manhwa';
-  const apiUrl = (page) => `/api/explore?q=${encodeURIComponent(currentQuery)}&genre=${encodeURIComponent(currentGenre)}&page=${page}&size=${SIZE}`;
+  const genreKey = () => currentGenres.join(',');
+  const title = () => currentGenres.length
+    ? `Genre: ${currentGenres.join(', ')}`
+    : currentQuery ? 'Hasil pencarian' : 'Jelajahi manhwa';
+  const apiUrl = (page) => `/api/explore?q=${encodeURIComponent(currentQuery)}&genre=${encodeURIComponent(genreKey())}&page=${page}&size=${SIZE}`;
 
   root.innerHTML = `
     <section class="section search-page">
@@ -27,11 +33,11 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
           <input id="explore-search-input" type="search" placeholder="Cari judul manhwa…" autocomplete="off" value="${esc(q)}" aria-label="Cari judul manhwa">
           <button type="button" id="search-clear" aria-label="Hapus pencarian" ${q ? '' : 'hidden'}>${icon('close')}</button>
         </form>
-        <button class="search-tools__icon ${genre ? 'is-active' : ''}" id="genre-open" type="button" aria-label="Filter genre" aria-expanded="false">${icon('filter')}</button>
+        <button class="search-tools__icon ${currentGenres.length ? 'is-active' : ''}" id="genre-open" type="button" aria-label="Filter genre" aria-expanded="false">${icon('filter')}</button>
         <button class="search-tools__icon" id="sort-toggle" type="button" aria-label="Urutkan judul" title="Urutkan judul">${icon('sort')}</button>
         <button class="search-tools__icon" id="search-expand" type="button" aria-label="Buka pencarian" aria-expanded="${!!q}">${icon('search')}</button>
       </div>
-      <div class="search-active-filter" id="search-active-filter" ${genre ? '' : 'hidden'}><span>${esc(genre)}</span><button id="genre-remove" type="button" aria-label="Hapus filter genre">${icon('close')}</button></div>
+      <div class="search-active-filter" id="search-active-filter" ${currentGenres.length ? '' : 'hidden'}><span>${esc(currentGenres.join(', '))}</span><button id="genre-remove" type="button" aria-label="Hapus filter genre">${icon('close')}</button></div>
       <div class="section__head search-page__heading"><h1 id="search-title">${esc(title())}</h1><span class="section__count" id="ex-count"></span></div>
       <div class="grid explore-grid" id="ex-grid">${'<div class="explore-skeleton loading-surface"></div>'.repeat(8)}</div>
       <div class="state" id="ex-end"></div>
@@ -40,7 +46,10 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
     <section class="genre-sheet" id="genre-sheet" role="dialog" aria-modal="true" aria-label="Filter genre" hidden>
       <div class="genre-sheet__handle"></div>
       <div class="genre-sheet__head"><h2>Genre</h2><button type="button" id="genre-close" aria-label="Tutup filter">${icon('close')}</button></div>
-      <div class="genre-sheet__chips" id="genre-chips">${[...new Set(GENRES)].map((g) => `<button type="button" class="genre-chip ${g.toLowerCase() === genre.toLowerCase() ? 'is-selected' : ''}" data-genre="${esc(g)}">${esc(g)}</button>`).join('')}</div>
+      <div class="genre-sheet__chips" id="genre-chips">${[...new Set(GENRES)].map((g) => {
+        const on = currentGenres.some((x) => x.toLowerCase() === g.toLowerCase());
+        return `<button type="button" class="genre-chip ${on ? 'is-selected' : ''}" data-genre="${esc(g)}" aria-pressed="${on}">${esc(g)}</button>`;
+      }).join('')}</div>
       <div class="genre-sheet__actions"><button type="button" class="btn btn--secondary" id="genre-reset">Reset</button><button type="button" class="btn btn--brand" id="genre-apply">Terapkan</button></div>
     </section>`;
 
@@ -55,13 +64,32 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
   const sheet = root.querySelector('#genre-sheet');
   const backdrop = root.querySelector('#genre-backdrop');
   const activeFilter = root.querySelector('#search-active-filter');
-  let draftGenre = currentGenre;
+  let draftGenres = [...currentGenres];
   let seen = new Set();
   let page = 0, pages = 1, loading = false, io = null, requestId = 0;
 
+  const paintChips = () => {
+    const set = new Set(draftGenres.map((g) => g.toLowerCase()));
+    root.querySelectorAll('.genre-chip').forEach((b) => {
+      const on = set.has(b.dataset.genre.toLowerCase());
+      b.classList.toggle('is-selected', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+  };
   const closeSheet = () => { sheet.hidden = true; backdrop.hidden = true; root.querySelector('#genre-open').setAttribute('aria-expanded', 'false'); };
-  const openSheet = () => { draftGenre = currentGenre; root.querySelectorAll('.genre-chip').forEach((b) => b.classList.toggle('is-selected', b.dataset.genre.toLowerCase() === draftGenre.toLowerCase())); sheet.hidden = false; backdrop.hidden = false; root.querySelector('#genre-open').setAttribute('aria-expanded', 'true'); };
-  const updateTitle = () => { heading.textContent = title(); activeFilter.hidden = !currentGenre; activeFilter.querySelector('span').textContent = currentGenre; root.querySelector('#genre-open').classList.toggle('is-active', !!currentGenre); };
+  const openSheet = () => {
+    draftGenres = [...currentGenres];
+    paintChips();
+    sheet.hidden = false;
+    backdrop.hidden = false;
+    root.querySelector('#genre-open').setAttribute('aria-expanded', 'true');
+  };
+  const updateTitle = () => {
+    heading.textContent = title();
+    activeFilter.hidden = !currentGenres.length;
+    activeFilter.querySelector('span').textContent = currentGenres.join(', ');
+    root.querySelector('#genre-open').classList.toggle('is-active', currentGenres.length > 0);
+  };
 
   searchExpand.addEventListener('click', () => {
     const opened = searchForm.classList.toggle('is-open');
@@ -76,18 +104,21 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
   backdrop.addEventListener('click', closeSheet);
   root.querySelector('#genre-chips').addEventListener('click', (e) => {
     const b = e.target.closest('[data-genre]'); if (!b) return;
-    draftGenre = draftGenre.toLowerCase() === b.dataset.genre.toLowerCase() ? '' : b.dataset.genre;
-    root.querySelectorAll('.genre-chip').forEach((chip) => chip.classList.toggle('is-selected', chip.dataset.genre.toLowerCase() === draftGenre.toLowerCase()));
+    const name = b.dataset.genre;
+    const i = draftGenres.findIndex((g) => g.toLowerCase() === name.toLowerCase());
+    if (i >= 0) draftGenres.splice(i, 1);
+    else draftGenres.push(name);
+    paintChips();
   });
-  root.querySelector('#genre-reset').addEventListener('click', () => { draftGenre = ''; root.querySelectorAll('.genre-chip').forEach((b) => b.classList.remove('is-selected')); });
-  root.querySelector('#genre-apply').addEventListener('click', () => { currentGenre = draftGenre; closeSheet(); navigate(); });
-  root.querySelector('#genre-remove').addEventListener('click', () => { currentGenre = ''; navigate(); });
+  root.querySelector('#genre-reset').addEventListener('click', () => { draftGenres = []; paintChips(); });
+  root.querySelector('#genre-apply').addEventListener('click', () => { currentGenres = [...draftGenres]; closeSheet(); navigate(); });
+  root.querySelector('#genre-remove').addEventListener('click', () => { currentGenres = []; navigate(); });
   root.querySelector('#sort-toggle').addEventListener('click', () => { sort = sort === 'popular' ? 'title' : 'popular'; root.querySelector('#sort-toggle').classList.toggle('is-active', sort === 'title'); root.querySelector('#sort-toggle').title = sort === 'title' ? 'Urutan: judul' : 'Urutan: default'; navigate(); });
 
   function navigate() {
     const params = new URLSearchParams();
     if (currentQuery) params.set('q', currentQuery);
-    if (currentGenre) params.set('genre', currentGenre);
+    if (currentGenres.length) params.set('genre', currentGenres.join(','));
     if (sort === 'title') params.set('sort', 'title');
     const next = '/search' + (params.size ? '?' + params.toString() : '');
     const current = location.pathname + location.search;
@@ -99,12 +130,12 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
     requestId += 1; const myRequest = requestId;
     seen = new Set(); page = 0; pages = 1; loading = false;
     updateTitle(); grid.innerHTML = '<div class="explore-skeleton loading-surface"></div>'.repeat(8); end.textContent = '';
-    const url = (n) => `/api/explore?q=${encodeURIComponent(currentQuery)}&genre=${encodeURIComponent(currentGenre)}&page=${n}&size=${SIZE}`;
+    const url = (n) => `/api/explore?q=${encodeURIComponent(currentQuery)}&genre=${encodeURIComponent(genreKey())}&page=${n}&size=${SIZE}`;
     try {
       const first = await api(url(1));
       if (!alive() || myRequest !== requestId) return;
       grid.innerHTML = '';
-      if (!first.items?.length) { end.textContent = currentGenre ? `Belum ada judul dengan genre ${currentGenre}.` : 'Tidak ada hasil yang cocok.'; count.textContent = '0 judul'; return; }
+      if (!first.items?.length) { end.textContent = currentGenres.length ? `Belum ada judul untuk genre: ${currentGenres.join(', ')}.` : 'Tidak ada hasil yang cocok.'; count.textContent = '0 judul'; return; }
       const add = (data) => { const fresh = data.items.filter((c) => c?.url && !seen.has(c.url) && seen.add(c.url)); grid.insertAdjacentHTML('beforeend', fresh.map(card).join('')); count.textContent = `${fmt(data.total)} judul`; };
       if (sort === 'title') first.items.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'id'));
       add(first); page = 1; pages = first.pages || 1;

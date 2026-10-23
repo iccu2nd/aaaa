@@ -386,3 +386,94 @@
 .inline-loading i:nth-child(2) { animation-delay: .16s; }
 .inline-loading i:nth-child(3) { animation-delay: .32s; }
 @keyframes loading-dot { to { background: #8b8b93; transform: translateY(-3px); } }
+
+
+/* ========== iOS components ========== */
+.section__head {
+  border-left: none !important;
+  padding-left: 0 !important;
+  margin-bottom: 14px !important;
+}
+.section__head h2 {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.03em !important;
+}
+.section__more,
+.rail-section__more {
+  font-size: 15px !important;
+  font-weight: 400 !important;
+  color: var(--blue) !important;
+}
+
+.btn {
+  min-height: 48px !important;
+  border-radius: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  border: none !important;
+  transition: transform 0.15s var(--ease-spring), opacity 0.15s var(--ease-ios), background 0.15s var(--ease-ios) !important;
+}
+.btn--brand {
+  background: var(--accent) !important;
+  box-shadow: 0 6px 20px rgba(255, 55, 95, 0.28);
+}
+.btn--pill {
+  border-radius: 999px !important;
+}
+.btn--secondary {
+  background: var(--fill) !important;
+}
+
+.card,
+.rail-card__cover {
+  border-radius: 14px !important;
+}
+.rail-card__cover {
+  box-shadow: var(--shadow-card);
+}
+.rail-card__title {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.015em !important;
+}
+.rail-card__sub {
+  font-size: 12px !important;
+  color: var(--dim) !important;
+}
+
+.chapters__row {
+  background: var(--near) !important;
+  border-radius: 14px !important;
+  border: none !important;
+  min-height: 76px !important;
+}
+.chapters__img,
+.chapters__thumb {
+  border-radius: 10px !important;
+}
+.chapters__name {
+  font-weight: 600 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.genre-chip {
+  border-radius: 999px !important;
+  padding: 8px 14px !important;
+  background: var(--fill) !important;
+  border: none !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+.genre-chip.is-selected {
+  background: var(--accent) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.tag {
+  border-radius: 999px !important;
+  background: var(--fill) !important;
+  border: none !important;
+}

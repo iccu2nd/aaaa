@@ -48,7 +48,7 @@ function spotlight(item) {
       <div class="spotlight__fade"></div>
       <div class="spotlight__content">
         <div class="spotlight__copy">
-          <span class="spotlight__label">#1 Spotlight</span>
+          <span class="spotlight__label" data-spotlight-label>#1 Spotlight</span>
           <h1 class="spotlight__title">${esc(item.title)}</h1>
           <p class="spotlight__desc">${esc(blurb)}</p>
         </div>
@@ -118,7 +118,7 @@ export async function home({ root, alive }) {
   `;
 
   // Lightweight spotlight rotation: update existing DOM instead of rerendering Home.
-  startSpotlightRotation(dedupeByUrl([...popular, ...updates]).filter((item) => item?.url && item?.poster).slice(0, 8), root, alive);
+  startSpotlightRotation(dedupeByUrl([...popular, ...updates]).filter((item) => item?.url && item?.poster).slice(0, 3), root, alive);
 }
 
 function startSpotlightRotation(items, root, alive) {
@@ -153,12 +153,14 @@ function startSpotlightRotation(items, root, alive) {
       cover.alt = item.title || '';
       title.textContent = item.title || '';
       desc.textContent = item.meta || item.chapter || 'Rekomendasi pilihan untukmu.';
+      const label = hero.querySelector('.spotlight__label');
+      if (label) label.textContent = `#${index + 1} Spotlight`;
       hero.classList.remove('is-changing');
     };
     preload.onerror = () => hero.classList.remove('is-changing');
     preload.src = nextUrl;
   };
-  timer = window.setInterval(change, reducedMotion ? 10000 : 6500);
+  timer = window.setInterval(change, reducedMotion ? 12000 : 5500);
   const onVisibility = () => {
     if (!alive() || !root.contains(hero)) {
       if (timer) clearInterval(timer);
@@ -167,7 +169,7 @@ function startSpotlightRotation(items, root, alive) {
       return;
     }
     if (document.hidden && timer) { clearInterval(timer); timer = null; }
-    else if (!document.hidden && !timer) timer = window.setInterval(change, reducedMotion ? 10000 : 6500);
+    else if (!document.hidden && !timer) timer = window.setInterval(change, reducedMotion ? 12000 : 5500);
   };
   document.addEventListener('visibilitychange', onVisibility);
 }

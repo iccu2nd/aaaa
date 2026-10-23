@@ -1,4 +1,4 @@
-import { route, start } from './router.js';
+import { route, start, navigate } from './router.js';
 import { home } from './pages/home.js';
 import { explore } from './pages/explore.js';
 import { library } from './pages/library.js';
@@ -29,3 +29,14 @@ if ('serviceWorker' in navigator) {
 }
 
 initChrome();
+
+/* Topbar search selalu terlihat → /search?q= */
+const topForm = document.getElementById('topbar-search');
+const topInput = document.getElementById('topbar-search-input');
+if (topForm && topInput) {
+  topForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const q = topInput.value.trim();
+    navigate(q ? '/search?q=' + encodeURIComponent(q) : '/search');
+  });
+}

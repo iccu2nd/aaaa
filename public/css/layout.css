@@ -27,14 +27,7 @@ body.is-detail .topbar { display: none !important; }
   pointer-events: none;
 }
 
-.topbar__inner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 0;
-  width: 100%;
-  min-width: 0;
-}
+/* topbar__inner replaced below */
 
 .logo {
   display: inline-flex;
@@ -206,3 +199,122 @@ body.is-detail #app { padding-bottom: 0; }
 }
 .topbar__title:hover { color: var(--white); }
 body:not(.is-reader) #app { padding-top: max(12px, env(safe-area-inset-top)); }
+
+
+.topbar__inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.topbar-search {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+.topbar-search__icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--dim);
+  pointer-events: none;
+}
+.topbar-search input {
+  width: 100%;
+  padding: 11px 14px 11px 42px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  font: 400 14px/1.4 var(--font);
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.topbar-search input::placeholder { color: var(--dim); }
+.topbar-search input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
+}
+
+/* legacy title (if any) */
+.topbar__title {
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.03em;
+}
+
+
+/* ========== iOS chrome polish ========== */
+.topbar {
+  background: rgba(22, 22, 24, 0.55) !important;
+  backdrop-filter: saturate(180%) blur(24px) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(24px) !important;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.08) !important;
+  padding-top: max(0px, env(safe-area-inset-top));
+}
+
+.topbar__inner {
+  padding: 8px 0 10px !important;
+}
+
+.topbar-search input {
+  padding: 12px 14px 12px 40px !important;
+  background: var(--fill) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-size: 16px !important; /* avoids iOS zoom on focus */
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  box-shadow: none !important;
+}
+.topbar-search input:focus {
+  background: var(--fill-strong) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.topbar-search__icon {
+  left: 12px !important;
+  color: var(--dim) !important;
+  opacity: 0.9;
+}
+
+.bottom-nav {
+  height: calc(var(--nav-h) + var(--safe-b)) !important;
+  background: rgba(22, 22, 24, 0.62) !important;
+  backdrop-filter: saturate(180%) blur(28px) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(28px) !important;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
+}
+.bottom-nav a {
+  gap: 2px !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--dim) !important;
+  padding: 6px 0 4px;
+  transition: color 0.2s var(--ease-ios), transform 0.15s var(--ease-spring);
+}
+.bottom-nav a svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 1.6;
+  transition: transform 0.2s var(--ease-spring);
+}
+.bottom-nav a[aria-current="page"] {
+  color: var(--accent) !important;
+}
+.bottom-nav a[aria-current="page"] svg {
+  transform: scale(1.06);
+  opacity: 1 !important;
+}
+
+#app {
+  padding-top: 12px !important;
+}

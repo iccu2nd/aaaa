@@ -36,13 +36,24 @@ router.get(
 // Explore: SEMUA judul dari kedua sumber, dikirim per potongan (tanpa batas total)
 router.get('/explore', async (req, res) => {
   const q = String(req.query.q || '').trim().slice(0, 100);
-  const genre = String(req.query.genre || '').trim().slice(0, 60).toLocaleLowerCase('id-ID');
+  const genreRaw = String(req.query.genre || '').trim().slice(0, 200);
+  const genres = genreRaw
+    .split(',')
+    .map((g) => g.trim().toLocaleLowerCase('id-ID'))
+    .filter(Boolean)
+    .slice(0, 12);
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const size = Math.min(200, Math.max(10, parseInt(req.query.size, 10) || EXPLORE_SIZE));
-  const full = await loadAll(genre ? '' : q);
+  const full = await loadAll(genres.length ? '' : q);
   if (!full || !full.status) return res.json(full || { status: false, message: 'Gagal memuat daftar' });
-  const list = genre
-    ? full.data.filter((item) => Array.isArray(item.genres) && item.genres.some((g) => String(g).toLocaleLowerCase('id-ID') === genre))
+  const list = genres.length
+    ? full.data.filter((item) => {
+        const itemGenres = Array.isArray(item.genres)
+          ? item.genres.map((g) => String(g).toLocaleLowerCase('id-ID'))
+          : [];
+        // OR: cocok jika punya salah satu genre yang dipilih
+        return genres.some((g) => itemGenres.includes(g));
+      })
     : full.data;
   res.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
   res.json({
