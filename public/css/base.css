@@ -12,11 +12,11 @@
   --dim: #7E7E84;
 
   /* Accent — soft teal (calm, not AI-slop) */
-  --accent: #5B9A8B;
-  --accent-dim: #4A7F72;
-  --accent-soft: rgba(91, 154, 139, 0.18);
-  --red: #5B9A8B; /* legacy alias → teal */
-  --blue: #5B9A8B;
+  --accent: #A0A0A5;
+  --accent-dim: #85858B;
+  --accent-soft: rgba(160, 160, 165, 0.14);
+  --red: #B8B8BE; /* neutral gray alias */
+  --blue: #A0A0A5;
 
   /* Secondary (sparse: rating / meta) */
   --warm: #C4A574;
@@ -108,7 +108,7 @@ button {
   outline-offset: 2px;
   border-radius: 8px;
 }
-::selection { background: rgba(91, 154, 139, 0.35); color: var(--white); }
+::selection { background: rgba(160, 160, 165, 0.35); color: var(--white); }
 
 ::-webkit-scrollbar { width: 0; height: 0; }
 

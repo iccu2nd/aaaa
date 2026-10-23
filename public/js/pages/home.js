@@ -24,10 +24,18 @@ function continueCard(h) {
     </a>`;
 }
 
+function getViews(item) {
+  const raw = item?.views ?? item?.view_count ?? item?.views_count ?? item?.total_views ?? item?.reader_count ?? item?.viewers;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0) return '';
+  return new Intl.NumberFormat('id-ID', { notation: value >= 1000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(value);
+}
+
 function updateCard(item) {
-  const ch = item.chapters?.[0]?.chapter || item.chapter || '';
-  const time = item.chapters?.[0]?.time || item.meta || '';
-  const rate = item.user_rate > 0 ? item.user_rate : '';
+  const ch = item.chapters?.[0]?.chapter || item.chapter || (item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : '');
+  const time = item.chapters?.[0]?.time || item.latest_chapter_time || '';
+  const rate = Number(item.user_rate) > 0 ? Number(item.user_rate).toFixed(1).replace(/\.0$/, '') : '';
+  const views = getViews(item);
   return `
     <a class="rail-card" href="${link('detail', item.url)}">
       <div class="rail-card__cover">
@@ -35,13 +43,22 @@ function updateCard(item) {
         ${rate ? `<span class="rail-card__rate"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9L22 10l-5 4.7L18.2 22 12 18.2 5.8 22 7 14.7 2 10l7.1-1.1L12 2z"/></svg> ${esc(String(rate))}</span>` : ''}
       </div>
       <div class="rail-card__title">${esc(item.title)}</div>
-      <div class="rail-card__sub">${esc(ch || time || '\u00A0')}</div>
+      <div class="rail-card__meta">
+        ${rate ? `<span>★ ${esc(String(rate))}</span>` : ''}
+        ${ch ? `<span>${esc(ch)}</span>` : ''}
+        ${views ? `<span>👁 ${esc(views)}</span>` : ''}
+      </div>
+      <div class="rail-card__sub">${esc(time || item.status || '')}</div>
     </a>`;
 }
 
 function spotlight(item) {
   if (!item) return '';
-  const blurb = item.meta || item.chapter || 'Rekomendasi pilihan untukmu.';
+  const blurb = item.status || (item.meta || '').split(' · ')[0] || 'Pilihan untukmu';
+  const rate = Number(item.user_rate) > 0 ? Number(item.user_rate).toFixed(1).replace(/\.0$/, '') : '';
+  const chapter = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || '');
+  const views = getViews(item);
+  const facts = [rate ? `★ ${rate}` : '', chapter, views ? `👁 ${views} pembaca` : ''].filter(Boolean);
   return `
     <a class="spotlight" data-spotlight href="${link('detail', item.url)}" aria-label="Lihat ${esc(item.title)}">
       <div class="spotlight__bg" style="background-image:url('${esc(img(item.poster))}')"></div>
@@ -54,6 +71,7 @@ function spotlight(item) {
           </div>
           <h1 class="spotlight__title">${esc(item.title)}</h1>
           <p class="spotlight__desc">${esc(blurb)}</p>
+          <div class="spotlight__facts">${facts.map((fact) => `<span>${esc(fact)}</span>`).join('')}</div>
           <span class="spotlight__cta">Baca sekarang</span>
         </div>
         <div class="spotlight__art">
@@ -195,6 +213,7 @@ function startSpotlightRotation(items, root, alive) {
     const cover = hero.querySelector('.spotlight__poster img');
     const title = hero.querySelector('.spotlight__title');
     const desc = hero.querySelector('.spotlight__desc');
+    const factsEl = hero.querySelector('.spotlight__facts');
     const label = hero.querySelector('.spotlight__label');
     const dots = hero.querySelectorAll('[data-spotlight-dots] i');
     hero.classList.add('is-changing');
@@ -207,7 +226,13 @@ function startSpotlightRotation(items, root, alive) {
       if (bg) bg.style.backgroundImage = `url("${nextUrl.replace(/["\\]/g, '')}")`;
       if (cover) { cover.src = nextUrl; cover.alt = item.title || ''; }
       if (title) title.textContent = item.title || '';
-      if (desc) desc.textContent = item.meta || item.chapter || 'Rekomendasi pilihan untukmu.';
+      if (desc) desc.textContent = item.status || (item.meta || '').split(' · ')[0] || 'Pilihan untukmu';
+      if (factsEl) {
+        const rate = Number(item.user_rate) > 0 ? Number(item.user_rate).toFixed(1).replace(/\.0$/, '') : '';
+        const chapter = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || '');
+        const views = getViews(item);
+        factsEl.innerHTML = [rate ? `★ ${rate}` : '', chapter, views ? `👁 ${views} pembaca` : ''].filter(Boolean).map((fact) => `<span>${esc(fact)}</span>`).join('');
+      }
       if (label) label.textContent = `#${index + 1}`;
       dots.forEach((d, i) => d.classList.toggle('is-on', i === index));
       hero.classList.remove('is-changing');
