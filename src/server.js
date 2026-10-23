@@ -7,8 +7,8 @@ const api = require('./routes/api');
 const app = express();
 app.disable('x-powered-by');
 
-// gambar tidak dihitung rate limit (satu halaman reader = puluhan gambar)
-app.use('/api', (req, res, next) => (req.path === '/img' ? next() : rateLimit(req, res, next)), api);
+// Batasi seluruh endpoint termasuk proxy gambar agar tidak bisa dipakai sebagai proxy terbuka tanpa batas.
+app.use('/api', rateLimit, api);
 app.use(express.static(path.join(__dirname, '..', 'public'), {
   setHeaders(res, file) {
     if (file.endsWith('sw.js')) res.set('Cache-Control', 'no-cache');

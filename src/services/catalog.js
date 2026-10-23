@@ -168,13 +168,17 @@ const thumb = async (chapterUrl) => {
 const detail = async (url) => {
   const src = detectSource(url);
   const client = src === 'voratoon' ? voratoon : shinigami;
-  return client.detail(url);
+  const result = await client.detail(url);
+  if (!result?.status) return result;
+  return { status: true, data: result.data };
 };
 
 const read = async (url) => {
   const src = detectSource(url);
   const client = src === 'voratoon' ? voratoon : shinigami;
-  return client.read(url);
+  const result = await client.read(url);
+  if (!result?.status) return result;
+  return { status: true, data: result.data };
 };
 
 module.exports = { home, search, update, detail, read, all, thumb, detectSource, normTitle };

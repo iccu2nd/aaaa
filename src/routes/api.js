@@ -110,8 +110,25 @@ router.get('/img', async (req, res) => {
           proxyRes.resume();
           return;
         }
-        res.set('Content-Type', proxyRes.headers['content-type'] || 'image/jpeg');
+        const contentType = String(proxyRes.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+        const length = Number(proxyRes.headers['content-length'] || 0);
+        if (!contentType.startsWith('image/') || (length && length > 15 * 1024 * 1024)) {
+          proxyRes.resume();
+          if (!res.headersSent) res.status(502).send('Format atau ukuran gambar tidak diizinkan');
+          return;
+        }
+        res.set('X-Content-Type-Options', 'nosniff');
+        res.set('Content-Type', contentType);
         res.set('Cache-Control', 'public, max-age=604800, immutable');
+        let bytes = 0;
+        proxyRes.on('data', (chunk) => {
+          bytes += chunk.length;
+          if (bytes > 15 * 1024 * 1024) {
+            proxyRes.destroy();
+            if (!res.headersSent) res.status(502).send('Ukuran gambar terlalu besar');
+            else res.destroy();
+          }
+        });
         proxyRes.pipe(res);
       },
     );

@@ -1,11 +1,12 @@
 {
   "name": "rimwa",
   "version": "1.4.0",
-  "description": "RiMwa — baca komik online",
+  "description": "RiMwa \u2014 baca komik online",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "check": "node --check src/server.js && node --check src/routes/api.js && node --check src/services/shinigami.js && node --check src/services/voratoon.js && node --check src/services/catalog.js && node --check src/middleware/validate.js && node --check src/middleware/rateLimit.js"
   },
   "engines": {
     "node": ">=18"

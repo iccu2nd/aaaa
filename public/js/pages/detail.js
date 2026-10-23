@@ -82,7 +82,7 @@ export async function detail({ root, alive }, url) {
   root.innerHTML = `
     <article class="detail">
       <div class="detail__hero">
-        <img class="detail__hero-bg" src="${esc(img(d.poster))}" alt="" aria-hidden="true">
+        <img class="detail__hero-bg" src="${esc(img(d.banner || d.poster))}" alt="" aria-hidden="true">
         <div class="detail__hero-fade"></div>
         <div class="detail__hero-actions">
           <a class="detail__icon-btn" href="/" aria-label="Kembali">
@@ -103,11 +103,16 @@ export async function detail({ root, alive }, url) {
               ${year ? `<span class="detail__badge">${esc(String(year))}</span>` : ''}
             </div>
             <h1 class="detail__title">${esc(d.title)}</h1>
+            ${d.alternative_title ? `<div class="detail__row detail__alt-title">Judul lain: ${esc(Array.isArray(d.alternative_title) ? d.alternative_title.join(', ') : d.alternative_title)}</div>` : ''}
             ${authors ? `<div class="detail__row">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 19c0-3.5 3-5.5 7-5.5s7 2 7 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
               ${esc(authors)}
             </div>` : ''}
+            ${Array.isArray(d.artists) && d.artists.length ? `<div class="detail__row">Artist: ${esc(d.artists.join(', '))}</div>` : ''}
+            ${Array.isArray(d.formats) && d.formats.length ? `<div class="detail__row">Format: ${esc(d.formats.join(', '))}</div>` : ''}
+            ${Array.isArray(d.types) && d.types.length ? `<div class="detail__row">Tipe: ${esc(d.types.join(', '))}</div>` : ''}
             ${rate ? `<div class="detail__row">Rating ${esc(rate)}</div>` : ''}
+            ${d.views != null ? `<div class="detail__row">Total pembaca: ${esc(Number(d.views).toLocaleString('id-ID'))}</div>` : ''}
             <div class="detail__row">${d.total_chapters || 0} chapter${status ? ' · ' + esc(status) : ''}</div>
           </div>
         </div>

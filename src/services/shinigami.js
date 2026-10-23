@@ -1,6 +1,7 @@
 'use strict';
 
 const https = require('https');
+const cheerio = require('cheerio');
 const cfg = require('../config');
 const baseUrl = cfg.shinigami.baseUrl;
 const apiBase = cfg.shinigami.apiBase;
@@ -33,8 +34,14 @@ function request(url, timeout = 15000) {
       { headers: DEFAULT_HEADERS, timeout },
       (res) => {
         let body = '';
+        let bytes = 0;
         res.setEncoding('utf8');
         res.on('data', (chunk) => {
+          bytes += Buffer.byteLength(chunk, 'utf8');
+          if (bytes > 5_000_000) {
+            req.destroy(new Error('Respons API terlalu besar'));
+            return;
+          }
           body += chunk;
         });
         res.on('end', () => {
@@ -123,10 +130,13 @@ function relativeTime(isoOrTs) {
 }
 
 function mapMangaCard(manga) {
+  if (!manga || !manga.manga_id || !manga.title) return null;
   const ch = manga.latest_chapter_number;
   return {
     title: manga.title,
     poster: manga.cover_portrait_url || manga.cover_image_url || null,
+    banner: manga.banner_image_url || manga.cover_banner_url || manga.banner_url || manga.cover_landscape_url || null,
+    views: manga.views ?? manga.view_count ?? manga.total_views ?? manga.read_count ?? null,
     url: seriesUrl(manga.manga_id),
     manga_id: manga.manga_id,
     chapter: ch != null ? `Ch. ${ch}` : '',
@@ -146,7 +156,7 @@ const home = safe(async () => {
   const params = new URLSearchParams({ page: '1', page_size: '48' });
   const res = await api(`/manga/list?${params}`);
   const data = Array.isArray(res.data) ? res.data : [];
-  return data.map(mapMangaCard);
+  return data.map(mapMangaCard).filter(Boolean);
 });
 
 const update = safe(async () => {
@@ -186,7 +196,7 @@ const search = safe(async (query = '') => {
   if (q) params.set('q', q);
   const res = await api(`/manga/list?${params}`);
   const data = Array.isArray(res.data) ? res.data : [];
-  return data.map(mapMangaCard);
+  return data.map(mapMangaCard).filter(Boolean);
 });
 
 /** Ambil SEMUA judul (semua halaman), tanpa limit. */
@@ -220,6 +230,57 @@ const all = safe(async (query = '') => {
     .filter((m) => m && m.manga_id && !seen.has(m.manga_id) && seen.add(m.manga_id))
     .map(mapMangaCard);
 });
+
+async function scrapeSeriesPresentation(id) {
+  const url = seriesUrl(id);
+  return new Promise((resolve) => {
+    const req = https.get(url, { headers: DEFAULT_HEADERS, timeout: 9000 }, (res) => {
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        res.resume();
+        resolve({ banner: null, ogImage: null });
+        return;
+      }
+      let html = '';
+      let bytes = 0;
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => {
+        bytes += Buffer.byteLength(chunk, 'utf8');
+        if (bytes > 2_000_000) {
+          req.destroy(new Error('HTML terlalu besar'));
+          return;
+        }
+        html += chunk;
+      });
+      res.on('end', () => {
+        try {
+          const $ = cheerio.load(html);
+          const candidates = [];
+          $('img').each((_, el) => {
+            const src = $(el).attr('src') || $(el).attr('data-src') || '';
+            const alt = $(el).attr('alt') || '';
+            const cls = $(el).attr('class') || '';
+            if (/assets\.shngm\.id/i.test(src) && /banner|thumbnail/i.test(`${src} ${alt} ${cls}`)) {
+              candidates.push(src.startsWith('//') ? `https:${src}` : src);
+            }
+          });
+          const rawOg = $('meta[property="og:image"]').attr('content') || '';
+          const ogImage = rawOg.startsWith('//') ? `https:${rawOg}` : rawOg;
+          resolve({
+            banner: candidates.find((src) => /banner/i.test(src)) || candidates[0] || null,
+            ogImage: ogImage || null,
+          });
+        } catch {
+          resolve({ banner: null, ogImage: null });
+        }
+      });
+    });
+    req.on('timeout', () => {
+      req.destroy();
+      resolve({ banner: null, ogImage: null });
+    });
+    req.on('error', () => resolve({ banner: null, ogImage: null }));
+  });
+}
 
 async function fetchAllChapters(mangaId) {
   const pageSize = 100;
@@ -280,24 +341,32 @@ const detail = safe(async (input) => {
     id = found.data[0].manga_id;
   }
 
-  const [detailRes, chapters] = await Promise.all([
-    api(`/manga/detail/${id}`),
+  const [detailRes, chapters, presentation] = await Promise.all([
+    api(`/manga/detail/${encodeURIComponent(id)}`),
     fetchAllChapters(id),
+    scrapeSeriesPresentation(id),
   ]);
 
   if (!detailRes?.data) throw new Error('Gagal mengambil detail manga');
 
   const d = detailRes.data;
   const tax = getTaxonomy(d.taxonomy);
+  const banner = d.banner_image_url || d.cover_banner_url || d.banner_url || d.cover_landscape_url || presentation.banner || null;
+  const views = d.views ?? d.view_count ?? d.total_views ?? d.read_count ?? d.total_reader ?? null;
 
   return {
     title: d.title,
     poster: d.cover_portrait_url || d.cover_image_url || null,
+    banner,
+    views,
     url: seriesUrl(d.manga_id || id),
     manga_id: d.manga_id || id,
     description: d.description || '',
     status: getStatus(d.status),
-    alternative_title: d.alternative_title || '',
+    alternative_title: d.alternative_title || d.alternative_titles || d.title_alt || '',
+    artists: tax.artist,
+    formats: tax.format,
+    types: tax.type,
     release_year: d.release_year,
     user_rate: d.user_rate,
     genres: tax.genre,
