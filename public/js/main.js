@@ -37,3 +37,15 @@ if (notifBtn) {
     notifBtn.classList.toggle('is-on');
   });
 }
+
+
+/* PWA install prompt (tersimpan; tombol Install bisa di Profile) */
+window.__rimwaInstall = null;
+addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window.__rimwaInstall = e;
+  window.dispatchEvent(new Event('rimwa:caninstall'));
+});
+addEventListener('appinstalled', () => {
+  window.__rimwaInstall = null;
+});

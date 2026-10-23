@@ -3,10 +3,15 @@ import { bookmarks, history, libraryBackup } from '../store.js';
 export function profile({ root }) {
   root.innerHTML = `
     <section class="profile-page">
-      <div class="profile-page__avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M4.8 20c.8-3.4 3.3-5.2 7.2-5.2s6.4 1.8 7.2 5.2"/></svg></div>
-      <h1>Profile</h1>
-      <p class="profile-page__copy">Kelola koleksi dan simpan cadangan data bacaanmu.</p>
-      <div class="profile-page__stats"><div><strong>${bookmarks.list().length}</strong><span>Bookmark</span></div><div><strong>${history.list().length}</strong><span>Riwayat baca</span></div></div>
+      <img class="profile-page__logo" src="/icons/icon-192.png" width="88" height="88" alt="RiMwa">
+      <h1>RiMwa</h1>
+      <p class="profile-page__copy">Baca manhwa &amp; manga — cepat dan rapi.</p>
+      <div class="profile-page__stats">
+        <div><strong>${bookmarks.list().length}</strong><span>Bookmark</span></div>
+        <div><strong>${history.list().length}</strong><span>Riwayat baca</span></div>
+      </div>
+      <button class="btn btn--brand profile-page__install" id="btn-install" type="button" hidden>Pasang aplikasi</button>
+      <p class="profile-page__install-hint" id="install-hint" hidden></p>
       <a class="btn btn--secondary profile-page__library" href="/library">Buka Library</a>
       <section class="profile-backup" aria-labelledby="profile-backup-title">
         <h2 id="profile-backup-title">Cadangan data</h2>
@@ -17,7 +22,41 @@ export function profile({ root }) {
         <p class="profile-backup__status" id="backup-status" role="status" aria-live="polite"></p>
       </section>
     </section>`;
+
   const status = root.querySelector('#backup-status');
+  const installBtn = root.querySelector('#btn-install');
+  const installHint = root.querySelector('#install-hint');
+
+  const paintInstall = () => {
+    const standalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+    if (standalone) {
+      installBtn.hidden = true;
+      installHint.hidden = false;
+      installHint.textContent = 'Aplikasi sudah terpasang.';
+      return;
+    }
+    if (window.__rimwaInstall) {
+      installBtn.hidden = false;
+      installHint.hidden = true;
+    } else {
+      installBtn.hidden = true;
+      installHint.hidden = false;
+      installHint.textContent = 'Untuk memasang: menu browser → “Add to Home Screen” / “Install app”.';
+    }
+  };
+  paintInstall();
+  window.addEventListener('rimwa:caninstall', paintInstall, { once: true });
+
+  installBtn.addEventListener('click', async () => {
+    const ev = window.__rimwaInstall;
+    if (!ev) return;
+    ev.prompt();
+    await ev.userChoice;
+    window.__rimwaInstall = null;
+    paintInstall();
+  });
+
   root.querySelector('#backup-export').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify(libraryBackup.export(), null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
