@@ -5,7 +5,7 @@ export function profile({ root }) {
     <section class="profile-page">
       <img class="profile-page__logo" src="/icons/icon-192.png" width="88" height="88" alt="RiMwa">
       <h1>RiMwa</h1>
-      <p class="profile-page__copy">Baca manhwa &amp; manga — cepat dan rapi.</p>
+      <p class="profile-page__copy">Baca manhwa &amp; manga<br>cepat, rapi, bisa offline.</p>
       <div class="profile-page__stats">
         <div><strong>${bookmarks.list().length}</strong><span>Bookmark</span></div>
         <div><strong>${history.list().length}</strong><span>Riwayat baca</span></div>
