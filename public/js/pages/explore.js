@@ -44,7 +44,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
     <div class="genre-sheet-backdrop" id="genre-backdrop" hidden></div>
     <section class="genre-sheet" id="genre-sheet" role="dialog" aria-modal="true" aria-label="Filter genre" hidden>
       <div class="genre-sheet__handle"></div>
-      <div class="genre-sheet__head"><div><h2>Genre</h2><p class="genre-sheet__hint">Pilih 2+ genre: hanya komik yang punya semua genre itu</p></div><button type="button" id="genre-close" aria-label="Tutup filter">${icon('close')}</button></div>
+      <div class="genre-sheet__head"><h2>Genre</h2><button type="button" id="genre-close" aria-label="Tutup filter">${icon('close')}</button></div>
       <div class="genre-sheet__chips" id="genre-chips">${[...new Set(GENRES)].map((g) => {
         const on = currentGenres.some((x) => x.toLowerCase() === g.toLowerCase());
         return `<button type="button" class="genre-chip ${on ? 'is-selected' : ''}" data-genre="${esc(g)}" aria-pressed="${on}">${esc(g)}</button>`;

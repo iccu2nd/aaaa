@@ -111,7 +111,7 @@ router.get('/img', async (req, res) => {
           return;
         }
         res.set('Content-Type', proxyRes.headers['content-type'] || 'image/jpeg');
-        res.set('Cache-Control', 'public, max-age=86400');
+        res.set('Cache-Control', 'public, max-age=604800, immutable');
         proxyRes.pipe(res);
       },
     );

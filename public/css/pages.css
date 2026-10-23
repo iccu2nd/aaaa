@@ -1027,8 +1027,24 @@
 
 
 /* Reading progress and local-library backup controls */
-.reader-progress { position:fixed; z-index:120; inset:0 0 auto; height:2px; pointer-events:none; background:transparent; }
-.reader-progress span { display:block; width:100%; height:100%; background:var(--accent, #8eaa9a); transform:scaleX(0); transform-origin:left center; will-change:transform; }
+.reader-progress {
+  position: fixed;
+  z-index: 120;
+  inset: 0 0 auto;
+  height: 2px;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.06);
+}
+.reader-progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* netral, tidak mengganggu baca */
+  background: linear-gradient(90deg, rgba(255,255,255,0.35), rgba(255,255,255,0.7));
+  transform: scaleX(0);
+  transform-origin: left center;
+  will-change: transform;
+}
 .profile-backup { width:min(100%, 340px); margin-top:30px; padding-top:22px; border-top:1px solid var(--line, rgba(255,255,255,.08)); display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
 .profile-backup h2 { width:100%; margin:0; font-size:15px; font-weight:600; }
 .profile-backup > p:not(.profile-backup__status) { width:100%; margin:0 0 5px; color:var(--muted); font-size:12px; line-height:1.6; }

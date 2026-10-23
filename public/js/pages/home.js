@@ -121,7 +121,7 @@ export async function home({ root, alive }) {
     ${spotlight(feature)}
     ${hist.length ? rail('Continue reading', contHtml, '/library') : ''}
     ${rail('Update', `<div class="rail">${updateRail.map(updateCard).join('')}</div>`, '/update')}
-    ${rail('Rekomendasi', `<div class="rail rail--wrap">${popular.slice(0, 24).map(updateCard).join('')}</div>`, '/search')}
+    ${rail('Rekomendasi', `<div class="rail">${dedupeByUrl([...popular, ...updateRail]).slice(0, 36).map(updateCard).join('')}</div>`, '/search')}
   `;
 
   // Lightweight spotlight rotation: update existing DOM instead of rerendering Home.

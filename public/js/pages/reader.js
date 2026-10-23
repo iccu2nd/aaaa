@@ -76,7 +76,11 @@ export async function reader({ root, alive }, url) {
       </div>
 
       <div class="reader__pages" id="reader-pages">
-        ${d.images.map((src, index) => `<img loading="${index < 2 ? 'eager' : 'lazy'}" fetchpriority="${index === 0 ? 'high' : 'auto'}" decoding="async" src="${esc(img(src))}" alt=""${index === 0 ? ' data-first-page' : ''}>`).join('')}
+        ${d.images.map((src, index) => {
+          const eager = index < 5;
+          const prio = index === 0 ? 'high' : index < 3 ? 'high' : 'auto';
+          return `<img class="reader__page" loading="${eager ? 'eager' : 'lazy'}" fetchpriority="${prio}" decoding="async" src="${esc(img(src))}" alt="" data-page="${index}"${index === 0 ? ' data-first-page' : ''}>`;
+        }).join('')}
       </div>
 
       <div class="reader__end" id="reader-end" aria-label="Navigasi chapter">
@@ -127,6 +131,25 @@ export async function reader({ root, alive }, url) {
   progressBar.innerHTML = '<span></span>';
   readerEl.prepend(progressBar);
   const progressFill = progressBar.firstElementChild;
+
+  // Prefetch sisa halaman di background (cepat, tidak blok UI)
+  (function preloadQueue() {
+    const urls = (d.images || []).map((src) => img(src));
+    let i = 5; // 0–4 sudah eager
+    const pump = () => {
+      if (i >= urls.length) return;
+      const end = Math.min(i + 3, urls.length);
+      for (; i < end; i++) {
+        const im = new Image();
+        im.decoding = 'async';
+        im.src = urls[i];
+      }
+      if (i < urls.length) setTimeout(pump, 40);
+    };
+    if ('requestIdleCallback' in window) requestIdleCallback(pump, { timeout: 400 });
+    else setTimeout(pump, 60);
+  })();
+
   const drawer = document.getElementById('reader-drawer');
   const settings = document.getElementById('reader-settings');
   const settingsBtn = document.getElementById('btn-reader-settings');
