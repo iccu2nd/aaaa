@@ -285,31 +285,38 @@ async function scrapeSeriesPresentation(id) {
 
 async function fetchAllChapters(mangaId) {
   const pageSize = 100;
-  let page = 1;
-  let totalPage = 1;
-  const all = [];
-  const seen = new Set();
-
-  while (page <= totalPage && page <= 50) {
+  const fetchPage = async (page) => {
     const params = new URLSearchParams({
       page: String(page),
       page_size: String(pageSize),
       sort_by: 'chapter_number',
       sort_order: 'desc',
     });
-    const res = await api(`/chapter/${mangaId}/list?${params}`);
-    const batch = Array.isArray(res.data) ? res.data : [];
-    totalPage = Number(res.meta?.total_page) || page;
-    if (res.meta?.total_record && page === 1) {
-      totalPage = Math.max(totalPage, Math.ceil(Number(res.meta.total_record) / pageSize));
-    }
+    return api(`/chapter/${encodeURIComponent(mangaId)}/list?${params}`);
+  };
+
+  // Fetch page 1 first to discover pagination, then fetch the remaining pages in parallel.
+  const first = await fetchPage(1);
+  const firstBatch = Array.isArray(first.data) ? first.data : [];
+  const totalRecords = Number(first.meta?.total_record) || 0;
+  const totalPages = Math.min(50, Math.max(
+    Number(first.meta?.total_page) || 1,
+    totalRecords ? Math.ceil(totalRecords / pageSize) : 1,
+  ));
+  const remaining = await Promise.all(
+    Array.from({ length: Math.max(0, totalPages - 1) }, (_, i) => fetchPage(i + 2).catch(() => null)),
+  );
+  const batches = [firstBatch, ...remaining.map((r) => Array.isArray(r?.data) ? r.data : [])];
+  const seen = new Set();
+  const all = [];
+
+  for (const batch of batches) {
     for (const ch of batch) {
-      const cid = ch.chapter_id;
+      const cid = ch?.chapter_id;
       if (!cid || seen.has(cid)) continue;
       seen.add(cid);
       const num = ch.chapter_number ?? '?';
       const extra = String(ch.chapter_title || ch.title || '').trim();
-      // Rapikan judul dari API: selalu tampilkan nomor chapter dan pertahankan nama aslinya.
       const cleanedExtra = extra
         .replace(/^chapter\s*\d+(?:\s*[:.-]\s*)?/i, '')
         .replace(/^ch\.?\s*\d+(?:\s*[:.-]\s*)?/i, '')
@@ -323,15 +330,10 @@ async function fetchAllChapters(mangaId) {
         url: chapterUrl(cid),
         chapter_id: cid,
         release_date: ch.release_date || ch.created_at || ch.updated_at || null,
-        // Gunakan thumbnail asli chapter jika API menyediakannya.
         thumbnail: ch.thumbnail_url || ch.thumbnail || ch.cover_image_url || ch.cover_url || ch.banner_image_url || ch.image_url || null,
       });
     }
-    if (!batch.length) break;
-    page += 1;
   }
-
-  // Pastikan urutan terbaru → lama
   all.sort((a, b) => Number(b.chapter_number) - Number(a.chapter_number));
   return all;
 }
@@ -347,17 +349,18 @@ const detail = safe(async (input) => {
     id = found.data[0].manga_id;
   }
 
-  const [detailRes, chapters, presentation] = await Promise.all([
+  // Jangan scrape HTML halaman seri di jalur utama: itu menambah latency dan tidak diperlukan
+  // bila API detail sudah menyediakan banner. Gunakan cover sebagai fallback di frontend.
+  const [detailRes, chapters] = await Promise.all([
     api(`/manga/detail/${encodeURIComponent(id)}`),
     fetchAllChapters(id),
-    scrapeSeriesPresentation(id),
   ]);
 
   if (!detailRes?.data) throw new Error('Gagal mengambil detail manga');
 
   const d = detailRes.data;
   const tax = getTaxonomy(d.taxonomy);
-  const banner = d.banner_image_url || d.cover_banner_url || d.banner_url || d.cover_landscape_url || presentation.banner || null;
+  const banner = d.banner_image_url || d.cover_banner_url || d.banner_url || d.cover_landscape_url || null;
   const views = d.views ?? d.view_count ?? d.total_views ?? d.read_count ?? d.total_reader ?? null;
 
   return {

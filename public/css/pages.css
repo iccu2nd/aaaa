@@ -2003,3 +2003,69 @@ body.is-detail .detail__body {
   .spotlight__bg, .spotlight__poster, .spotlight__content, .spotlight__badge::before, .spotlight__dots i.is-on::after { animation: none !important; }
   .spotlight__dots i.is-on::after { transform: none; }
 }
+
+
+/* RiMwa polish: metadata in spotlight is plain icon + text, never boxed. */
+.spotlight__facts {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 8px 14px !important;
+  margin: 12px 0 16px !important;
+}
+.spotlight__fact {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  outline: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: rgba(245,245,247,.88) !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  white-space: nowrap;
+}
+.spotlight__fact::before,
+.spotlight__fact::after { content: none !important; display: none !important; }
+.spotlight__fact svg { width: 16px; height: 16px; flex: 0 0 16px; }
+
+/* Detail header: consistent cover and metadata alignment on mobile. */
+.detail__header {
+  display: grid !important;
+  grid-template-columns: clamp(96px, 27vw, 132px) minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 14px !important;
+}
+.detail__cover {
+  width: 100% !important;
+  max-width: 132px !important;
+  aspect-ratio: 3 / 4 !important;
+  height: auto !important;
+  align-self: start !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.detail__meta {
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+.detail__title {
+  overflow-wrap: anywhere;
+  margin: 0 0 8px !important;
+}
+.detail__row {
+  min-width: 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.detail__row span { min-width: 0; }
+.detail__alt-title { color: var(--muted); }
+@media (max-width: 360px) {
+  .detail__header { grid-template-columns: 88px minmax(0, 1fr) !important; gap: 11px !important; }
+  .detail__title { font-size: 18px !important; }
+  .detail__row { font-size: 11px !important; gap: 6px !important; }
+}
