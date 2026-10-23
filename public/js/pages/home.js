@@ -3,6 +3,9 @@ import { history } from '../store.js';
 import { esc, img, link } from '../utils.js';
 import { skeletonGrid, state as msg } from '../components/section.js';
 
+const starIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8l-6.2 3.2L7 14.2 2 9.3l6.9-1L12 2z"/></svg>';
+const eyeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+
 function relativeFromHist() {
   return 'baru saja';
 }
@@ -65,9 +68,9 @@ function updateCard(item) {
       </div>
       <div class="rail-card__title">${esc(item.title)}</div>
       <div class="rail-card__meta">
-        ${rate ? `<span>★ ${esc(String(rate))}</span>` : ''}
+        ${rate ? `<span class="meta-icon">${starIcon}<span>${esc(String(rate))}</span></span>` : ''}
         ${ch ? `<span>${esc(ch)}</span>` : ''}
-        ${views ? `<span>👁 ${esc(views)}</span>` : ''}
+        ${views ? `<span class="meta-icon">${eyeIcon}<span>${esc(views)}</span></span>` : ''}
       </div>
       <div class="rail-card__sub">${esc(time || item.status || '')}</div>
     </a>`;
@@ -79,7 +82,7 @@ function spotlight(item) {
   const rate = getRating(item);
   const chapter = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || '');
   const views = getViews(item);
-  const facts = [rate ? `★ ${rate}` : '', chapter, views ? `👁 ${views} pembaca` : ''].filter(Boolean);
+  const facts = [rate ? `${starIcon}<span>${esc(rate)}</span>` : '', chapter ? esc(chapter) : '', views ? `${eyeIcon}<span>${esc(views)} pembaca</span>` : ''].filter(Boolean);
   return `
     <a class="spotlight" data-spotlight href="${link('detail', item.url)}" aria-label="Lihat ${esc(item.title)}">
       <div class="spotlight__bg" style="background-image:url('${esc(img(item.poster))}')"></div>
@@ -91,7 +94,7 @@ function spotlight(item) {
           </div>
           <h1 class="spotlight__title">${esc(item.title)}</h1>
           <p class="spotlight__desc">${esc(blurb)}</p>
-          <div class="spotlight__facts">${facts.map((fact) => `<span>${esc(fact)}</span>`).join('')}</div>
+          <div class="spotlight__facts">${facts.map((fact) => `<span class="spotlight__fact">${fact}</span>`).join('')}</div>
           <span class="spotlight__cta">Baca sekarang <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </div>
         <div class="spotlight__art">
@@ -255,7 +258,7 @@ function startSpotlightRotation(items, root, alive) {
         const rate = getRating(item);
         const chapter = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || '');
         const views = getViews(item);
-        factsEl.innerHTML = [rate ? `★ ${rate}` : '', chapter, views ? `👁 ${views} pembaca` : ''].filter(Boolean).map((fact) => `<span>${esc(fact)}</span>`).join('');
+        factsEl.innerHTML = [rate ? `${starIcon}<span>${esc(rate)}</span>` : '', chapter ? esc(chapter) : '', views ? `${eyeIcon}<span>${esc(views)} pembaca</span>` : ''].filter(Boolean).map((fact) => `<span class="spotlight__fact">${fact}</span>`).join('');
       }
       if (label) label.textContent = `#${index + 1}`;
       if (chapterBadge) chapterBadge.textContent = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || 'Chapter terbaru');

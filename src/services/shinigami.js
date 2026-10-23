@@ -217,7 +217,8 @@ const all = safe(async (query = '') => {
   }
   totalPage = Math.min(totalPage, 300);
 
-  const BATCH = 5;
+  // Ambil beberapa halaman sekaligus supaya detail tidak menunggu puluhan request serial.
+  const BATCH = 10;
   for (let start = 2; start <= totalPage; start += BATCH) {
     const pages = [];
     for (let p = start; p < start + BATCH && p <= totalPage; p += 1) pages.push(p);
@@ -234,7 +235,7 @@ const all = safe(async (query = '') => {
 async function scrapeSeriesPresentation(id) {
   const url = seriesUrl(id);
   return new Promise((resolve) => {
-    const req = https.get(url, { headers: DEFAULT_HEADERS, timeout: 9000 }, (res) => {
+    const req = https.get(url, { headers: DEFAULT_HEADERS, timeout: 1200 }, (res) => {
       if (res.statusCode < 200 || res.statusCode >= 300) {
         res.resume();
         resolve({ banner: null, ogImage: null });
@@ -306,19 +307,24 @@ async function fetchAllChapters(mangaId) {
       const cid = ch.chapter_id;
       if (!cid || seen.has(cid)) continue;
       seen.add(cid);
-      const num = ch.chapter_number;
-      const extra = (ch.chapter_title || '').trim();
-      // Judul jelas: "Chapter 12" atau "Chapter 12: Title"
-      let title = `Chapter ${num}`;
-      if (extra && extra.toLowerCase() !== String(num).toLowerCase() && !/^ch(apter)?\s*\.?\s*\d+/i.test(extra)) {
-        title = `Chapter ${num}: ${extra}`;
-      }
+      const num = ch.chapter_number ?? '?';
+      const extra = String(ch.chapter_title || ch.title || '').trim();
+      // Rapikan judul dari API: selalu tampilkan nomor chapter dan pertahankan nama aslinya.
+      const cleanedExtra = extra
+        .replace(/^chapter\s*\d+(?:\s*[:.-]\s*)?/i, '')
+        .replace(/^ch\.?\s*\d+(?:\s*[:.-]\s*)?/i, '')
+        .trim();
+      const title = cleanedExtra && cleanedExtra.toLowerCase() !== String(num).toLowerCase()
+        ? `Chapter ${num}: ${cleanedExtra}`
+        : `Chapter ${num}`;
       all.push({
         title,
         chapter_number: num,
         url: chapterUrl(cid),
         chapter_id: cid,
-        release_date: ch.release_date,
+        release_date: ch.release_date || ch.created_at || ch.updated_at || null,
+        // Gunakan thumbnail asli chapter jika API menyediakannya.
+        thumbnail: ch.thumbnail_url || ch.thumbnail || ch.cover_image_url || ch.cover_url || ch.banner_image_url || ch.image_url || null,
       });
     }
     if (!batch.length) break;

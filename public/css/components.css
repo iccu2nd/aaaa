@@ -477,3 +477,17 @@
   background: var(--fill) !important;
   border: none !important;
 }
+
+/* Metadata icon alignment: consistent, accessible, and responsive. */
+.meta-icon,
+.spotlight__fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.meta-icon svg,
+.spotlight__fact svg {
+  flex: 0 0 auto;
+  display: block;
+}

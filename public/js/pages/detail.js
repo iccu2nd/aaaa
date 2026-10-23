@@ -30,12 +30,13 @@ export async function detail({ root, alive }, url) {
   if (!alive()) return;
 
   const seriesUrl = d.url || url;
-  state.series = { url: seriesUrl, title: d.title, poster: d.poster, chapters: d.chapters };
-  // Chapter 1 = nomor terkecil (bukan asumsi urutan array)
-  const byNum = [...(d.chapters || [])].sort(
+  const chapters = Array.isArray(d.chapters) ? d.chapters : [];
+  state.series = { url: seriesUrl, title: d.title, poster: d.poster, chapters };
+  // Chapter 1 = nomor terkecil, tidak bergantung pada urutan respons API.
+  const byNum = [...chapters].sort(
     (a, b) => Number(a.chapter_number || 0) - Number(b.chapter_number || 0),
   );
-  const first = byNum[0] || d.chapters[d.chapters.length - 1];
+  const first = byNum[0] || null;
   const resume = history.lastFor(seriesUrl);
   const readSet = history.readChapters(seriesUrl);
   const item = { url: seriesUrl, title: d.title, poster: d.poster, meta: `${d.total_chapters} chapter` };
@@ -54,7 +55,7 @@ export async function detail({ root, alive }, url) {
 
   const letter = (d.title || 'K').charAt(0).toUpperCase();
   let order = getSort(); // desc = terbaru dulu (default)
-  const sorted = () => (order === 'desc' ? d.chapters.slice() : d.chapters.slice().reverse());
+  const sorted = () => (order === 'desc' ? chapters.slice() : chapters.slice().reverse());
 
   const dlBtn = (c) => {
     const done = isDownloaded(c.url);
@@ -64,11 +65,16 @@ export async function detail({ root, alive }, url) {
 
   const rowHtml = (c) => {
     const time = relative(c.release_date);
-    return `<div class="ch-row${readSet.has(c.url) ? ' is-read' : ''}" data-ch="${esc(c.title)}">
+    const rawTitle = String(c.title || '').trim();
+    const number = c.chapter_number ?? rawTitle.match(/\d+(?:\.\d+)?/)?.[0] ?? '?';
+    const chapterTitle = rawTitle && /^chapter\s*\d+/i.test(rawTitle)
+      ? rawTitle
+      : `Chapter ${number}${rawTitle && !/^ch(?:apter)?\s*\d+$/i.test(rawTitle) && rawTitle !== String(number) ? `: ${rawTitle}` : ''}`;
+    return `<div class="ch-row${readSet.has(c.url) ? ' is-read' : ''}" data-ch="${esc(chapterTitle)}">
       <a class="ch-row__link" href="${link('read', c.url)}">
         ${thumbBox(c.url, letter, c.thumbnail)}
         <div class="ch-row__info">
-          <div class="ch-row__name">${esc(c.title)}</div>
+          <div class="ch-row__name">${esc(chapterTitle)}</div>
           ${time ? `<div class="ch-row__time">${esc(time)}</div>` : ''}
         </div>
       </a>
@@ -113,7 +119,7 @@ export async function detail({ root, alive }, url) {
             ${Array.isArray(d.types) && d.types.length ? `<div class="detail__row">Tipe: ${esc(d.types.join(', '))}</div>` : ''}
             ${rate ? `<div class="detail__row">Rating ${esc(rate)}</div>` : ''}
             ${d.views != null ? `<div class="detail__row">Total pembaca: ${esc(Number(d.views).toLocaleString('id-ID'))}</div>` : ''}
-            <div class="detail__row">${d.total_chapters || 0} chapter${status ? ' · ' + esc(status) : ''}</div>
+            <div class="detail__row">${Number(d.total_chapters ?? chapters.length).toLocaleString('id-ID')} chapter${status ? ' · ' + esc(status) : ''}</div>
           </div>
         </div>
 
@@ -132,7 +138,7 @@ export async function detail({ root, alive }, url) {
 
         <div class="detail__chapters-head">
           <h2>Chapters</h2>
-          <span style="font-size:12px;color:var(--dim)">${d.total_chapters || 0}</span>
+          <span style="font-size:12px;color:var(--dim)">${Number(d.total_chapters ?? chapters.length).toLocaleString('id-ID')}</span>
         </div>
         <div class="detail__ch-search">
           <label class="ch-search">
@@ -210,7 +216,8 @@ export async function detail({ root, alive }, url) {
 
   const renderList = () => {
     if (io) io.disconnect();
-    list.innerHTML = sorted().map(rowHtml).join('');
+    const rows = sorted();
+    list.innerHTML = rows.length ? rows.map(rowHtml).join('') : '<div class="detail-empty" role="status">Belum ada chapter yang tersedia.</div>';
     applyFilter();
     io = watchThumbs(list, alive);
   };
