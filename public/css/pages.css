@@ -1775,3 +1775,13 @@ body.is-detail .detail__body {
 @media (prefers-reduced-motion: reduce) {
   .spotlight__bg, .spotlight__poster img, .spotlight__title, .spotlight__desc, .spotlight__dots i { transition: none !important; }
 }
+
+/* Home: Update and recommendation rails align with section headings; Continue reading stays full-bleed. */
+.rail--inset {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}

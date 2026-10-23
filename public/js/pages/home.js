@@ -24,6 +24,27 @@ function continueCard(h) {
     </a>`;
 }
 
+function getRating(item) {
+  const raw = item?.user_rate ?? item?.rating ?? item?.rate ?? item?.score ?? item?.rating_score;
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value.toFixed(1).replace(/\.0$/, '') : '';
+}
+
+function formatUpdateTime(raw) {
+  if (raw == null || raw === '') return '';
+  const value = String(raw).trim();
+  // Jangan tampilkan timestamp ISO mentah dari API.
+  if (!/[Tt]\d{2}:\d{2}|Z$|[+-]\d{2}:?\d{2}$/.test(value)) return value;
+  const t = Date.parse(value);
+  if (!Number.isFinite(t)) return '';
+  const sec = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (sec < 60) return 'baru saja';
+  if (sec < 3600) return `${Math.floor(sec / 60)} menit lalu`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)} jam lalu`;
+  if (sec < 604800) return `${Math.floor(sec / 86400)} hari lalu`;
+  return new Date(t).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 function getViews(item) {
   const raw = item?.views ?? item?.view_count ?? item?.views_count ?? item?.total_views ?? item?.reader_count ?? item?.viewers;
   const value = Number(raw);
@@ -33,8 +54,8 @@ function getViews(item) {
 
 function updateCard(item) {
   const ch = item.chapters?.[0]?.chapter || item.chapter || (item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : '');
-  const time = item.chapters?.[0]?.time || item.latest_chapter_time || '';
-  const rate = Number(item.user_rate) > 0 ? Number(item.user_rate).toFixed(1).replace(/\.0$/, '') : '';
+  const time = formatUpdateTime(item.chapters?.[0]?.time || item.latest_chapter_time || '');
+  const rate = getRating(item);
   const views = getViews(item);
   return `
     <a class="rail-card" href="${link('detail', item.url)}">
@@ -55,7 +76,7 @@ function updateCard(item) {
 function spotlight(item) {
   if (!item) return '';
   const blurb = item.status || (item.meta || '').split(' · ')[0] || 'Pilihan untukmu';
-  const rate = Number(item.user_rate) > 0 ? Number(item.user_rate).toFixed(1).replace(/\.0$/, '') : '';
+  const rate = getRating(item);
   const chapter = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || '');
   const views = getViews(item);
   const facts = [rate ? `★ ${rate}` : '', chapter, views ? `👁 ${views} pembaca` : ''].filter(Boolean);
@@ -133,14 +154,14 @@ export async function home({ root, alive }) {
   // Rekomendasi: katalog lebar, beda dari update, diacak biar segar
   const updateUrls = new Set(updateRail.map((x) => x.url));
   const catalog = [
+    ...(Array.isArray(popular) ? popular : []),
     ...(Array.isArray(explore1?.items) ? explore1.items : []),
     ...(Array.isArray(explore2?.items) ? explore2.items : []),
-    ...(Array.isArray(popular) ? popular : []),
   ].map(normalize);
 
-  let rekomendasi = dedupeByUrl(catalog).filter((x) => x?.url && x?.poster && !updateUrls.has(x.url));
+  let rekomendasi = mergeByUrl(catalog).filter((x) => x?.url && x?.poster && !updateUrls.has(x.url));
   if (rekomendasi.length < 48) {
-    rekomendasi = dedupeByUrl([...rekomendasi, ...(popular || []).map(normalize)]);
+    rekomendasi = mergeByUrl([...rekomendasi, ...(popular || []).map(normalize)]);
   }
   rekomendasi = shuffle(rekomendasi);
   // 6 layer × ~12 judul
@@ -163,7 +184,7 @@ export async function home({ root, alive }) {
   const recRails = layerTitles.map((title, i) => {
     const slice = rekomendasi.slice(i * PER_LAYER, (i + 1) * PER_LAYER);
     if (!slice.length) return '';
-    return rail(title, `<div class="rail">${slice.map(updateCard).join('')}</div>`, i === 0 ? '/search' : '');
+    return rail(title, `<div class="rail rail--inset">${slice.map(updateCard).join('')}</div>`, i === 0 ? '/search' : '');
   }).join('');
 
   const feature = (popular && popular[0]) || rekomendasi[0] || updateRail[0];
@@ -174,7 +195,7 @@ export async function home({ root, alive }) {
   root.innerHTML = `
     ${spotlight(feature)}
     ${hist.length ? rail('Continue reading', contHtml, '/library') : ''}
-    ${rail('Update', `<div class="rail">${updateRail.map(updateCard).join('')}</div>`, '/update')}
+    ${rail('Update', `<div class="rail rail--inset">${updateRail.map(updateCard).join('')}</div>`, '/update')}
     ${recRails}
   `;
 
@@ -230,7 +251,7 @@ function startSpotlightRotation(items, root, alive) {
       if (title) title.textContent = item.title || '';
       if (desc) desc.textContent = item.status || (item.meta || '').split(' · ')[0] || 'Pilihan untukmu';
       if (factsEl) {
-        const rate = Number(item.user_rate) > 0 ? Number(item.user_rate).toFixed(1).replace(/\.0$/, '') : '';
+        const rate = getRating(item);
         const chapter = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || '');
         const views = getViews(item);
         factsEl.innerHTML = [rate ? `★ ${rate}` : '', chapter, views ? `👁 ${views} pembaca` : ''].filter(Boolean).map((fact) => `<span>${esc(fact)}</span>`).join('');
@@ -266,4 +287,22 @@ function dedupeByUrl(list) {
     out.push(x);
   }
   return out;
+}
+
+// Pertahankan metadata terlengkap saat judul sama datang dari beberapa endpoint.
+function mergeByUrl(list) {
+  const byUrl = new Map();
+  for (const item of list) {
+    if (!item?.url) continue;
+    const prior = byUrl.get(item.url);
+    if (!prior) { byUrl.set(item.url, { ...item }); continue; }
+    const merged = { ...item, ...prior };
+    for (const key of ['user_rate', 'rating', 'rate', 'score', 'latest_chapter', 'latest_chapter_time', 'views', 'view_count', 'views_count', 'total_views', 'reader_count', 'viewers', 'chapter', 'chapters', 'poster', 'status']) {
+      const value = prior[key];
+      const empty = value == null || value === '' || (typeof value === 'number' && value <= 0) || (Array.isArray(value) && value.length === 0);
+      if (empty && item[key] != null && item[key] !== '' && !(Array.isArray(item[key]) && item[key].length === 0)) merged[key] = item[key];
+    }
+    byUrl.set(item.url, merged);
+  }
+  return [...byUrl.values()];
 }
