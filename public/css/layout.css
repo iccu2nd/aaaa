@@ -318,3 +318,41 @@ body:not(.is-reader) #app { padding-top: max(12px, env(safe-area-inset-top)); }
 #app {
   padding-top: 12px !important;
 }
+
+
+/* Topbar: brand + icon actions (no search field) */
+.topbar__inner {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 10px 0 12px !important;
+}
+.topbar__brand {
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.04em;
+  color: var(--white);
+}
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.topbar__icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: var(--white);
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+.topbar__icon:hover,
+.topbar__icon:active {
+  background: rgba(255,255,255,0.08);
+}
+.topbar-search { display: none !important; }

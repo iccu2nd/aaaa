@@ -51,8 +51,9 @@ router.get('/explore', async (req, res) => {
         const itemGenres = Array.isArray(item.genres)
           ? item.genres.map((g) => String(g).toLocaleLowerCase('id-ID'))
           : [];
-        // OR: cocok jika punya salah satu genre yang dipilih
-        return genres.some((g) => itemGenres.includes(g));
+        // AND: satu komik harus memuat SEMUA genre yang dipilih
+        // (mis. Action + Romance → hanya judul yang punya keduanya)
+        return genres.every((g) => itemGenres.includes(g));
       })
     : full.data;
   res.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');

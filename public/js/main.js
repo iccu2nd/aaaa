@@ -30,13 +30,10 @@ if ('serviceWorker' in navigator) {
 
 initChrome();
 
-/* Topbar search selalu terlihat → /search?q= */
-const topForm = document.getElementById('topbar-search');
-const topInput = document.getElementById('topbar-search-input');
-if (topForm && topInput) {
-  topForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const q = topInput.value.trim();
-    navigate(q ? '/search?q=' + encodeURIComponent(q) : '/search');
+const notifBtn = document.getElementById('topbar-notif');
+if (notifBtn) {
+  notifBtn.addEventListener('click', () => {
+    // placeholder — bisa dihubungkan ke feed notifikasi nanti
+    notifBtn.classList.toggle('is-on');
   });
 }

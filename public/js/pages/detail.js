@@ -72,8 +72,8 @@ export async function detail({ root, alive }, url) {
     </div>`;
   };
 
-  const sortLabel = () => (order === 'desc' ? 'Terbaru' : 'Terlama');
-  const sortIcon = () => (order === 'desc' ? ico.arrowDown() : ico.arrowUp());
+  // desc = terbaru dulu → chevron bawah; asc = terlama dulu → chevron atas
+  const sortIcon = () => (order === 'desc' ? ico.chevronDown() : ico.chevronUp());
 
   root.innerHTML = `
     <article class="detail">
@@ -124,10 +124,10 @@ export async function detail({ root, alive }, url) {
             ${ico.search(16)}
             <input type="search" id="ch-filter" placeholder="Cari chapter…" autocomplete="off">
           </label>
-          <button type="button" class="ch-tool" id="ch-sort" aria-label="Urutkan chapter" title="Urutkan">
-            ${sortIcon()}<span>${sortLabel()}</span>
+          <button type="button" class="ch-tool ch-tool--round" id="ch-sort" aria-label="Urutkan chapter" title="Urutkan">
+            ${sortIcon()}
           </button>
-          <button type="button" class="ch-tool ch-tool--icon" id="ch-dl-all" aria-label="Unduh semua chapter" title="Unduh semua">
+          <button type="button" class="ch-tool ch-tool--round" id="ch-dl-all" aria-label="Unduh semua chapter" title="Unduh semua">
             ${ico.downloadAll()}
           </button>
         </div>
@@ -196,7 +196,7 @@ export async function detail({ root, alive }, url) {
   sortBtn.addEventListener('click', () => {
     order = order === 'desc' ? 'asc' : 'desc';
     setSort(order);
-    sortBtn.innerHTML = `${sortIcon()}<span>${sortLabel()}</span>`;
+    sortBtn.innerHTML = sortIcon();
     renderList();
   });
   filter.addEventListener('input', applyFilter);

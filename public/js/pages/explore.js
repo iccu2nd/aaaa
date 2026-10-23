@@ -29,13 +29,12 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
   root.innerHTML = `
     <section class="section search-page">
       <div class="search-tools">
-        <form class="search-tools__form ${q ? 'is-open' : ''}" id="explore-search-form" role="search">
+        <form class="search-tools__form is-open" id="explore-search-form" role="search">
           <input id="explore-search-input" type="search" placeholder="Cari judul manhwa…" autocomplete="off" value="${esc(q)}" aria-label="Cari judul manhwa">
           <button type="button" id="search-clear" aria-label="Hapus pencarian" ${q ? '' : 'hidden'}>${icon('close')}</button>
         </form>
         <button class="search-tools__icon ${currentGenres.length ? 'is-active' : ''}" id="genre-open" type="button" aria-label="Filter genre" aria-expanded="false">${icon('filter')}</button>
-        <button class="search-tools__icon" id="sort-toggle" type="button" aria-label="Urutkan judul" title="Urutkan judul">${icon('sort')}</button>
-        <button class="search-tools__icon" id="search-expand" type="button" aria-label="Buka pencarian" aria-expanded="${!!q}">${icon('search')}</button>
+        <button class="search-tools__icon" id="sort-toggle" type="button" aria-label="Urutkan judul" title="Urutkan">${icon('sort')}</button>
       </div>
       <div class="search-active-filter" id="search-active-filter" ${currentGenres.length ? '' : 'hidden'}><span>${esc(currentGenres.join(', '))}</span><button id="genre-remove" type="button" aria-label="Hapus filter genre">${icon('close')}</button></div>
       <div class="section__head search-page__heading"><h1 id="search-title">${esc(title())}</h1><span class="section__count" id="ex-count"></span></div>
@@ -45,7 +44,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
     <div class="genre-sheet-backdrop" id="genre-backdrop" hidden></div>
     <section class="genre-sheet" id="genre-sheet" role="dialog" aria-modal="true" aria-label="Filter genre" hidden>
       <div class="genre-sheet__handle"></div>
-      <div class="genre-sheet__head"><h2>Genre</h2><button type="button" id="genre-close" aria-label="Tutup filter">${icon('close')}</button></div>
+      <div class="genre-sheet__head"><div><h2>Genre</h2><p class="genre-sheet__hint">Pilih 2+ genre: hanya komik yang punya semua genre itu</p></div><button type="button" id="genre-close" aria-label="Tutup filter">${icon('close')}</button></div>
       <div class="genre-sheet__chips" id="genre-chips">${[...new Set(GENRES)].map((g) => {
         const on = currentGenres.some((x) => x.toLowerCase() === g.toLowerCase());
         return `<button type="button" class="genre-chip ${on ? 'is-selected' : ''}" data-genre="${esc(g)}" aria-pressed="${on}">${esc(g)}</button>`;
@@ -55,7 +54,6 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
 
   const searchInput = root.querySelector('#explore-search-input');
   const searchForm = root.querySelector('#explore-search-form');
-  const searchExpand = root.querySelector('#search-expand');
   const searchClear = root.querySelector('#search-clear');
   const grid = root.querySelector('#ex-grid');
   const end = root.querySelector('#ex-end');
@@ -91,11 +89,6 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
     root.querySelector('#genre-open').classList.toggle('is-active', currentGenres.length > 0);
   };
 
-  searchExpand.addEventListener('click', () => {
-    const opened = searchForm.classList.toggle('is-open');
-    searchExpand.setAttribute('aria-expanded', String(opened));
-    if (opened) searchInput.focus();
-  });
   searchForm.addEventListener('submit', (e) => { e.preventDefault(); currentQuery = searchInput.value.trim(); navigate(); });
   searchInput.addEventListener('input', () => { searchClear.hidden = !searchInput.value; });
   searchClear.addEventListener('click', () => { searchInput.value = ''; searchClear.hidden = true; currentQuery = ''; navigate(); });
@@ -156,7 +149,6 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
   }
 
   // Preserve filter and search state when entering through a genre link.
-  if (q) { searchForm.classList.add('is-open'); searchExpand.setAttribute('aria-expanded', 'true'); searchClear.hidden = false; }
   updateTitle();
   await loadResults();
 }

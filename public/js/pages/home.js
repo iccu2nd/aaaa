@@ -48,15 +48,22 @@ function spotlight(item) {
       <div class="spotlight__fade"></div>
       <div class="spotlight__content">
         <div class="spotlight__copy">
-          <span class="spotlight__label" data-spotlight-label>#1 Spotlight</span>
+          <div class="spotlight__meta-row">
+            <span class="spotlight__badge">Spotlight</span>
+            <span class="spotlight__label" data-spotlight-label>#1</span>
+          </div>
           <h1 class="spotlight__title">${esc(item.title)}</h1>
           <p class="spotlight__desc">${esc(blurb)}</p>
+          <span class="spotlight__cta">Baca sekarang</span>
         </div>
         <div class="spotlight__art">
-          <div class="spotlight__phone">
+          <div class="spotlight__poster">
             <img src="${esc(img(item.poster))}" alt="">
           </div>
         </div>
+      </div>
+      <div class="spotlight__dots" data-spotlight-dots aria-hidden="true">
+        <i class="is-on"></i><i></i><i></i>
       </div>
     </a>`;
 }
@@ -137,24 +144,24 @@ function startSpotlightRotation(items, root, alive) {
     index = (index + 1) % items.length;
     const item = items[index];
     const bg = hero.querySelector('.spotlight__bg');
-    const cover = hero.querySelector('.spotlight__phone img');
+    const cover = hero.querySelector('.spotlight__poster img');
     const title = hero.querySelector('.spotlight__title');
     const desc = hero.querySelector('.spotlight__desc');
+    const label = hero.querySelector('.spotlight__label');
+    const dots = hero.querySelectorAll('[data-spotlight-dots] i');
     hero.classList.add('is-changing');
-    // Decode the next cover before switching to avoid flashing an empty image.
     const nextUrl = img(item.poster);
     const preload = new Image();
     preload.onload = () => {
       if (!alive() || !root.contains(hero)) return;
       hero.href = link('detail', item.url);
       hero.setAttribute('aria-label', `Lihat ${item.title}`);
-      bg.style.backgroundImage = `url("${nextUrl.replace(/["\\]/g, '')}")`;
-      cover.src = nextUrl;
-      cover.alt = item.title || '';
-      title.textContent = item.title || '';
-      desc.textContent = item.meta || item.chapter || 'Rekomendasi pilihan untukmu.';
-      const label = hero.querySelector('.spotlight__label');
-      if (label) label.textContent = `#${index + 1} Spotlight`;
+      if (bg) bg.style.backgroundImage = `url("${nextUrl.replace(/["\\]/g, '')}")`;
+      if (cover) { cover.src = nextUrl; cover.alt = item.title || ''; }
+      if (title) title.textContent = item.title || '';
+      if (desc) desc.textContent = item.meta || item.chapter || 'Rekomendasi pilihan untukmu.';
+      if (label) label.textContent = `#${index + 1}`;
+      dots.forEach((d, i) => d.classList.toggle('is-on', i === index));
       hero.classList.remove('is-changing');
     };
     preload.onerror = () => hero.classList.remove('is-changing');
