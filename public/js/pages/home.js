@@ -89,10 +89,11 @@ export async function home({ root, alive }) {
       ${rail('Update', skeletonGrid(6))}
     </div>`;
 
-  const [popular, updates, explore] = await Promise.all([
+  const [popular, updates, explore1, explore2] = await Promise.all([
     api('/api/home'),
     api('/api/update').catch(() => []),
-    api('/api/explore?q=&genre=&page=1&size=80').catch(() => ({ items: [] })),
+    api('/api/explore?q=&genre=&page=1&size=60').catch(() => ({ items: [] })),
+    api('/api/explore?q=&genre=&page=2&size=60').catch(() => ({ items: [] })),
   ]);
   if (!alive()) return;
 
@@ -113,16 +114,38 @@ export async function home({ root, alive }) {
   // Rekomendasi: katalog lebar, beda dari update, diacak biar segar
   const updateUrls = new Set(updateRail.map((x) => x.url));
   const catalog = [
-    ...(Array.isArray(explore?.items) ? explore.items : []),
+    ...(Array.isArray(explore1?.items) ? explore1.items : []),
+    ...(Array.isArray(explore2?.items) ? explore2.items : []),
     ...(Array.isArray(popular) ? popular : []),
   ].map(normalize);
 
   let rekomendasi = dedupeByUrl(catalog).filter((x) => x?.url && x?.poster && !updateUrls.has(x.url));
-  // kalau setelah difilter masih tipis, isi dari popular yang tersisa
-  if (rekomendasi.length < 16) {
+  if (rekomendasi.length < 48) {
     rekomendasi = dedupeByUrl([...rekomendasi, ...(popular || []).map(normalize)]);
   }
-  rekomendasi = shuffle(rekomendasi).slice(0, 48);
+  rekomendasi = shuffle(rekomendasi);
+  // 6 layer × ~12 judul
+  const REC_LAYERS = 6;
+  const PER_LAYER = 12;
+  const need = REC_LAYERS * PER_LAYER;
+  while (rekomendasi.length < need && rekomendasi.length > 0) {
+    rekomendasi = rekomendasi.concat(shuffle(rekomendasi.slice(0, PER_LAYER)));
+  }
+  rekomendasi = rekomendasi.slice(0, need);
+
+  const layerTitles = [
+    'Rekomendasi',
+    'Untukmu',
+    'Populer minggu ini',
+    'Pilihan editor',
+    'Mirip yang kamu baca',
+    'Jelajah lainnya',
+  ];
+  const recRails = layerTitles.map((title, i) => {
+    const slice = rekomendasi.slice(i * PER_LAYER, (i + 1) * PER_LAYER);
+    if (!slice.length) return '';
+    return rail(title, `<div class="rail">${slice.map(updateCard).join('')}</div>`, i === 0 ? '/search' : '');
+  }).join('');
 
   const feature = (popular && popular[0]) || rekomendasi[0] || updateRail[0];
   const contHtml = hist.length
@@ -133,7 +156,7 @@ export async function home({ root, alive }) {
     ${spotlight(feature)}
     ${hist.length ? rail('Continue reading', contHtml, '/library') : ''}
     ${rail('Update', `<div class="rail">${updateRail.map(updateCard).join('')}</div>`, '/update')}
-    ${rail('Rekomendasi', `<div class="rail">${rekomendasi.map(updateCard).join('')}</div>`, '/search')}
+    ${recRails}
   `;
 
   // Spotlight: prioritaskan popular, fallback rekomendasi (bukan update saja)
