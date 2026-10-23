@@ -245,7 +245,7 @@
   border-radius: var(--radius-sm);
   color: var(--dim);
 }
-.ch-search:focus-within { border-color: rgba(91, 141, 239, 0.5); }
+.ch-search:focus-within { border-color: rgba(91, 154, 139, 0.5); }
 .ch-search input {
   flex: 1;
   min-width: 0;
@@ -274,7 +274,7 @@
 }
 .ch-tool--icon { padding: 0; }
 .ch-tool:hover { background: var(--char); }
-.ch-tool.is-busy { color: var(--red); border-color: rgba(91, 141, 239, 0.5); }
+.ch-tool.is-busy { color: var(--red); border-color: rgba(91, 154, 139, 0.5); }
 .ch-tool__count { font-size: 11px; font-weight: 600; }
 
 .section__count { font-size: 12px; color: var(--dim); }
@@ -416,7 +416,7 @@
 }
 .btn--brand {
   background: var(--accent) !important;
-  box-shadow: 0 6px 20px rgba(91, 141, 239, 0.28);
+  box-shadow: 0 6px 20px rgba(91, 154, 139, 0.28);
 }
 .btn--pill {
   border-radius: 999px !important;
