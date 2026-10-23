@@ -467,14 +467,3 @@ body.is-library .topbar,
 body.is-profile .topbar {
   display: none !important;
 }
-
-
-/* RiMwa brand mark: compact, crisp and unobtrusive on mobile and desktop. */
-.topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:4px var(--page-x); }
-.brand-home { display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; flex:0 0 48px; overflow:hidden; }
-.brand-home img { display:block; width:46px; height:46px; object-fit:contain; }
-.topbar__actions { margin-left:auto; }
-@media (min-width: 700px) {
-  .brand-home { width:58px; height:54px; flex-basis:58px; }
-  .brand-home img { width:52px; height:52px; }
-}
