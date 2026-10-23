@@ -467,7 +467,7 @@
 }
 .genre-chip.is-selected {
   background: var(--accent) !important;
-  color: #fff !important;
+  color: var(--white) !important;
   box-shadow: none !important;
   border: none !important;
 }

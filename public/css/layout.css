@@ -444,7 +444,7 @@ body.is-search #app {
   height: 40px;
   display: grid;
   place-items: center;
-  color: #fff;
+  color: var(--white);
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;

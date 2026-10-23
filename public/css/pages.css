@@ -905,7 +905,7 @@
 }
 .reader__bottom .reader__icon { width: clamp(40px, 11vw, 48px); height: clamp(40px, 11vw, 48px); }
 .reader__bottom .reader__icon.is-active { color: var(--accent); background: rgba(91, 154, 139,.16); border-color: rgba(91, 154, 139,.35); }
-.reader__autoscroll { color: #fff; }
+.reader__autoscroll { color: var(--white); }
 .reader__autoscroll.is-active { color: var(--accent); background: rgba(91, 154, 139,.18); border-color: rgba(91, 154, 139,.4); }
 .reader-settings {
   position: fixed; z-index: 65; left: 12px; right: 12px;
@@ -979,7 +979,7 @@
 .genre-sheet__head button { display:grid; place-items:center; width:36px; height:36px; color:var(--muted); }
 .genre-sheet__chips { display:flex; flex-wrap:wrap; gap:8px; padding-bottom:20px; }
 .genre-chip { padding:7px 12px; border:1px solid #55555c; border-radius:999px; color:#b9b9c0; background:#29292d; font-size:12px; white-space:nowrap; }
-.genre-chip.is-selected /* multi */ { color:#fff; border-color:var(--accent); background:rgba(91, 154, 139,.16); }
+.genre-chip.is-selected /* multi */ { color: var(--white); border-color:var(--accent); background:rgba(91, 154, 139,.16); }
 .genre-sheet__actions { position:sticky; bottom:0; display:grid; grid-template-columns:1fr 1fr; gap:10px; padding-top:12px; background:#1b1b1e; }
 .text-action { color:var(--accent); font:inherit; }
 
@@ -1410,7 +1410,7 @@
   -webkit-backdrop-filter: blur(10px);
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: var(--white);
   letter-spacing: -0.01em;
 }
 .spotlight__art {

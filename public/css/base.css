@@ -7,9 +7,9 @@
   --line: rgba(84, 84, 88, 0.55);
 
   /* Type */
-  --white: #F5F5F7;
-  --muted: #A1A1A6;
-  --dim: #8E8E93;
+  --white: #E8E8EA;
+  --muted: #9A9A9F;
+  --dim: #7E7E84;
 
   /* Accent — soft teal (calm, not AI-slop) */
   --accent: #5B9A8B;
