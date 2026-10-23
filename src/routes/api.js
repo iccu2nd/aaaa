@@ -37,6 +37,7 @@ router.get(
 router.get('/explore', async (req, res) => {
   const q = String(req.query.q || '').trim().slice(0, 100);
   const genreRaw = String(req.query.genre || '').trim().slice(0, 200);
+  const format = String(req.query.format || '').trim().toLocaleLowerCase('id-ID').slice(0, 30);
   const genres = genreRaw
     .split(',')
     .map((g) => g.trim().toLocaleLowerCase('id-ID'))
@@ -46,7 +47,7 @@ router.get('/explore', async (req, res) => {
   const size = Math.min(200, Math.max(10, parseInt(req.query.size, 10) || EXPLORE_SIZE));
   const full = await loadAll(genres.length ? '' : q);
   if (!full || !full.status) return res.json(full || { status: false, message: 'Gagal memuat daftar' });
-  const list = genres.length
+  let list = genres.length
     ? full.data.filter((item) => {
         const itemGenres = Array.isArray(item.genres)
           ? item.genres.map((g) => String(g).toLocaleLowerCase('id-ID'))
@@ -55,7 +56,14 @@ router.get('/explore', async (req, res) => {
         // (mis. Action + Romance → hanya judul yang punya keduanya)
         return genres.every((g) => itemGenres.includes(g));
       })
-    : full.data;
+    : full.data.filter((item) => !q || String(item.title || '').toLocaleLowerCase('id-ID').includes(q.toLocaleLowerCase('id-ID')));
+  if (format) {
+    const supported = new Set(['manhwa', 'manhua', 'manga']);
+    if (supported.has(format)) list = list.filter((item) => {
+      const values = [item.format, item.formats, item.type].flatMap((v) => Array.isArray(v) ? v : [v]).filter(Boolean).map((v) => String(v).toLocaleLowerCase('id-ID'));
+      return values.some((v) => v.includes(format));
+    });
+  }
   res.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
   res.json({
     status: true,

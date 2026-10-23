@@ -13,17 +13,22 @@ const icon = (name) => ({
 })[name];
 const fmt = (n) => Number(n || 0).toLocaleString('id-ID');
 
-export async function explore({ root, alive }, q = '', genre = '', sortMode = 'popular') {
+export async function explore({ root, alive }, q = '', genre = '', sortMode = 'popular', format = '') {
   let currentQuery = q;
   let currentGenres = String(genre || '')
     .split(',')
     .map((g) => g.trim())
     .filter(Boolean);
   let sort = sortMode;
+  let currentFormat = String(format || '').trim().toLowerCase();
+  const FORMATS = ['manhwa', 'manhua', 'manga'];
   const genreKey = () => currentGenres.join(',');
-  const title = () => currentGenres.length
-    ? `Genre: ${currentGenres.join(', ')}`
-    : currentQuery ? 'Hasil pencarian' : 'Jelajahi manhwa';
+  const title = () => {
+    const filters = [];
+    if (currentGenres.length) filters.push(`Genre: ${currentGenres.join(', ')}`);
+    if (currentFormat) filters.push(`Format: ${currentFormat[0].toUpperCase()}${currentFormat.slice(1)}`);
+    return filters.length ? filters.join(' · ') : currentQuery ? 'Hasil pencarian' : 'Jelajahi komik';
+  };
   const apiUrl = (page) => `/api/explore?q=${encodeURIComponent(currentQuery)}&genre=${encodeURIComponent(genreKey())}&page=${page}&size=${SIZE}`;
 
   root.innerHTML = `
@@ -33,10 +38,10 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
           <input id="explore-search-input" type="search" placeholder="Cari judul manhwa…" autocomplete="off" value="${esc(q)}" aria-label="Cari judul manhwa">
           <button type="button" id="search-clear" aria-label="Hapus pencarian" ${q ? '' : 'hidden'}>${icon('close')}</button>
         </form>
-        <button class="search-tools__icon ${currentGenres.length ? 'is-active' : ''}" id="genre-open" type="button" aria-label="Filter genre" aria-expanded="false">${icon('filter')}</button>
+        <button class="search-tools__icon ${currentGenres.length || currentFormat ? 'is-active' : ''}" id="genre-open" type="button" aria-label="Filter genre" aria-expanded="false">${icon('filter')}</button>
         <button class="search-tools__icon" id="sort-toggle" type="button" aria-label="Urutkan judul" title="Urutkan">${icon('sort')}</button>
       </div>
-      <div class="search-active-filter" id="search-active-filter" ${currentGenres.length ? '' : 'hidden'}><span>${esc(currentGenres.join(', '))}</span><button id="genre-remove" type="button" aria-label="Hapus filter genre">${icon('close')}</button></div>
+      <div class="search-active-filter" id="search-active-filter" ${currentGenres.length || currentFormat ? '' : 'hidden'}><span>${esc([...currentGenres, ...(currentFormat ? [`Format: ${currentFormat}`] : [])].join(', '))}</span><button id="genre-remove" type="button" aria-label="Hapus semua filter">${icon('close')}</button></div>
       <div class="section__head search-page__heading"><h1 id="search-title">${esc(title())}</h1><span class="section__count" id="ex-count"></span></div>
       <div class="grid explore-grid" id="ex-grid">${'<div class="explore-skeleton loading-surface"></div>'.repeat(8)}</div>
       <div class="state" id="ex-end"></div>
@@ -44,7 +49,10 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
     <div class="genre-sheet-backdrop" id="genre-backdrop" hidden></div>
     <section class="genre-sheet" id="genre-sheet" role="dialog" aria-modal="true" aria-label="Filter genre" hidden>
       <div class="genre-sheet__handle"></div>
-      <div class="genre-sheet__head"><h2>Genre</h2><button type="button" id="genre-close" aria-label="Tutup filter">${icon('close')}</button></div>
+      <div class="genre-sheet__head"><h2>Filter komik</h2><button type="button" id="genre-close" aria-label="Tutup filter">${icon('close')}</button></div>
+      <div class="genre-sheet__head"><h2>Format</h2></div>
+      <div class="genre-sheet__chips" id="format-chips">${FORMATS.map((f) => `<button type="button" class="genre-chip ${currentFormat === f ? 'is-selected' : ''}" data-format="${f}" aria-pressed="${currentFormat === f}">${f[0].toUpperCase() + f.slice(1)}</button>`).join('')}<button type="button" class="genre-chip ${!currentFormat ? 'is-selected' : ''}" data-format="" aria-pressed="${!currentFormat}">Semua format</button></div>
+      <div class="genre-sheet__head"><h2>Genre</h2></div>
       <div class="genre-sheet__chips" id="genre-chips">${[...new Set(GENRES)].map((g) => {
         const on = currentGenres.some((x) => x.toLowerCase() === g.toLowerCase());
         return `<button type="button" class="genre-chip ${on ? 'is-selected' : ''}" data-genre="${esc(g)}" aria-pressed="${on}">${esc(g)}</button>`;
@@ -84,9 +92,10 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
   };
   const updateTitle = () => {
     heading.textContent = title();
-    activeFilter.hidden = !currentGenres.length;
-    activeFilter.querySelector('span').textContent = currentGenres.join(', ');
-    root.querySelector('#genre-open').classList.toggle('is-active', currentGenres.length > 0);
+    activeFilter.hidden = !currentGenres.length && !currentFormat;
+    activeFilter.querySelector('span').textContent = [...currentGenres, ...(currentFormat ? [`Format: ${currentFormat}`] : [])].join(', ');
+    root.querySelector('#genre-open').classList.toggle('is-active', currentGenres.length > 0 || Boolean(currentFormat));
+    root.querySelectorAll('[data-format]').forEach((b) => { const on = b.dataset.format === currentFormat; b.classList.toggle('is-selected', on); b.setAttribute('aria-pressed', String(on)); });
   };
 
   searchForm.addEventListener('submit', (e) => { e.preventDefault(); currentQuery = searchInput.value.trim(); navigate(); });
@@ -103,15 +112,17 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
     else draftGenres.push(name);
     paintChips();
   });
-  root.querySelector('#genre-reset').addEventListener('click', () => { draftGenres = []; paintChips(); });
+  root.querySelector('#format-chips').addEventListener('click', (e) => { const b = e.target.closest('[data-format]'); if (!b) return; currentFormat = b.dataset.format; updateTitle(); });
+  root.querySelector('#genre-reset').addEventListener('click', () => { draftGenres = []; currentFormat = ''; paintChips(); updateTitle(); });
   root.querySelector('#genre-apply').addEventListener('click', () => { currentGenres = [...draftGenres]; closeSheet(); navigate(); });
-  root.querySelector('#genre-remove').addEventListener('click', () => { currentGenres = []; navigate(); });
+  root.querySelector('#genre-remove').addEventListener('click', () => { currentGenres = []; currentFormat = ''; navigate(); });
   root.querySelector('#sort-toggle').addEventListener('click', () => { sort = sort === 'popular' ? 'title' : 'popular'; root.querySelector('#sort-toggle').classList.toggle('is-active', sort === 'title'); root.querySelector('#sort-toggle').title = sort === 'title' ? 'Urutan: judul' : 'Urutan: default'; navigate(); });
 
   function navigate() {
     const params = new URLSearchParams();
     if (currentQuery) params.set('q', currentQuery);
     if (currentGenres.length) params.set('genre', currentGenres.join(','));
+    if (currentFormat) params.set('format', currentFormat);
     if (sort === 'title') params.set('sort', 'title');
     const next = '/search' + (params.size ? '?' + params.toString() : '');
     const current = location.pathname + location.search;
@@ -123,7 +134,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'p
     requestId += 1; const myRequest = requestId;
     seen = new Set(); page = 0; pages = 1; loading = false;
     updateTitle(); grid.innerHTML = '<div class="explore-skeleton loading-surface"></div>'.repeat(8); end.textContent = '';
-    const url = (n) => `/api/explore?q=${encodeURIComponent(currentQuery)}&genre=${encodeURIComponent(genreKey())}&page=${n}&size=${SIZE}`;
+    const url = (n) => `/api/explore?q=${encodeURIComponent(currentQuery)}&genre=${encodeURIComponent(genreKey())}&format=${encodeURIComponent(currentFormat)}&page=${n}&size=${SIZE}`;
     try {
       const first = await api(url(1));
       if (!alive() || myRequest !== requestId) return;

@@ -491,3 +491,14 @@
   flex: 0 0 auto;
   display: block;
 }
+
+/* RiMwa catalog cards: slightly larger, clearer labels on phones and desktop. */
+.grid { gap: 11px; }
+.card__cover { aspect-ratio: 2.92 / 4; }
+.card__title { padding: 8px 8px 0; font-size: 12.5px; line-height: 1.4; }
+.card__meta { padding: 3px 8px 9px; font-size: 10.5px; line-height: 1.45; }
+@media (min-width: 600px) {
+  .grid { gap: 13px; }
+  .card__title { font-size: 13px; }
+  .card__meta { font-size: 11px; }
+}
