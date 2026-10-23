@@ -1,50 +1,71 @@
-const THRESHOLD = 10;
-const TOP_ZONE = 24;
+/**
+ * Show/hide topbar + bottom-nav on scroll (halaman utama).
+ * Reader/detail: chrome global sudah di-hide lewat body class.
+ */
+const topbar = () => document.getElementById('topbar');
+const bottomNav = () => document.getElementById('bottom-nav');
+
+let lastY = 0;
+let ticking = false;
+let enabled = true;
+
+function pageAllowsChromeScroll() {
+  const b = document.body;
+  return !b.classList.contains('is-reader') && !b.classList.contains('is-detail');
+}
+
+function setHidden(hidden) {
+  const t = topbar();
+  const n = bottomNav();
+  if (t) t.classList.toggle('is-hidden', hidden);
+  if (n) n.classList.toggle('is-hidden', hidden);
+  document.body.classList.toggle('chrome-collapsed', hidden);
+}
+
+function onScroll() {
+  if (!enabled || !pageAllowsChromeScroll()) {
+    setHidden(false);
+    return;
+  }
+  const y = window.scrollY || 0;
+  const delta = y - lastY;
+  // di puncak selalu tampil
+  if (y < 24) {
+    setHidden(false);
+    lastY = y;
+    return;
+  }
+  // scroll turun cukup → sembunyi; naik → muncul
+  if (delta > 8) setHidden(true);
+  else if (delta < -8) setHidden(false);
+  lastY = y;
+}
+
+function onScrollRaf() {
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => {
+    onScroll();
+    ticking = false;
+  });
+}
 
 export function initChrome() {
-  const topbar = document.getElementById('topbar');
-  const nav = document.getElementById('bottom-nav');
-  if (!topbar || !nav) return;
-
-  let lastY = window.scrollY;
-  let ticking = false;
-  let hidden = false;
-
-  const set = (value) => {
-    if (hidden === value) return;
-    hidden = value;
-    topbar.classList.toggle('is-hidden', value);
-    nav.classList.toggle('is-hidden', value);
-  };
-
-  const update = () => {
-    ticking = false;
-    const body = document.body;
-    if (body.classList.contains('is-reader') || body.classList.contains('is-detail')) {
-      lastY = window.scrollY;
-      set(false);
-      return;
-    }
-    const y = Math.max(0, window.scrollY);
-    const max = document.documentElement.scrollHeight - window.innerHeight;
-    const delta = y - lastY;
-    if (y <= TOP_ZONE || y >= max - 2) set(false);
-    else if (Math.abs(delta) >= THRESHOLD) set(delta > 0);
-    if (Math.abs(delta) >= THRESHOLD || y <= TOP_ZONE) lastY = y;
-  };
-
-  window.addEventListener('scroll', () => {
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(update);
-  }, { passive: true });
-
-  window.addEventListener('rimwa:chrome-reset', () => {
-    lastY = window.scrollY;
-    set(false);
+  lastY = window.scrollY || 0;
+  setHidden(false);
+  window.addEventListener('scroll', onScrollRaf, { passive: true });
+  window.addEventListener('rimwa:routechange', () => {
+    lastY = 0;
+    setHidden(false);
   });
-
-  document.addEventListener('focusin', (event) => {
-    if (event.target.closest?.('input, textarea')) set(false);
+  // pastikan class body berubah (reader/detail) → chrome reset
+  const obs = new MutationObserver(() => {
+    if (!pageAllowsChromeScroll()) setHidden(false);
   });
+  obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+}
+
+export function resetChrome() {
+  lastY = window.scrollY || 0;
+  setHidden(false);
 }

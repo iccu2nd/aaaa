@@ -59,7 +59,6 @@ async function runRoute({ scroll = false } = {}) {
   document.body.classList.toggle('is-detail', /^\/detail\//.test(pathname));
   markActive(pathname);
   if (scroll) window.scrollTo({ top: 0, behavior: 'auto' });
-  window.dispatchEvent(new Event('rimwa:chrome-reset'));
 
   const ctx = { root: rootElement, alive: () => token === current };
   for (const { pattern, handler } of routes) {
@@ -70,7 +69,7 @@ async function runRoute({ scroll = false } = {}) {
       await handler(ctx, ...params);
     } catch (error) {
       if (ctx.alive()) {
-        document.body.classList.remove('is-reader', 'is-detail');
+        document.body.classList.remove('is-reader');
         rootElement.innerHTML = `<div class="state state--error">${esc(error?.message || 'Terjadi kesalahan. Coba lagi.')}</div>`;
       }
     }
@@ -80,8 +79,17 @@ async function runRoute({ scroll = false } = {}) {
 }
 
 function markActive(pathname) {
-  const segment = (pathname.split('/')[1] || 'home').split('?')[0];
-  const active = segment === 'explore' ? 'search' : ['detail', 'read', 'update'].includes(segment) ? '' : segment;
+  const raw = (pathname.split('/')[1] || '').split('?')[0];
+  // Map route segment → data-nav id di bottom bar
+  let active = 'home';
+  if (!raw || raw === 'home') active = 'home';
+  else if (raw === 'search' || raw === 'explore') active = 'search';
+  else if (raw === 'library') active = 'library';
+  else if (raw === 'profile') active = 'profile';
+  else if (raw === 'update') active = ''; // tidak ada tab Update
+  else if (raw === 'detail' || raw === 'read') active = '';
+  else active = raw;
+
   document.querySelectorAll('[data-nav]').forEach((anchor) => {
     if (active && anchor.dataset.nav === active) anchor.setAttribute('aria-current', 'page');
     else anchor.removeAttribute('aria-current');

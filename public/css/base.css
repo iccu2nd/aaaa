@@ -10,11 +10,10 @@
   --accent: #E11D48;
   --accent-dim: #BE123C;
 
-  --glass: rgba(24, 24, 27, 0.55);
-  --glass-strong: rgba(14, 14, 16, 0.62);
+  --glass: rgba(14, 14, 16, 0.55);
+  --glass-strong: rgba(14, 14, 16, 0.78);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-hi: rgba(255, 255, 255, 0.05);
-  --glass-blur: 12px;
+  --glass-blur: 16px;
 
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px;
   --s5: 20px; --s6: 24px; --s8: 32px;
@@ -48,8 +47,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   padding-bottom: calc(var(--nav-h) + var(--safe-b));
 }
-body.is-reader,
-body.is-detail {
+body.is-reader {
   padding-bottom: 0;
 }
 
