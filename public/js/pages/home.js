@@ -93,9 +93,11 @@ function spotlight(item) {
           <h1 class="spotlight__title">${esc(item.title)}</h1>
           <p class="spotlight__desc">${esc(blurb)}</p>
           <div class="spotlight__facts">${facts.map((fact) => `<span>${esc(fact)}</span>`).join('')}</div>
-          <span class="spotlight__cta">Baca sekarang</span>
+          <span class="spotlight__cta">Baca sekarang <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </div>
         <div class="spotlight__art">
+          <i class="spotlight__ghost spotlight__ghost--b"></i>
+          <i class="spotlight__ghost spotlight__ghost--a"></i>
           <div class="spotlight__poster">
             <span class="spotlight__chapter" data-spotlight-chapter>${esc(chapter || 'Chapter terbaru')}</span>
             <img src="${esc(img(item.poster))}" alt="" decoding="async" fetchpriority="high">
