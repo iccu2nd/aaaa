@@ -3,7 +3,7 @@ import { bookmarks, history, libraryBackup } from '../store.js';
 export function profile({ root }) {
   root.innerHTML = `
     <section class="profile-page">
-      <img class="profile-page__logo" src="/icons/icon-192.png" width="88" height="88" alt="RiMwa">
+      <img class="profile-page__logo" src="/icons/rimwa-logo.png" width="88" height="88" alt="RiMwa">
       <h1>RiMwa</h1>
       <p class="profile-page__copy">Baca manhwa &amp; manga<br>cepat, rapi, bisa offline.</p>
       <div class="profile-page__stats">
