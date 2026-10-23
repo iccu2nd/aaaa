@@ -1418,6 +1418,7 @@
   width: min(34vw, 128px);
 }
 .spotlight__poster {
+  position: relative;
   width: 100%;
   aspect-ratio: 2 / 3;
   border-radius: 16px;
@@ -1428,9 +1429,31 @@
   transform-origin: center bottom;
 }
 .spotlight__poster img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  content-visibility: auto;
+}
+.spotlight__chapter {
+  position: absolute;
+  z-index: 2;
+  top: 9px;
+  left: 9px;
+  max-width: calc(100% - 18px);
+  padding: 5px 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 7px;
+  background: rgba(18,18,20,.88);
+  color: #F2F2F4;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .spotlight__dots {
   position: absolute;
@@ -1739,4 +1762,16 @@ body.is-detail .detail__body {
   .spotlight__content { gap: 10px; }
   .spotlight__art { width: min(36vw, 132px); }
   .spotlight__title { font-size: 22px !important; }
+}
+
+
+/* Mobile performance: avoid expensive blur/compositing while keeping the same dark look. */
+@media (max-width: 600px) {
+  .spotlight__bg { filter: brightness(.38); transform: none; transition: opacity .22s ease; }
+  .spotlight__poster { box-shadow: 0 6px 16px rgba(0,0,0,.28); }
+  .spotlight__poster img, .rail-card__cover img, .card__cover img { content-visibility: auto; }
+  .rail-card, .card, .spotlight { -webkit-tap-highlight-color: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spotlight__bg, .spotlight__poster img, .spotlight__title, .spotlight__desc, .spotlight__dots i { transition: none !important; }
 }

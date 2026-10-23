@@ -39,7 +39,7 @@ function updateCard(item) {
   return `
     <a class="rail-card" href="${link('detail', item.url)}">
       <div class="rail-card__cover">
-        <img loading="lazy" src="${esc(img(item.poster))}" alt="">
+        <img loading="lazy" decoding="async" src="${esc(img(item.poster))}" alt="">
         ${rate ? `<span class="rail-card__rate"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9L22 10l-5 4.7L18.2 22 12 18.2 5.8 22 7 14.7 2 10l7.1-1.1L12 2z"/></svg> ${esc(String(rate))}</span>` : ''}
       </div>
       <div class="rail-card__title">${esc(item.title)}</div>
@@ -76,7 +76,8 @@ function spotlight(item) {
         </div>
         <div class="spotlight__art">
           <div class="spotlight__poster">
-            <img src="${esc(img(item.poster))}" alt="">
+            <span class="spotlight__chapter" data-spotlight-chapter>${esc(chapter || 'Chapter terbaru')}</span>
+            <img src="${esc(img(item.poster))}" alt="" decoding="async" fetchpriority="high">
           </div>
         </div>
       </div>
@@ -110,8 +111,8 @@ export async function home({ root, alive }) {
   const [popular, updates, explore1, explore2] = await Promise.all([
     api('/api/home'),
     api('/api/update').catch(() => []),
-    api('/api/explore?q=&genre=&page=1&size=60').catch(() => ({ items: [] })),
-    api('/api/explore?q=&genre=&page=2&size=60').catch(() => ({ items: [] })),
+    api('/api/explore?q=&genre=&page=1&size=24').catch(() => ({ items: [] })),
+    api('/api/explore?q=&genre=&page=2&size=24').catch(() => ({ items: [] })),
   ]);
   if (!alive()) return;
 
@@ -215,6 +216,7 @@ function startSpotlightRotation(items, root, alive) {
     const desc = hero.querySelector('.spotlight__desc');
     const factsEl = hero.querySelector('.spotlight__facts');
     const label = hero.querySelector('.spotlight__label');
+    const chapterBadge = hero.querySelector('[data-spotlight-chapter]');
     const dots = hero.querySelectorAll('[data-spotlight-dots] i');
     hero.classList.add('is-changing');
     const nextUrl = img(item.poster);
@@ -234,6 +236,7 @@ function startSpotlightRotation(items, root, alive) {
         factsEl.innerHTML = [rate ? `★ ${rate}` : '', chapter, views ? `👁 ${views} pembaca` : ''].filter(Boolean).map((fact) => `<span>${esc(fact)}</span>`).join('');
       }
       if (label) label.textContent = `#${index + 1}`;
+      if (chapterBadge) chapterBadge.textContent = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || 'Chapter terbaru');
       dots.forEach((d, i) => d.classList.toggle('is-on', i === index));
       hero.classList.remove('is-changing');
     };
