@@ -2069,3 +2069,27 @@ body.is-detail .detail__body {
   .detail__title { font-size: 18px !important; }
   .detail__row { font-size: 11px !important; gap: 6px !important; }
 }
+
+/* iOS-inspired reader: unobtrusive floating controls, no blurred bars or panels. */
+.reader__top,
+.reader__bottom {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+.reader__top { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+.reader__bottom { padding-bottom: max(18px, env(safe-area-inset-bottom)); gap: clamp(8px, 3vw, 18px); }
+.reader__top .reader__icon,
+.reader__bottom .reader__icon { background: rgba(30,30,34,.45); border: 0 !important; box-shadow: none !important; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.reader-settings { background: rgba(24,24,28,.96); border: 0; box-shadow: 0 12px 40px rgba(0,0,0,.25); border-radius: 22px; }
+.reader-settings__directions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+.reader-settings__directions button { min-height: 40px; padding: 8px 6px; color: var(--muted); background: rgba(255,255,255,.06); border: 0; border-radius: 12px; font: inherit; font-size: 12px; }
+.reader-settings__directions button.is-selected { color: var(--white); background: rgba(255,255,255,.16); }
+.reader-settings__direction-title { margin-top: 18px; margin-bottom: 10px; }
+.reader__pages--horizontal { display: flex; width: 100%; max-width: none; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.reader__pages--horizontal::-webkit-scrollbar { display: none; }
+.reader__pages--horizontal .reader__page { flex: 0 0 100vw; width: 100vw; max-width: 100vw; max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); object-fit: contain; scroll-snap-align: start; }
+.spotlight__fact { padding: 0 !important; margin-right: 12px; background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; outline: 0 !important; }
+.spotlight__fact::before, .spotlight__fact::after { display: none !important; }

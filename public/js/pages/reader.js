@@ -100,8 +100,14 @@ export async function reader({ root, alive }, url) {
       <div class="reader-settings" id="reader-settings" hidden>
         <div class="reader-settings__title">Kecepatan auto-scroll</div>
         <div class="reader-settings__range-wrap">
-          <input id="reader-speed" class="reader-settings__range" type="range" min="0.5" max="1.5" step="0.05" value="1" aria-label="Kecepatan auto-scroll">
-          <div class="reader-settings__range-labels"><span>0.5×</span><output id="reader-speed-value" for="reader-speed">1.0×</output><span>1.5×</span></div>
+          <input id="reader-speed" class="reader-settings__range" type="range" min="0.5" max="2" step="0.05" value="1" aria-label="Kecepatan auto-scroll">
+          <div class="reader-settings__range-labels"><span>0.5×</span><output id="reader-speed-value" for="reader-speed">1.0×</output><span>2×</span></div>
+        </div>
+        <div class="reader-settings__title reader-settings__direction-title">Arah membaca</div>
+        <div class="reader-settings__directions" role="group" aria-label="Arah membaca">
+          <button type="button" data-reader-direction="down" class="is-selected">Bawah</button>
+          <button type="button" data-reader-direction="up">Atas</button>
+          <button type="button" data-reader-direction="horizontal">Kanan ke kiri</button>
         </div>
       </div>
 
@@ -162,8 +168,17 @@ export async function reader({ root, alive }, url) {
   let autoScrolling = false;
   const speedInput = document.getElementById('reader-speed');
   const speedValue = document.getElementById('reader-speed-value');
-  const initialSpeed = Math.min(1.5, Math.max(0.5, Number(localStorage.getItem('rimwa:auto-speed')) || 1));
+  const initialSpeed = Math.min(2, Math.max(0.5, Number(localStorage.getItem('rimwa:auto-speed')) || 1));
   let autoScrollSpeed = 60 * initialSpeed;
+  let readerDirection = localStorage.getItem('rimwa:reader-direction') || 'down';
+  const pageRail = document.getElementById('reader-pages');
+  const applyDirection = (direction) => {
+    readerDirection = direction;
+    pageRail.classList.toggle('reader__pages--horizontal', direction === 'horizontal');
+    document.querySelectorAll('[data-reader-direction]').forEach((b) => b.classList.toggle('is-selected', b.dataset.readerDirection === direction));
+    try { localStorage.setItem('rimwa:reader-direction', direction); } catch {}
+  };
+  applyDirection(readerDirection);
   let previousFrameTime = 0;
 
   if (speedInput) {
@@ -220,8 +235,16 @@ export async function reader({ root, alive }, url) {
     previousFrameTime = time;
     const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     if (maxY <= 0 || window.scrollY >= maxY - 2) { stopAutoScroll(); return; }
-    window.scrollBy(0, autoScrollSpeed * delta / 1000);
-    if (window.scrollY >= maxY - 2) { stopAutoScroll(); return; }
+    if (readerDirection === 'horizontal') {
+      const maxX = Math.max(0, pageRail.scrollWidth - pageRail.clientWidth);
+      if (pageRail.scrollLeft >= maxX - 2) { stopAutoScroll(); return; }
+      pageRail.scrollLeft += autoScrollSpeed * delta / 1000;
+    } else {
+      const direction = readerDirection === 'up' ? -1 : 1;
+      window.scrollBy(0, direction * autoScrollSpeed * delta / 1000);
+    }
+    if (readerDirection === 'up' && window.scrollY <= 2) { stopAutoScroll(); return; }
+    if (readerDirection === 'down' && window.scrollY >= maxY - 2) { stopAutoScroll(); return; }
     autoScrollFrame = requestAnimationFrame(autoScrollTick);
   };
   autoBtn.addEventListener('click', (e) => {
@@ -245,7 +268,7 @@ export async function reader({ root, alive }, url) {
   });
   if (speedInput) {
     speedInput.addEventListener('input', () => {
-      const multiplier = Math.min(1.5, Math.max(0.5, Number(speedInput.value) || 1));
+      const multiplier = Math.min(2, Math.max(0.5, Number(speedInput.value) || 1));
       autoScrollSpeed = 60 * multiplier;
       try { localStorage.setItem('rimwa:auto-speed', String(multiplier)); } catch { /* storage may be unavailable */ }
       const label = `${multiplier.toFixed(2).replace(/0$/, '')}×`;
@@ -261,6 +284,7 @@ export async function reader({ root, alive }, url) {
       }
     });
   }
+  document.querySelectorAll('[data-reader-direction]').forEach((button) => button.addEventListener('click', () => applyDirection(button.dataset.readerDirection)));
   document.getElementById('drawer-close').addEventListener('click', closeDrawer);
   document.getElementById('drawer-backdrop').addEventListener('click', closeDrawer);
 

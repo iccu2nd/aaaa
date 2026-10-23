@@ -117,7 +117,7 @@ export async function detail({ root, alive }, url) {
             ${Array.isArray(d.artists) && d.artists.length ? `<div class="detail__row">${ico.palette(14)}<span>Artist: ${esc(d.artists.join(', '))}</span></div>` : ''}
             ${Array.isArray(d.formats) && d.formats.length ? `<div class="detail__row">${ico.book(14)}<span>Format: ${esc(d.formats.join(', '))}</span></div>` : ''}
             ${rate ? `<div class="detail__row">${ico.star(14)}<span>Rating ${esc(rate)}</span></div>` : ''}
-            ${d.views != null ? `<div class="detail__row">${ico.eye(14)}<span>Total pembaca: ${esc(Number(d.views).toLocaleString('id-ID'))}</span></div>` : ''}
+            ${d.views != null ? `<div class="detail__row">${ico.eye(14)}<span>Views: ${esc(Number(d.views).toLocaleString('id-ID'))}</span></div>` : ''}
             <div class="detail__row">${ico.book(14)}<span>${Number(d.total_chapters ?? chapters.length).toLocaleString('id-ID')} chapter${status ? ' · ' + esc(status) : ''}</span></div>
           </div>
         </div>
