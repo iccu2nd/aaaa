@@ -89,30 +89,42 @@ export async function home({ root, alive }) {
       ${rail('Update', skeletonGrid(6))}
     </div>`;
 
-  const [popular, updates] = await Promise.all([
+  const [popular, updates, explore] = await Promise.all([
     api('/api/home'),
     api('/api/update').catch(() => []),
+    api('/api/explore?q=&genre=&page=1&size=80').catch(() => ({ items: [] })),
   ]);
   if (!alive()) return;
 
-  const feature = popular[0] || updates[0];
-  const updateItems = (updates.length ? updates : popular).map((u) => {
-    // normalize update feed item → card fields
-    if (u.chapters) {
+  const normalize = (u) => {
+    if (u?.chapters) {
       return {
         ...u,
-        chapter: u.chapters[0]?.chapter || '',
+        chapter: u.chapters[0]?.chapter || u.chapter || '',
         user_rate: u.user_rate,
       };
     }
     return u;
-  });
+  };
 
-  // also mix popular into update rail if update is short
-  const updateRail = updateItems.length >= 8
-    ? updateItems
-    : dedupeByUrl([...updateItems, ...popular]);
+  // Update: hanya feed update (baru rilis) — jangan dicampur popular
+  const updateRail = dedupeByUrl((updates.length ? updates : []).map(normalize)).slice(0, 24);
 
+  // Rekomendasi: katalog lebar, beda dari update, diacak biar segar
+  const updateUrls = new Set(updateRail.map((x) => x.url));
+  const catalog = [
+    ...(Array.isArray(explore?.items) ? explore.items : []),
+    ...(Array.isArray(popular) ? popular : []),
+  ].map(normalize);
+
+  let rekomendasi = dedupeByUrl(catalog).filter((x) => x?.url && x?.poster && !updateUrls.has(x.url));
+  // kalau setelah difilter masih tipis, isi dari popular yang tersisa
+  if (rekomendasi.length < 16) {
+    rekomendasi = dedupeByUrl([...rekomendasi, ...(popular || []).map(normalize)]);
+  }
+  rekomendasi = shuffle(rekomendasi).slice(0, 48);
+
+  const feature = (popular && popular[0]) || rekomendasi[0] || updateRail[0];
   const contHtml = hist.length
     ? `<div class="rail">${hist.map(continueCard).join('')}</div>`
     : '';
@@ -121,11 +133,24 @@ export async function home({ root, alive }) {
     ${spotlight(feature)}
     ${hist.length ? rail('Continue reading', contHtml, '/library') : ''}
     ${rail('Update', `<div class="rail">${updateRail.map(updateCard).join('')}</div>`, '/update')}
-    ${rail('Rekomendasi', `<div class="rail">${dedupeByUrl([...popular, ...updateRail]).slice(0, 36).map(updateCard).join('')}</div>`, '/search')}
+    ${rail('Rekomendasi', `<div class="rail">${rekomendasi.map(updateCard).join('')}</div>`, '/search')}
   `;
 
-  // Lightweight spotlight rotation: update existing DOM instead of rerendering Home.
-  startSpotlightRotation(dedupeByUrl([...popular, ...updates]).filter((item) => item?.url && item?.poster).slice(0, 3), root, alive);
+  // Spotlight: prioritaskan popular, fallback rekomendasi (bukan update saja)
+  startSpotlightRotation(
+    dedupeByUrl([...(popular || []), ...rekomendasi]).filter((item) => item?.url && item?.poster).slice(0, 3),
+    root,
+    alive,
+  );
+}
+
+function shuffle(list) {
+  const a = list.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 function startSpotlightRotation(items, root, alive) {
