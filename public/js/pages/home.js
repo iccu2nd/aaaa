@@ -87,7 +87,6 @@ function spotlight(item) {
       <div class="spotlight__content">
         <div class="spotlight__copy">
           <div class="spotlight__meta-row">
-            <span class="spotlight__badge">Spotlight</span>
             <span class="spotlight__label" data-spotlight-label>#1</span>
           </div>
           <h1 class="spotlight__title">${esc(item.title)}</h1>
