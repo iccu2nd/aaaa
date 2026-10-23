@@ -409,3 +409,61 @@ body.is-search .topbar__actions {
 body.is-search #app {
   padding-top: 8px !important;
 }
+
+
+/* Topbar: icon-only, no box, Home only */
+.topbar {
+  position: fixed !important;
+  top: 0;
+  right: 0;
+  left: auto !important;
+  width: auto !important;
+  z-index: 40;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 0 0;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+.topbar__inner,
+.topbar__spacer,
+.topbar__brand,
+.topbar__title,
+.topbar-search { display: none !important; }
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  pointer-events: auto;
+}
+.topbar__icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.45));
+}
+.topbar__icon:active { opacity: 0.65; }
+
+/* Hanya di Home */
+body:not(.is-home) .topbar {
+  display: none !important;
+}
+body.is-home .topbar {
+  display: block !important;
+}
+body.is-reader .topbar,
+body.is-detail .topbar,
+body.is-search .topbar,
+body.is-library .topbar,
+body.is-profile .topbar {
+  display: none !important;
+}

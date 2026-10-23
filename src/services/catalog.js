@@ -120,21 +120,43 @@ const all = async (query = '') => {
   return { status: data.length > 0, data, message: data.length ? undefined : 'Daftar kosong' };
 };
 
-/** Gambar cuplikan chapter (acak tapi stabil per chapter) untuk thumbnail. */
+/**
+ * Cuplikan chapter untuk list.
+ * Prefer tengah chapter (bukan cover/credit) + crop vertikal ~25–42%
+ * (area panel manhwa yang biasanya berisi karakter).
+ */
 const thumb = async (chapterUrl) => {
   const r = await read(chapterUrl);
   if (!r.status) return r;
   const imgs = (r.data.images || []).filter(Boolean);
   if (!imgs.length) return { status: false, message: 'Tidak ada gambar' };
+
   let h = 0;
   for (const ch of String(chapterUrl)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  // hindari halaman pertama/terakhir (biasanya logo/credit) bila chapter cukup panjang
-  const lo = imgs.length > 6 ? 1 : 0;
-  const hi = imgs.length > 6 ? imgs.length - 2 : imgs.length - 1;
+
+  const n = imgs.length;
+  // Skip intro/iklan di awal & credit di akhir
+  let lo = 0;
+  let hi = n - 1;
+  if (n >= 12) {
+    lo = Math.floor(n * 0.22);
+    hi = Math.floor(n * 0.72);
+  } else if (n >= 6) {
+    lo = 1;
+    hi = n - 2;
+  } else if (n >= 3) {
+    lo = 1;
+    hi = n - 1;
+  }
+  if (hi < lo) hi = lo;
   const pick = lo + (h % (hi - lo + 1));
+
+  // Fokus crop ke area karakter (bukan langit kosong di atas panel)
+  const pos = 24 + (h % 18); // 24–41%
+
   return {
     status: true,
-    data: { url: imgs[pick], pos: 8 + (h % 50) /* % posisi crop vertikal */ },
+    data: { url: imgs[pick], pos },
   };
 };
 

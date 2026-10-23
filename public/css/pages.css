@@ -1549,3 +1549,14 @@ body.is-detail .detail__body {
 .ch-tool--round svg {
   filter: drop-shadow(0 0 5px rgba(255,255,255,0.25));
 }
+
+.ch-thumb {
+  overflow: hidden;
+  background: var(--char);
+}
+.ch-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

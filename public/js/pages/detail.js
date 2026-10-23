@@ -66,7 +66,7 @@ export async function detail({ root, alive }, url) {
     const time = relative(c.release_date);
     return `<div class="ch-row${readSet.has(c.url) ? ' is-read' : ''}" data-ch="${esc(c.title)}">
       <a class="ch-row__link" href="${link('read', c.url)}">
-        ${thumbBox(c.url, letter)}
+        ${thumbBox(c.url, letter, c.thumbnail)}
         <div class="ch-row__info">
           <div class="ch-row__name">${esc(c.title)}</div>
           ${time ? `<div class="ch-row__time">${esc(time)}</div>` : ''}

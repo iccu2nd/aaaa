@@ -58,6 +58,9 @@ async function runRoute({ scroll = false } = {}) {
   document.body.classList.toggle('is-reader', /^\/read\//.test(pathname));
   document.body.classList.toggle('is-detail', /^\/detail\//.test(pathname));
   document.body.classList.toggle('is-search', /^\/(search|explore)/.test(pathname));
+  document.body.classList.toggle('is-home', pathname === '/' || pathname === '');
+  document.body.classList.toggle('is-library', /^\/library/.test(pathname));
+  document.body.classList.toggle('is-profile', /^\/profile/.test(pathname));
   markActive(pathname);
   if (scroll) window.scrollTo({ top: 0, behavior: 'auto' });
 
