@@ -57,6 +57,7 @@ async function runRoute({ scroll = false } = {}) {
   const pathWithQuery = `${pathname}${location.search}`;
   document.body.classList.toggle('is-reader', /^\/read\//.test(pathname));
   document.body.classList.toggle('is-detail', /^\/detail\//.test(pathname));
+  document.body.classList.toggle('is-search', /^\/(search|explore)/.test(pathname));
   markActive(pathname);
   if (scroll) window.scrollTo({ top: 0, behavior: 'auto' });
 

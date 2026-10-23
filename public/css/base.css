@@ -29,8 +29,7 @@
   --radius-lg: 22px;
   --radius-xl: 28px;
 
-  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
-    'Poppins', system-ui, 'Segoe UI', sans-serif;
+  --font: 'Poppins', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', sans-serif;
 
   --nav-h: 56px;
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -59,7 +58,7 @@ body {
   overflow-x: hidden;
   background: var(--ink);
   color: var(--white);
-  font: 400 15px/1.47 var(--font);
+  font: 400 15px/1.47 'Poppins', var(--font);
   letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

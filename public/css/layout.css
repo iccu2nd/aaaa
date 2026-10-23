@@ -356,3 +356,56 @@ body:not(.is-reader) #app { padding-top: max(12px, env(safe-area-inset-top)); }
   background: rgba(255,255,255,0.08);
 }
 .topbar-search { display: none !important; }
+
+
+/* Topbar transparent — icons only */
+.topbar {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+.topbar__inner,
+.topbar__actions,
+.topbar__icon {
+  pointer-events: auto;
+}
+.topbar__brand,
+.topbar__title {
+  display: none !important;
+}
+.topbar__spacer {
+  flex: 1;
+}
+.topbar__inner {
+  justify-content: flex-end !important;
+}
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.topbar__icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: var(--white);
+  border-radius: 50%;
+  background: transparent !important;
+  border: none !important;
+}
+.topbar__icon:active {
+  opacity: 0.6;
+}
+
+/* Di halaman Search: sembunyikan notif + search (sudah ada kolom search) */
+body.is-search .topbar,
+body.is-search .topbar__actions {
+  display: none !important;
+}
+body.is-search #app {
+  padding-top: 8px !important;
+}

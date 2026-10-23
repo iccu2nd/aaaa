@@ -6,15 +6,18 @@
   <meta name="theme-color" content="#000000">
   <meta name="description" content="RiMwa — baca komik online">
   <title>RiMwa</title>
-  <link rel="stylesheet" href="css/base.css?v=17">
-  <link rel="stylesheet" href="css/layout.css?v=17">
-  <link rel="stylesheet" href="css/components.css?v=17">
-  <link rel="stylesheet" href="css/pages.css?v=17">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css?v=18">
+  <link rel="stylesheet" href="css/layout.css?v=18">
+  <link rel="stylesheet" href="css/components.css?v=18">
+  <link rel="stylesheet" href="css/pages.css?v=18">
 </head>
 <body>
   <header class="topbar" id="topbar">
     <div class="topbar__inner container">
-      <a class="topbar__brand" href="/" aria-label="RiMwa">RiMwa</a>
+      <div class="topbar__spacer" aria-hidden="true"></div>
       <div class="topbar__actions">
         <button type="button" class="topbar__icon" id="topbar-notif" aria-label="Notifikasi">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -22,7 +25,7 @@
             <path d="M10 18.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
           </svg>
         </button>
-        <a class="topbar__icon" href="/search" data-nav-jump="search" aria-label="Cari">
+        <a class="topbar__icon" href="/search" id="topbar-search-btn" aria-label="Cari">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.7"/>
             <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>

@@ -1434,3 +1434,54 @@
   color: var(--accent) !important;
   background: rgba(255, 55, 95, 0.18) !important;
 }
+
+
+/* ===== Search fields: pill (bukan persegi) ===== */
+.search-tools {
+  gap: 10px !important;
+  margin-bottom: 16px !important;
+}
+.search-tools__form,
+.search-tools__form.is-open {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: 44px !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 14px !important;
+  background: rgba(120, 120, 128, 0.2) !important;
+  border: none !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+.search-tools__form input {
+  font: 400 15px/1.3 'Poppins', var(--font) !important;
+  color: var(--white) !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+.search-tools__form input::placeholder {
+  color: var(--dim) !important;
+}
+.search-tools__icon {
+  width: 44px !important;
+  height: 44px !important;
+  flex: 0 0 44px !important;
+  border-radius: 50% !important;
+  border: none !important;
+  background: rgba(120, 120, 128, 0.2) !important;
+}
+
+.detail__ch-search .ch-search {
+  border-radius: 999px !important;
+  background: rgba(120, 120, 128, 0.2) !important;
+  border: none !important;
+}
+.reader-drawer__search input,
+.detail__ch-search input {
+  border-radius: 999px !important;
+  font-family: 'Poppins', var(--font) !important;
+}
