@@ -8,6 +8,11 @@
 
 const shinigami = require('./shinigami');
 const voratoon = require('./voratoon');
+const axios = require('axios');
+const sharp = require('sharp');
+
+const THUMB_UA =
+  'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 Chrome/124.0.0.0 Mobile Safari/537.36';
 
 function normTitle(t) {
   return String(t || '')
@@ -128,19 +133,134 @@ const all = async (query = '') => {
 
 /**
  * Cuplikan chapter untuk list.
- * Prefer tengah chapter (bukan cover/credit) + crop vertikal ~25–42%
- * (area panel manhwa yang biasanya berisi karakter).
+ * Pilih panel tengah chapter, lalu analisis warna/detail supaya
+ * object-position CSS mengarah ke area wajah/karakter (bukan langit/kaki).
  */
-const thumb = async (chapterUrl) => {
-  const r = await read(chapterUrl);
-  if (!r.status) return r;
-  const imgs = (r.data.images || []).filter(Boolean);
-  if (!imgs.length) return { status: false, message: 'Tidak ada gambar' };
+async function fetchImageBuffer(url) {
+  const res = await axios.get(url, {
+    responseType: 'arraybuffer',
+    timeout: 9000,
+    maxContentLength: 4 * 1024 * 1024,
+    headers: {
+      'User-Agent': THUMB_UA,
+      Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+      Referer: 'https://shinigami.id/',
+    },
+    validateStatus: (s) => s >= 200 && s < 400,
+  });
+  return Buffer.from(res.data);
+}
 
-  let h = 0;
-  for (const ch of String(chapterUrl)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+/**
+ * Skor band horizontal: favor area yang mirip wajah/tubuh karakter.
+ * - warna kulit / warna baju (mid-tone, saturasi sedang)
+ * - detail (varian lokal) tinggi
+ * - hindari putih polos (balon teks) & hitam polos (gutter)
+ */
+function scoreBands(data, width, height, channels) {
+  const bands = 24;
+  const scores = new Array(bands).fill(0);
+  const counts = new Array(bands).fill(0);
+  const rowH = height / bands;
 
-  const n = imgs.length;
+  for (let y = 0; y < height; y += 1) {
+    const bi = Math.min(bands - 1, Math.floor(y / rowH));
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * channels;
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      const sat = max === 0 ? 0 : (max - min) / max;
+
+      // skip gutter / pure bg
+      if (lum < 12 || lum > 245) continue;
+      // skip very flat pale (speech bubble)
+      if (lum > 220 && sat < 0.08) continue;
+
+      let s = 0;
+      // skin-ish: R dominant, mid brightness
+      if (r > 70 && r > g && g > b * 0.75 && lum > 55 && lum < 230 && sat > 0.08 && sat < 0.65) {
+        s += 3.2;
+      }
+      // hair / dark clothing near face
+      if (lum > 20 && lum < 90 && sat < 0.35) s += 0.6;
+      // saturated mid-tone (clothes, eyes, accent)
+      if (sat > 0.18 && lum > 40 && lum < 200) s += 1.1;
+      // general mid detail preference
+      if (lum > 40 && lum < 210) s += 0.35;
+
+      scores[bi] += s;
+      counts[bi] += 1;
+    }
+  }
+
+  // normalize + smooth with neighbors (faces span multiple bands)
+  const norm = scores.map((s, i) => (counts[i] ? s / counts[i] : 0));
+  const smooth = norm.map((_, i) => {
+    const a = norm[Math.max(0, i - 1)] || 0;
+    const b = norm[i] || 0;
+    const c = norm[Math.min(bands - 1, i + 1)] || 0;
+    return a * 0.2 + b * 0.6 + c * 0.2;
+  });
+  return smooth;
+}
+
+async function analyzeFocus(url) {
+  try {
+    const buf = await fetchImageBuffer(url);
+    // sample kecil supaya cepat
+    const { data, info } = await sharp(buf)
+      .rotate() // respect EXIF
+      .resize(48, 160, { fit: 'inside', withoutEnlargement: true })
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const { width, height, channels } = info;
+    if (!width || !height || channels < 3) return null;
+
+    const bands = scoreBands(data, width, height, channels);
+    // hindari 10% paling atas & 15% paling bawah (langit / kaki / credit)
+    const lo = Math.max(1, Math.floor(bands.length * 0.1));
+    const hi = Math.min(bands.length - 2, Math.floor(bands.length * 0.85));
+
+    let peak = 0;
+    for (let i = lo; i <= hi; i += 1) {
+      if (bands[i] > peak) peak = bands[i];
+    }
+    if (peak <= 0) return null;
+
+    // Ambil rentang band yang mendekati peak (area karakter), lalu pakai pusatnya
+    // supaya fokus di tengah wajah/tubuh, bukan di tepi area skor tinggi.
+    const thresh = peak * 0.72;
+    let left = lo;
+    let right = hi;
+    for (let i = lo; i <= hi; i += 1) {
+      if (bands[i] >= thresh) {
+        left = i;
+        break;
+      }
+    }
+    for (let i = hi; i >= lo; i -= 1) {
+      if (bands[i] >= thresh) {
+        right = i;
+        break;
+      }
+    }
+    // Bias sedikit ke atas dalam rentang (wajah biasanya di atas torso)
+    const bestI = left + (right - left) * 0.35;
+    const pos = Math.round(((bestI + 0.5) / bands.length) * 100);
+    const clamped = Math.max(18, Math.min(58, pos));
+    return { pos: clamped, score: peak };
+  } catch {
+    return null;
+  }
+}
+
+function candidateIndexes(n, seed) {
   // Skip intro/iklan di awal & credit di akhir
   let lo = 0;
   let hi = n - 1;
@@ -155,14 +275,55 @@ const thumb = async (chapterUrl) => {
     hi = n - 1;
   }
   if (hi < lo) hi = lo;
-  const pick = lo + (h % (hi - lo + 1));
 
-  // Fokus crop ke area karakter (bukan langit kosong di atas panel)
-  const pos = 24 + (h % 18); // 24–41%
+  const span = hi - lo + 1;
+  const primary = lo + (seed % span);
+  // coba beberapa kandidat di sekitar primary
+  const set = new Set([primary]);
+  if (span > 1) set.add(lo + ((seed + Math.floor(span / 3)) % span));
+  if (span > 2) set.add(lo + ((seed + Math.floor((2 * span) / 3)) % span));
+  // panel tengah absolut sering bagus
+  set.add(lo + Math.floor(span / 2));
+  return [...set].slice(0, 3);
+}
 
+const thumb = async (chapterUrl) => {
+  const r = await read(chapterUrl);
+  if (!r.status) return r;
+  const imgs = (r.data.images || []).filter(Boolean);
+  if (!imgs.length) return { status: false, message: 'Tidak ada gambar' };
+
+  let h = 0;
+  for (const ch of String(chapterUrl)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+
+  const idxs = candidateIndexes(imgs.length, h);
+  let best = null;
+
+  // Analisis paralel terbatas (maks 3 gambar)
+  const results = await Promise.all(
+    idxs.map(async (i) => {
+      const focus = await analyzeFocus(imgs[i]);
+      return { i, focus };
+    }),
+  );
+
+  for (const row of results) {
+    if (!row.focus) continue;
+    if (!best || row.focus.score > best.focus.score) best = row;
+  }
+
+  if (best) {
+    return {
+      status: true,
+      data: { url: imgs[best.i], pos: best.focus.pos, x: 50 },
+    };
+  }
+
+  // fallback: panel primary + posisi karakter tipikal manhwa
+  const fallbackIdx = idxs[0];
   return {
     status: true,
-    data: { url: imgs[pick], pos },
+    data: { url: imgs[fallbackIdx], pos: 28 + (h % 14), x: 50 },
   };
 };
 
