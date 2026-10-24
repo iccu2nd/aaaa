@@ -200,12 +200,11 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 body {
-  overscroll-behavior-y: none;
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
-  touch-action: manipulation;
 }
+a, button, [role="button"], .card, .rail-card { touch-action: manipulation; }
 input, textarea, [contenteditable] {
   -webkit-user-select: text;
   user-select: text;
@@ -213,7 +212,6 @@ input, textarea, [contenteditable] {
 img, a { -webkit-user-drag: none; }
 a, button, [role="button"] { -webkit-tap-highlight-color: transparent; }
 a:focus:not(:focus-visible), button:focus:not(:focus-visible) { outline: none; }
-.rail { overscroll-behavior-x: contain; }
 @media (display-mode: standalone) {
   html { scroll-behavior: auto; }
 }

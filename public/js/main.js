@@ -38,11 +38,10 @@ if ('serviceWorker' in navigator) {
 
 initChrome();
 
-// Nuansa aplikasi: matikan menu long-press gambar & zoom gesture iOS
+// Nuansa aplikasi: matikan menu long-press gambar
 document.addEventListener('contextmenu', (e) => {
   if (e.target instanceof Element && e.target.closest('img, a, button')) e.preventDefault();
 });
-document.addEventListener('gesturestart', (e) => e.preventDefault());
 
 const notifBtn = document.getElementById('topbar-notif');
 if (notifBtn) {
