@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { history } from '../store.js';
 import { esc, img, link } from '../utils.js';
 import { skeletonGrid, state as msg } from '../components/section.js';
+import { railCard } from '../components/card.js';
 
 const starIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8l-6.2 3.2L7 14.2 2 9.3l6.9-1L12 2z"/></svg>';
 const eyeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -55,26 +56,6 @@ function getViews(item) {
   return new Intl.NumberFormat('id-ID', { notation: value >= 1000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(value);
 }
 
-function updateCard(item) {
-  const ch = item.chapters?.[0]?.chapter || item.chapter || (item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : '');
-  const time = formatUpdateTime(item.chapters?.[0]?.time || item.latest_chapter_time || '');
-  const rate = getRating(item);
-  const views = getViews(item);
-  return `
-    <a class="rail-card" href="${link('detail', item.url)}">
-      <div class="rail-card__cover">
-        <img loading="lazy" decoding="async" src="${esc(img(item.poster))}" alt="">
-        ${rate ? `<span class="rail-card__rate"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9L22 10l-5 4.7L18.2 22 12 18.2 5.8 22 7 14.7 2 10l7.1-1.1L12 2z"/></svg> ${esc(String(rate))}</span>` : ''}
-      </div>
-      <div class="rail-card__title">${esc(item.title)}</div>
-      <div class="rail-card__meta">
-        ${rate ? `<span class="meta-icon">${starIcon}<span>${esc(String(rate))}</span></span>` : ''}
-        ${ch ? `<span>${esc(ch)}</span>` : ''}
-        ${views ? `<span class="meta-icon">${eyeIcon}<span>${esc(views)}</span></span>` : ''}
-      </div>
-      <div class="rail-card__sub">${esc(time || item.status || '')}</div>
-    </a>`;
-}
 
 function spotlight(item) {
   if (!item) return '';
@@ -188,7 +169,7 @@ export async function home({ root, alive }) {
   const recRails = layerTitles.map((title, i) => {
     const slice = rekomendasi.slice(i * PER_LAYER, (i + 1) * PER_LAYER);
     if (!slice.length) return '';
-    return rail(title, `<div class="rail rail--inset">${slice.map(updateCard).join('')}</div>`, i === 0 ? '/search' : '');
+    return rail(title, `<div class="rail rail--inset">${slice.map(railCard).join('')}</div>`, i === 0 ? '/search' : '');
   }).join('');
 
   const feature = (popular && popular[0]) || rekomendasi[0] || updateRail[0];
@@ -199,7 +180,7 @@ export async function home({ root, alive }) {
   root.innerHTML = `
     ${spotlight(feature)}
     ${hist.length ? rail('Continue reading', contHtml, '/library') : ''}
-    ${rail('Update', `<div class="rail rail--inset">${updateRail.map(updateCard).join('')}</div>`, '/update')}
+    ${rail('Update', `<div class="rail rail--inset">${updateRail.map(railCard).join('')}</div>`, '/update')}
     ${recRails}
   `;
 

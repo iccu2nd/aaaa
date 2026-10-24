@@ -115,6 +115,7 @@ const all = async (query = '') => {
     chapter: c.chapter || '',
     latest_chapter: c.latest_chapter ?? null,
     latest_chapter_time: c.latest_chapter_time ?? null,
+    chapters: Array.isArray(c.chapters) ? c.chapters.slice(0, 2) : undefined,
     user_rate: c.user_rate ?? c.rating ?? c.rate ?? null,
     views: c.views ?? c.view_count ?? c.views_count ?? null,
     status: c.status || '',

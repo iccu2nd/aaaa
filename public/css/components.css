@@ -46,10 +46,11 @@
   gap: 10px;
 }
 .card {
-  display: block;
+  display: flex;
+  flex-direction: column;
   border-radius: var(--radius-sm);
   overflow: hidden;
-  background: var(--near);
+  background: transparent;
   transition: transform 0.18s ease;
   -webkit-tap-highlight-color: transparent;
   min-width: 0;
