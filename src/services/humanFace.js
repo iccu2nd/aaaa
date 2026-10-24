@@ -82,16 +82,21 @@ function installFileFetch(prefixes) {
   globalThis.__rimwaFileFetch = true;
 }
 
-async function load() {
+async function attempt(backend, humanRoot, wasmRoot) {
+  const logs = [];
+  const saved = { warn: console.warn, error: console.error, log: console.log };
+  const grab = (...args) => {
+    if (logs.length < 25) logs.push(args.map((x) => (x && x.stack) || String(x)).join(' ').slice(0, 600));
+  };
+  console.warn = grab;
+  console.error = grab;
+  console.log = grab;
   try {
-    const humanRoot = dirOf('@vladmandic/human', path.join('dist', 'human.node-wasm.js'));
-    const wasmRoot = dirOf('@tensorflow/tfjs-backend-wasm', 'package.json');
-    installFileFetch([humanRoot, wasmRoot]);
     const mod = require(path.join(humanRoot, 'dist', 'human.node-wasm.js'));
     const Human = mod.default || mod.Human || mod;
     const off = { enabled: false };
     const human = new Human({
-      backend: 'wasm',
+      backend,
       wasmPath: `${path.join(wasmRoot, 'dist')}${path.sep}`,
       modelBasePath: `file://${path.join(humanRoot, 'models')}/`,
       debug: false,
@@ -117,10 +122,36 @@ async function load() {
     });
     await human.load();
     await human.warmup();
-    state = { ready: true, error: null };
     return human;
   } catch (e) {
-    state = { ready: false, error: e.message, debug: debugInfo(e) };
+    e.logs = logs;
+    throw e;
+  } finally {
+    console.warn = saved.warn;
+    console.error = saved.error;
+    console.log = saved.log;
+  }
+}
+
+async function load() {
+  const attempts = [];
+  try {
+    const humanRoot = dirOf('@vladmandic/human', path.join('dist', 'human.node-wasm.js'));
+    const wasmRoot = dirOf('@tensorflow/tfjs-backend-wasm', 'package.json');
+    installFileFetch([humanRoot, wasmRoot]);
+    for (const backend of ['wasm', 'cpu']) {
+      try {
+        const human = await attempt(backend, humanRoot, wasmRoot);
+        state = { ready: true, error: null, backend, attempts };
+        return human;
+      } catch (e) {
+        attempts.push({ backend, error: e.message, logs: e.logs || [] });
+      }
+    }
+    const err = new Error(attempts.map((x) => `${x.backend}: ${x.error}`).join(' | '));
+    throw err;
+  } catch (e) {
+    state = { ready: false, error: e.message, debug: { ...debugInfo(e), attempts } };
     console.warn('[humanFace] detektor model tidak aktif, pakai cadangan warna:', e.message);
     return null;
   }
