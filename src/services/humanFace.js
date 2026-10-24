@@ -48,6 +48,8 @@ function listDir(dir) {
 function debugInfo(err) {
   return {
     node: process.version,
+    hasFetch: typeof globalThis.fetch,
+    fileFetch: !!globalThis.__rimwaFileFetch,
     cwd: process.cwd(),
     dirname: __dirname,
     tried: err.tried || null,
@@ -58,10 +60,33 @@ function debugInfo(err) {
   };
 }
 
+function installFileFetch(prefixes) {
+  if (globalThis.__rimwaFileFetch || typeof Response === 'undefined') return;
+  const original = globalThis.fetch;
+  const toPath = (input) => {
+    const raw = typeof input === 'string' ? input : (input && input.url) || String(input);
+    const p = raw.startsWith('file://') ? decodeURIComponent(raw.slice(7)) : raw;
+    return prefixes.some((x) => p.startsWith(x)) ? p : null;
+  };
+  globalThis.fetch = async (input, init) => {
+    const p = toPath(input);
+    if (!p) return original(input, init);
+    try {
+      const buf = await fs.promises.readFile(p);
+      const type = p.endsWith('.wasm') ? 'application/wasm' : p.endsWith('.json') ? 'application/json' : 'application/octet-stream';
+      return new Response(buf, { status: 200, headers: { 'Content-Type': type } });
+    } catch {
+      return new Response(null, { status: 404 });
+    }
+  };
+  globalThis.__rimwaFileFetch = true;
+}
+
 async function load() {
   try {
     const humanRoot = dirOf('@vladmandic/human', path.join('dist', 'human.node-wasm.js'));
     const wasmRoot = dirOf('@tensorflow/tfjs-backend-wasm', 'package.json');
+    installFileFetch([humanRoot, wasmRoot]);
     const mod = require(path.join(humanRoot, 'dist', 'human.node-wasm.js'));
     const Human = mod.default || mod.Human || mod;
     const off = { enabled: false };
