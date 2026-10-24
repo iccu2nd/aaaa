@@ -376,12 +376,14 @@
   .loading-surface::after, .explore-skeleton::after { animation: none; }
 }
 
-/* More readable chapter rows and previews on narrow screens. */
-.chapters { gap: 12px; }
-.ch-row { min-height: 82px; }
+/* Chapter rows sedikit lebih besar agar preview wajah lebih jelas. */
+.chapters { gap: 14px; }
+.ch-row { min-height: 96px; }
 .ch-row__link { gap: 14px; }
-.ch-thumb { width: 112px; height: 76px; border-radius: 8px; padding: 0; }
+.ch-thumb { width: 132px; height: 90px; border-radius: 10px; padding: 0; }
 .ch-thumb span { display: none; }
+.ch-row__name { font-size: 15px; }
+.ch-row__time { font-size: 12px; }
 .inline-loading { display: flex; justify-content: center; gap: 6px; padding: 16px; }
 .inline-loading i { display: block; width: 7px; height: 7px; border-radius: 50%; background: #3b3b40; animation: loading-dot 1s ease-in-out infinite alternate; }
 .inline-loading i:nth-child(2) { animation-delay: .16s; }

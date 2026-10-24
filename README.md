@@ -59,3 +59,5 @@ npm start
 - v17: bila 4 halaman tengah chapter tidak menghasilkan wajah, dicari lagi di sampai 10 halaman lain (14–86% chapter); crop wajah lebih rapat; pemilih cadangan tidak lagi menyukai area penuh kulit (tangan).
 - Cek detektor model: buka `/api/detector` → `{"ready":true}` berarti aktif; `{"ready":false,"error":"..."}` berarti pakai cadangan warna. Asal tiap thumbnail ada di header `X-Thumb-By`.
 - v19: detektor model dipindai lebih hemat (lebar 320 px, maks 18 potongan/halaman, berhenti dini bila sudah ketemu wajah yang sangat meyakinkan, batas waktu 5 dtk untuk pencarian tambahan). Wajah diberi dorongan ringan bila jendelanya kontras/berwarna/bercahaya ("momen dramatis"). Tidak ada pengenalan gender atau karakter utama.
+
+- v20: thumbnail chapter **hanya tier 0 (model BlazeFace)** bila detektor siap; kandidat dikurangi (2 halaman tengah, +4 bila perlu) agar load lebih cepat. Cache thumb memori 7 hari, CDN 14 hari, key `ti5`. List chapter sedikit lebih besar. Tombol Mulai/Lanjut Baca di detail hilang saat scroll ke bawah dan muncul saat scroll ke atas.

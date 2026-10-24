@@ -204,7 +204,43 @@ export async function detail({ root, alive }, url) {
   const filter = document.getElementById('ch-filter');
   const sortBtn = document.getElementById('ch-sort');
   const allBtn = document.getElementById('ch-dl-all');
+  const startBar = document.querySelector('.detail__start');
   let io = null;
+
+  // Start-link: hilang saat scroll ke bawah, muncul saat scroll ke atas (seperti bottom-nav)
+  if (startBar) {
+    let lastY = window.scrollY || 0;
+    let acc = 0;
+    let hidden = false;
+    let ticking = false;
+    const setStartHidden = (v) => {
+      if (hidden === v) return;
+      hidden = v;
+      startBar.classList.toggle('is-hidden', v);
+    };
+    const onScroll = () => {
+      if (!alive()) return;
+      const y = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
+      const delta = y - lastY;
+      lastY = y;
+      if (y < 40) {
+        acc = 0;
+        setStartHidden(false);
+        return;
+      }
+      if (delta === 0) return;
+      if (Math.sign(delta) !== Math.sign(acc)) acc = 0;
+      acc += delta;
+      if (acc > 20) { setStartHidden(true); acc = 0; }
+      else if (acc < -14) { setStartHidden(false); acc = 0; }
+    };
+    const onScrollRaf = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => { onScroll(); ticking = false; });
+    };
+    window.addEventListener('scroll', onScrollRaf, { passive: true });
+  }
 
   const applyFilter = () => {
     const q = filter.value.trim().toLowerCase();

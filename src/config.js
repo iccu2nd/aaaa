@@ -38,7 +38,7 @@ module.exports = {
     detail: 10 * MIN,
     read: 30 * MIN,
     all: 30 * MIN,
-    thumb: 24 * 60 * MIN,
+    thumb: 7 * 24 * 60 * MIN, // 7 hari memori server
   },
   rateLimit: { windowMs: MIN, max: 400 },
 };

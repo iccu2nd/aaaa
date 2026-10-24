@@ -1,6 +1,6 @@
 import { esc, img } from './utils.js';
 
-const MAX = 6;
+const MAX = 10;
 let active = 0;
 const queue = [];
 
@@ -20,6 +20,7 @@ function load(el) {
     const im = new Image();
     im.alt = '';
     im.decoding = 'async';
+    im.fetchPriority = 'low';
     im.onload = () => {
       el.classList.add('is-ready');
       el.classList.remove('loading-surface');
@@ -32,12 +33,12 @@ function load(el) {
       el.classList.remove('loading-surface');
       resolve();
     };
-    im.src = '/api/thumbimg?v=4&url=' + encodeURIComponent(url);
+    im.src = '/api/thumbimg?v=5&url=' + encodeURIComponent(url);
     el.appendChild(im);
   });
 }
 
-/** Muat thumbnail chapter hanya saat terlihat di layar (hemat request). */
+/** Muat thumbnail chapter hanya saat terlihat di layar (prefetch lebih agresif). */
 export function watchThumbs(container, alive = () => true) {
   const io = new IntersectionObserver((entries) => {
     for (const en of entries) {
@@ -46,7 +47,7 @@ export function watchThumbs(container, alive = () => true) {
       queue.push(() => (alive() ? load(en.target) : Promise.resolve()));
     }
     pump();
-  }, { rootMargin: '500px 0px' });
+  }, { rootMargin: '900px 0px' });
   container.querySelectorAll('[data-thumb]').forEach((el) => io.observe(el));
   return io;
 }

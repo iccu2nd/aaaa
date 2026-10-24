@@ -158,9 +158,14 @@ async function fetchImageBuffer(url) {
   return Buffer.from(res.data);
 }
 
-async function analyzeFocus(url, shared) {
+/** Hanya detektor model (tier 0). Cadangan warna/area hanya jika model tidak siap. */
+async function analyzeFocus(url, shared, { modelOnly = true } = {}) {
   try {
     const buf = await fetchImageBuffer(url);
+    const model = await humanFace.detectFace(buf, shared).catch(() => null);
+    if (modelOnly && model) return { buf, model, face: null, art: null };
+
+    // Cadangan cepat bila model kosong/tidak aktif (warna + area bersih)
     const { data, info } = await sharp(buf, { limitInputPixels: 80e6 })
       .rotate()
       .resize({ width: ANALYZE_WIDTH })
@@ -168,10 +173,10 @@ async function analyzeFocus(url, shared) {
       .raw()
       .toBuffer({ resolveWithObject: true });
     const { width, height, channels } = info;
-    if (!width || !height || channels < 3) return null;
+    if (!width || !height || channels < 3) return model ? { buf, model, face: null, art: null } : null;
     return {
       buf,
-      model: await humanFace.detectFace(buf, shared).catch(() => null),
+      model,
       face: findFace(data, width, height, channels),
       art: findArt(data, width, height, channels),
     };
@@ -180,11 +185,12 @@ async function analyzeFocus(url, shared) {
   }
 }
 
+/** Sedikit kandidat di tengah → lebih cepat. */
 function candidateIndexes(n, wide = false, skip = new Set()) {
   const head = n >= 12 ? 3 : n >= 7 ? 2 : n >= 4 ? 1 : 0;
   const tail = n >= 12 ? 4 : n >= 7 ? 3 : n >= 4 ? 2 : 0;
-  const from = wide ? 0.14 : 0.3;
-  const to = wide ? 0.86 : 0.7;
+  const from = wide ? 0.18 : 0.35;
+  const to = wide ? 0.82 : 0.65;
   let lo = Math.max(head, Math.floor(n * from));
   let hi = Math.min(n - 1 - tail, Math.floor(n * to));
   if (hi < lo) {
@@ -192,7 +198,7 @@ function candidateIndexes(n, wide = false, skip = new Set()) {
     hi = Math.max(lo, n - 1 - tail);
   }
   const span = hi - lo + 1;
-  const count = Math.min(wide ? 10 : 4, span);
+  const count = Math.min(wide ? 4 : 2, span); // cepat: 2 halaman dulu, max +4
   const picks = [];
   for (let k = 0; k < count; k += 1) {
     const i = lo + Math.floor(((k + 0.5) * span) / count);
@@ -207,13 +213,19 @@ const thumbImage = async (chapterUrl) => {
   const imgs = (r.data.images || []).filter(Boolean);
   if (!imgs.length) return { status: false, message: 'Tidak ada gambar' };
 
+  const modelReady = !!(await humanFace.getHuman().catch(() => null));
   const collect = (rows) => {
     const out = [];
     for (const row of rows) {
       if (!row.a) continue;
       if (row.a.model) out.push({ tier: 0, by: 'model', row, f: row.a.model, face: true });
-      if (row.a.face && row.a.face.score >= FACE_MIN_SCORE) out.push({ tier: 1, by: 'warna', row, f: row.a.face, face: true });
-      if (row.a.art) out.push({ tier: 2, by: 'area', row, f: row.a.art, face: false });
+      // Cadangan hanya jika model tidak aktif / tidak menemukan wajah
+      if (!modelReady || !row.a.model) {
+        if (row.a.face && row.a.face.score >= FACE_MIN_SCORE) {
+          out.push({ tier: 1, by: 'warna', row, f: row.a.face, face: true });
+        }
+        if (row.a.art) out.push({ tier: 2, by: 'area', row, f: row.a.art, face: false });
+      }
     }
     return out;
   };
@@ -223,19 +235,23 @@ const thumbImage = async (chapterUrl) => {
   const started = Date.now();
   const analyze = async (idxs) => {
     idxs.forEach((i) => used.add(i));
-    return Promise.all(idxs.map(async (i) => ({ i, a: await analyzeFocus(imgs[i], shared) })));
+    return Promise.all(
+      idxs.map(async (i) => ({ i, a: await analyzeFocus(imgs[i], shared, { modelOnly: modelReady }) })),
+    );
   };
 
-  const cands = collect(await analyze(candidateIndexes(imgs.length)));
-  if (!cands.some((c) => c.face) && Date.now() - started < 5000) {
+  // 2 halaman tengah dulu; berhenti dini jika sudah ada wajah model bersih
+  let cands = collect(await analyze(candidateIndexes(imgs.length)));
+  const hasModel = () => cands.some((c) => c.by === 'model');
+  if (!hasModel() && Date.now() - started < 3500) {
     const more = candidateIndexes(imgs.length, true, used);
-    if (more.length) cands.push(...collect(await analyze(more)));
+    if (more.length) cands = cands.concat(collect(await analyze(more)));
   }
   if (!cands.length) return { status: false, message: 'Gambar tidak bisa dianalisis' };
   cands.sort((x, y) => x.tier - y.tier || y.f.score - x.f.score);
 
   let chosen = null;
-  for (const c of cands.slice(0, 8)) {
+  for (const c of cands.slice(0, 6)) {
     const meta = await sharp(c.row.a.buf).metadata();
     const rect = cropRect(meta.width, meta.height, c.f, c.face);
     const base = sharp(c.row.a.buf).rotate().extract(rect);
