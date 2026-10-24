@@ -12,24 +12,56 @@ let loading = null;
 let state = { ready: false, error: null };
 let chain = Promise.resolve();
 
-function dirOf(pkg) {
+function candidates(pkg) {
   const parts = pkg.split('/');
-  const roots = [
+  const roots = new Set([
     path.join(__dirname, '..', '..', 'node_modules'),
     path.join(process.cwd(), 'node_modules'),
     '/var/task/node_modules',
-  ];
-  for (const root of roots) {
-    const dir = path.join(root, ...parts);
-    if (fs.existsSync(path.join(dir, 'package.json'))) return dir;
+  ]);
+  try {
+    for (const p of require.resolve.paths(pkg) || []) roots.add(p);
+  } catch { /* abaikan */ }
+  return [...roots].map((r) => path.join(r, ...parts));
+}
+
+function dirOf(pkg, probe) {
+  const tried = [];
+  for (const dir of candidates(pkg)) {
+    const ok = fs.existsSync(path.join(dir, probe));
+    tried.push({ dir, ok });
+    if (ok) return dir;
   }
-  throw new Error(`paket ${pkg} tidak ditemukan di node_modules`);
+  const err = new Error(`file ${probe} dari paket ${pkg} tidak ditemukan`);
+  err.tried = tried;
+  throw err;
+}
+
+function listDir(dir) {
+  try {
+    return fs.readdirSync(dir).slice(0, 40);
+  } catch (e) {
+    return `tidak bisa dibaca: ${e.code || e.message}`;
+  }
+}
+
+function debugInfo(err) {
+  return {
+    node: process.version,
+    cwd: process.cwd(),
+    dirname: __dirname,
+    tried: err.tried || null,
+    nodeModules: listDir(path.join(process.cwd(), 'node_modules')),
+    scope: listDir(path.join(process.cwd(), 'node_modules', '@vladmandic')),
+    humanDir: listDir(path.join(process.cwd(), 'node_modules', '@vladmandic', 'human')),
+    stack: String(err.stack || '').split('\n').slice(0, 4),
+  };
 }
 
 async function load() {
   try {
-    const humanRoot = dirOf('@vladmandic/human');
-    const wasmRoot = dirOf('@tensorflow/tfjs-backend-wasm');
+    const humanRoot = dirOf('@vladmandic/human', path.join('dist', 'human.node-wasm.js'));
+    const wasmRoot = dirOf('@tensorflow/tfjs-backend-wasm', 'package.json');
     const mod = require(path.join(humanRoot, 'dist', 'human.node-wasm.js'));
     const Human = mod.default || mod.Human || mod;
     const off = { enabled: false };
@@ -63,7 +95,7 @@ async function load() {
     state = { ready: true, error: null };
     return human;
   } catch (e) {
-    state = { ready: false, error: e.message };
+    state = { ready: false, error: e.message, debug: debugInfo(e) };
     console.warn('[humanFace] detektor model tidak aktif, pakai cadangan warna:', e.message);
     return null;
   }
