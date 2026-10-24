@@ -171,24 +171,37 @@ const update = safe(async () => {
       ? relativeTime(manga.latest_chapter_time)
       : '';
     const chNum = manga.latest_chapter_number;
+    const chapters = [];
+    if (chNum != null) {
+      chapters.push({
+        chapter: `Ch. ${chNum}`,
+        time,
+        url: manga.latest_chapter_id
+          ? chapterUrl(manga.latest_chapter_id)
+          : seriesUrl(manga.manga_id),
+      });
+      // chapter sebelumnya agar user lihat jarak update
+      if (Number(chNum) > 1) {
+        chapters.push({
+          chapter: `Ch. ${Number(chNum) - 1}`,
+          time: '',
+          url: seriesUrl(manga.manga_id),
+        });
+      }
+    }
     return {
       title: manga.title,
       poster: manga.cover_portrait_url || manga.cover_image_url || null,
       url: seriesUrl(manga.manga_id),
       manga_id: manga.manga_id,
       user_rate: manga.user_rate,
+      latest_chapter: chNum,
+      latest_chapter_time: manga.latest_chapter_time,
+      views: manga.views ?? manga.view_count ?? manga.total_views ?? null,
+      authors: getTaxonomy(manga.taxonomy).author,
+      formats: getTaxonomy(manga.taxonomy).format,
       source: 'shinigami',
-      chapters: chNum != null
-        ? [
-            {
-              chapter: `Ch. ${chNum}`,
-              time,
-              url: manga.latest_chapter_id
-                ? chapterUrl(manga.latest_chapter_id)
-                : seriesUrl(manga.manga_id),
-            },
-          ]
-        : [],
+      chapters,
     };
   });
 });

@@ -112,7 +112,18 @@ function getChapterRows(item) {
       });
     }
   }
-  return rows;
+  // Pastikan selalu 2 baris bila nomor chapter diketahui (update sebelumnya)
+  if (rows.length === 1) {
+    const m = String(rows[0].label).match(/(\d+(?:\.\d+)?)/);
+    if (m) {
+      const n = Number(m[1]);
+      if (Number.isFinite(n) && n > 1) {
+        const prev = Number.isInteger(n) ? n - 1 : Math.round((n - 1) * 10) / 10;
+        rows.push({ label: `Chapter ${prev}`, time: '' });
+      }
+    }
+  }
+  return rows.slice(0, 2);
 }
 
 /**
