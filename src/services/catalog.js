@@ -181,22 +181,14 @@ async function analyzeFocus(url) {
 }
 
 function candidateIndexes(n) {
-  let lo = 0;
-  let hi = n - 1;
-  if (n >= 20) {
-    lo = Math.floor(n * 0.2);
-    hi = Math.floor(n * 0.8);
-  } else if (n >= 12) {
-    lo = Math.floor(n * 0.2);
-    hi = Math.floor(n * 0.8);
-  } else if (n >= 7) {
-    lo = 1;
-    hi = n - 2;
-  } else if (n >= 4) {
-    lo = 1;
-    hi = n - 1;
+  const head = n >= 12 ? 3 : n >= 7 ? 2 : n >= 4 ? 1 : 0;
+  const tail = n >= 12 ? 4 : n >= 7 ? 3 : n >= 4 ? 2 : 0;
+  let lo = Math.max(head, Math.floor(n * 0.3));
+  let hi = Math.min(n - 1 - tail, Math.floor(n * 0.7));
+  if (hi < lo) {
+    lo = Math.max(0, Math.min(head, n - 1));
+    hi = Math.max(lo, n - 1 - tail);
   }
-  if (hi < lo) hi = lo;
   const span = hi - lo + 1;
   const count = Math.min(4, span);
   const picks = new Set();
