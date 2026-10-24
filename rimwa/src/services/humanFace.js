@@ -249,6 +249,11 @@ async function detectFace(buf, shared = { best: 0 }) {
         if (conf < MIN_BOX_SCORE || frac < MIN_FACE_FRAC) continue;
         const cx = bx + bw / 2;
         const cy = top + by + bh / 2;
+        // Thumbnail hanya boleh fokus pada wajah di area tengah halaman.
+        // Abaikan wajah di pinggir/area promo, watermark, atau banner chapter.
+        const centerX = cx / w;
+        const centerY = cy / h;
+        if (centerX < 0.28 || centerX > 0.72 || centerY < 0.22 || centerY > 0.78) continue;
         const ww = Math.min(w, Math.max(w * 0.3, bw / 0.48));
         const wh = ww / THUMB_RATIO;
         const epic = epicScore(data, w, h, 3, cx - ww / 2, cy - wh / 2, cx + ww / 2, cy + wh / 2);

@@ -21,7 +21,7 @@ function persist() {
   dirty = false;
   try {
     fs.mkdirSync(path.dirname(FILE), { recursive: true });
-    const skip = (k) => k.startsWith('r:') || k.startsWith('ti4:') || k.startsWith('ti5:') || k.startsWith('ti6:'); // buffer thumb besar, tidak ke disk
+    const skip = (k) => k.startsWith('r:') || k.startsWith('ti4:') || k.startsWith('ti5:') || k.startsWith('ti6:') || k.startsWith('ti7:'); // buffer thumb besar, tidak ke disk
     const rows = [...store.entries()].filter(([k]) => !skip(k));
     fs.writeFileSync(FILE, JSON.stringify(rows));
   } catch { /* abaikan */ }

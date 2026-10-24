@@ -118,7 +118,7 @@ router.get('/detector', async (req, res) => {
 // Thumbnail chapter: crop kecil (±8KB) fokus wajah (model tier 0), cache agresif
 router.get('/thumbimg', sourceUrl, async (req, res) => {
   try {
-    const out = await cache.wrap('ti6:' + req.query.url, cfg.ttl.thumb, () => source.thumbImage(String(req.query.url)));
+    const out = await cache.wrap('ti7:' + req.query.url, cfg.ttl.thumb, () => source.thumbImage(String(req.query.url)));
     if (!out || !out.status) return res.status(404).end();
     res.set('Content-Type', 'image/webp');
     res.set('X-Thumb-By', String(out.by || ''));

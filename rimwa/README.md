@@ -61,3 +61,10 @@ npm start
 - v19: detektor model dipindai lebih hemat (lebar 320 px, maks 18 potongan/halaman, berhenti dini bila sudah ketemu wajah yang sangat meyakinkan, batas waktu 5 dtk untuk pencarian tambahan). Wajah diberi dorongan ringan bila jendelanya kontras/berwarna/bercahaya ("momen dramatis"). Tidak ada pengenalan gender atau karakter utama.
 
 - v20: thumbnail chapter **hanya tier 0 (model BlazeFace)** bila detektor siap; kandidat dikurangi (2 halaman tengah, +4 bila perlu) agar load lebih cepat. Cache thumb memori 7 hari, CDN 14 hari, key `ti5`. List chapter sedikit lebih besar. Tombol Mulai/Lanjut Baca di detail hilang saat scroll ke bawah dan muncul saat scroll ke atas.
+
+
+## Thumbnail chapter fokus tengah (v21)
+- Kandidat thumbnail hanya diambil dari maksimal 3 halaman sekitar titik tengah chapter; tidak melebar ke halaman lain jika wajah tidak ditemukan.
+- Detektor wajah hanya menerima wajah yang berada di area tengah halaman (28–72% horizontal, 22–78% vertikal).
+- Jika tidak ada wajah di area tengah, thumbnail memakai crop tengah netral agar tidak mengejar wajah/banner promosi di pinggir.
+- Cache thumbnail dinaikkan ke `ti7` agar hasil lama tidak terus dipakai.

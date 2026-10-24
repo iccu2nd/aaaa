@@ -140,7 +140,7 @@ const all = async (query = '') => {
 };
 
 /**
- * Cuplikan chapter — prioritaskan wajah/karakter, tolak balon teks.
+ * Cuplikan chapter — fokus wajah hanya di tengah halaman, hindari halaman promosi.
  * Cepat: resize kecil, max 5 kandidat, reject agresif panel putih/teks.
  */
 async function fetchImageBuffer(url) {
@@ -179,34 +179,29 @@ async function colorFocus(buf) {
       .raw()
       .toBuffer({ resolveWithObject: true });
     const face = findFace(data, info.width, info.height, 3);
-    if (face && face.score >= FACE_MIN_SCORE) return { f: face, by: 'color', face: true };
-    const art = findArt(data, info.width, info.height, 3, THUMB_RATIO);
-    return art ? { f: art, by: 'area', face: false } : null;
+    if (face && face.score >= FACE_MIN_SCORE && face.fx >= 0.28 && face.fx <= 0.72 && face.fy >= 0.22 && face.fy <= 0.78) {
+      return { f: face, by: 'color', face: true };
+    }
+    // Jika wajah tidak berada di area tengah, gunakan crop tengah yang netral,
+    // bukan mengejar wajah/banner promosi di pinggir gambar.
+    return { f: { fx: 0.5, fy: 0.5, fw: 0, fh: 0, score: 0.01 }, by: 'center', face: false };
   } catch {
     return null;
   }
 }
 
-/** Sedikit kandidat di tengah → lebih cepat. */
-function candidateIndexes(n, wide = false, skip = new Set()) {
+/** Ambil hanya halaman yang benar-benar dekat titik tengah chapter.
+ * Halaman awal/akhir sering berisi sampul promosi, iklan, atau credit.
+ */
+function candidateIndexes(n) {
+  if (!n) return [];
   const head = n >= 12 ? 3 : n >= 7 ? 2 : n >= 4 ? 1 : 0;
-  const tail = n >= 12 ? 4 : n >= 7 ? 3 : n >= 4 ? 2 : 0;
-  const from = wide ? 0.18 : 0.35;
-  const to = wide ? 0.82 : 0.65;
-  let lo = Math.max(head, Math.floor(n * from));
-  let hi = Math.min(n - 1 - tail, Math.floor(n * to));
-  if (hi < lo) {
-    lo = Math.max(0, Math.min(head, n - 1));
-    hi = Math.max(lo, n - 1 - tail);
-  }
-  const span = hi - lo + 1;
-  const count = Math.min(wide ? 6 : 3, span); // 3 tengah dulu, +6 bila perlu
-  const picks = [];
-  for (let k = 0; k < count; k += 1) {
-    const i = lo + Math.floor(((k + 0.5) * span) / count);
-    if (!skip.has(i) && !picks.includes(i)) picks.push(i);
-  }
-  return picks;
+  const tail = n >= 12 ? 4 : n >= 7 ? 2 : n >= 4 ? 1 : 0;
+  const lo = Math.min(n - 1, head);
+  const hi = Math.max(lo, n - 1 - tail);
+  const mid = Math.floor((lo + hi) / 2);
+  // Maksimal 3 halaman berurutan di sekitar titik tengah, tanpa ekspansi ke luar.
+  return [...new Set([mid - 1, mid, mid + 1].filter((i) => i >= lo && i <= hi))];
 }
 
 const thumbImage = async (chapterUrl) => {
@@ -230,17 +225,9 @@ const thumbImage = async (chapterUrl) => {
     .filter((row) => row.a.model)
     .map((row) => ({ by: 'model', row, f: row.a.model, face: true }));
 
-  // 3 halaman tengah, lalu perluas bila belum ketemu wajah
-  let rows = await analyze(candidateIndexes(imgs.length));
+  // Hanya halaman di sekitar titik tengah chapter; jangan ekspansi ke halaman promo.
+  const rows = await analyze(candidateIndexes(imgs.length));
   let cands = modelCands(rows);
-  if (!cands.length && Date.now() - started < 6000) {
-    const more = candidateIndexes(imgs.length, true, used);
-    if (more.length) {
-      const extra = await analyze(more);
-      rows = rows.concat(extra);
-      cands = modelCands(rows);
-    }
-  }
   if (!rows.length) return { status: false, message: 'Gambar chapter tidak bisa diunduh' };
 
   // Tanpa wajah dari model → warna kulit, lalu area paling bersih

@@ -1171,3 +1171,45 @@ body.is-home .topbar__icon.is-on {
   body.is-home #topbar-search-btn,
   body.is-home #topbar-notif { flex-basis: 36px !important; width: 36px !important; }
 }
+
+/* Final Komikta brand correction: restore the red K, enlarge the full wordmark,
+   and keep the reference-style white header rule with angled end caps. */
+body.is-home .topbar,
+body.is-home #topbar {
+  border-bottom: 2px solid rgba(255,255,255,.92) !important;
+  overflow: visible !important;
+}
+body.is-home .topbar::after {
+  left: 0 !important;
+  right: 0 !important;
+  bottom: -2px !important;
+  height: 7px !important;
+  background: #f4f4f5 !important;
+  clip-path: polygon(0 0, 100% 0, 96% 100%, 4% 100%) !important;
+  opacity: .96 !important;
+}
+body.is-home .topbar__logo {
+  gap: 10px !important;
+  height: 54px !important;
+  flex: 0 1 auto !important;
+}
+body.is-home .topbar__mask {
+  flex: 0 0 38px !important;
+  width: 38px !important;
+  height: 48px !important;
+}
+body.is-home .topbar__wordmark {
+  display: block !important;
+  flex: 0 1 auto !important;
+  width: clamp(142px, 39vw, 174px) !important;
+  max-width: 174px !important;
+  height: 56px !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+}
+@media (max-width: 380px) {
+  body.is-home .topbar__logo { gap: 7px !important; }
+  body.is-home .topbar__mask { flex-basis: 34px !important; width: 34px !important; height: 44px !important; }
+  body.is-home .topbar__wordmark { width: clamp(124px, 37vw, 145px) !important; height: 50px !important; }
+  body.is-home .topbar__actions { gap: 7px !important; }
+}
