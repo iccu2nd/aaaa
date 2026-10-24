@@ -2,7 +2,7 @@ import { esc, img, link } from '../utils.js';
 
 const starIcon = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8l-6.2 3.2L7 14.2 2 9.3l6.9-1L12 2z"/></svg>';
 const eyeIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-const authorIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0 0-3L17.5 5.5a2.1 2.1 0 0 0-3 0L4 16v4z"/><path d="M13.5 6.5l4 4"/><path d="M4 20l3.2-.8"/></svg>';
+const authorIcon = '<svg width="14" height="12" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="7.5" r="3.2"/><path d="M3.5 19c.6-3.1 2.9-4.8 6.5-4.8s5.9 1.7 6.5 4.8"/><path d="M18.2 14.2 22.5 9.9a1.35 1.35 0 0 1 1.9 0l.5.5a1.35 1.35 0 0 1 0 1.9L19.2 17.8 16.8 18.5l.7-2.3z"/><path d="m19.5 13.5 2.2 2.2"/></svg>';
 const bookIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21V5.5Z"/><path d="M4 6v15M8 7h8M8 11h8"/></svg>';
 
 function getRating(item) {
@@ -96,7 +96,7 @@ function chapterNum(label) {
   return m ? Number(m[1]) : -1;
 }
 
-/** Ambil 2 chapter nomor terbesar (max), urut terbaru dulu. */
+/** Ambil 1 chapter nomor terbesar (max / terbaru). */
 function getChapterRows(item) {
   const rows = [];
   if (Array.isArray(item.chapters) && item.chapters.length) {
@@ -131,14 +131,8 @@ function getChapterRows(item) {
     seen.add(key);
     uniq.push(r);
   }
-  // Lengkapi ke 2 baris dari chapter max-1 bila hanya 1
-  if (uniq.length === 1 && uniq[0].num > 1) {
-    const prev = Number.isInteger(uniq[0].num)
-      ? uniq[0].num - 1
-      : Math.round((uniq[0].num - 1) * 10) / 10;
-    uniq.push({ label: `Chapter ${prev}`, time: '', num: prev });
-  }
-  return uniq.slice(0, 2).map(({ label, time }) => ({ label, time }));
+  // Hanya 1 chapter terbaru (nomor max)
+  return uniq.slice(0, 1).map(({ label, time }) => ({ label, time }));
 }
 
 /**
@@ -171,20 +165,38 @@ function chaptersHtml(item) {
     .join('')}</div>`;
 }
 
-function coverBadges(item) {
+function coverBadges(item, { showFormat = false } = {}) {
   const total = getChapterTotalNum(item);
   const rate = getRating(item);
-  const left = total != null
-    ? `<span class="card__ch-total">Ch. ${esc(String(total))}</span>`
-    : '';
+  const format = getFormat(item);
+  const left = showFormat && format
+    ? `<span class="card__format-badge">${esc(format)}</span>`
+    : (total != null ? `<span class="card__ch-total">Ch. ${esc(String(total))}</span>` : '');
   const right = rate
     ? `<span class="card__rate-badge">${starIcon} ${esc(rate)}</span>`
     : '';
   return left + right;
 }
 
-/** Kartu grid (explore / search). */
-export const card = (c) => `
+/** Kartu grid explore — mirip referensi: format badge, judul, ch. */
+export const card = (c) => {
+  const total = getChapterTotalNum(c);
+  const chLabel = total != null ? `Ch. ${total}` : (getChapterRows(c)[0]?.label || '');
+  return `
+  <a class="card card--explore" href="${link('detail', c.url)}">
+    <div class="card__cover">
+      <img loading="lazy" decoding="async" src="${esc(img(c.poster))}" alt="">
+      ${coverBadges(c, { showFormat: true })}
+    </div>
+    <div class="card__body">
+      <div class="card__title">${esc(c.title)}</div>
+      ${chLabel ? `<div class="card__ch-line">${esc(chLabel)}</div>` : ''}
+    </div>
+  </a>`;
+};
+
+/** Kartu penuh (home rail) dengan author / views / 1 chapter pill. */
+export const richCard = (c) => `
   <a class="card" href="${link('detail', c.url)}">
     <div class="card__cover">
       <img loading="lazy" decoding="async" src="${esc(img(c.poster))}" alt="">
@@ -211,3 +223,4 @@ export const railCard = (item) => `
       ${metaHtml(item)}
       ${chaptersHtml(item)}
     </a>`;
+
