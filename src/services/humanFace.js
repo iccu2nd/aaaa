@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 
@@ -12,14 +13,24 @@ let state = { ready: false, error: null };
 let chain = Promise.resolve();
 
 function dirOf(pkg) {
-  return path.dirname(require.resolve(`${pkg}/package.json`));
+  const parts = pkg.split('/');
+  const roots = [
+    path.join(__dirname, '..', '..', 'node_modules'),
+    path.join(process.cwd(), 'node_modules'),
+    '/var/task/node_modules',
+  ];
+  for (const root of roots) {
+    const dir = path.join(root, ...parts);
+    if (fs.existsSync(path.join(dir, 'package.json'))) return dir;
+  }
+  throw new Error(`paket ${pkg} tidak ditemukan di node_modules`);
 }
 
 async function load() {
   try {
     const humanRoot = dirOf('@vladmandic/human');
     const wasmRoot = dirOf('@tensorflow/tfjs-backend-wasm');
-    const mod = require('@vladmandic/human/dist/human.node-wasm.js');
+    const mod = require(path.join(humanRoot, 'dist', 'human.node-wasm.js'));
     const Human = mod.default || mod.Human || mod;
     const off = { enabled: false };
     const human = new Human({
