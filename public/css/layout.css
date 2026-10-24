@@ -513,3 +513,48 @@ body.is-home #topbar-search-btn {
   box-shadow: none !important;
   outline: none !important;
 }
+
+/* Topbar full-width: logo kiri, ikon kanan */
+body.is-home .topbar,
+body.is-home #topbar {
+  position: fixed !important;
+  top: 0;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  z-index: 40;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+body.is-home .topbar__logo {
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  margin-left: 2px;
+  -webkit-tap-highlight-color: transparent;
+}
+body.is-home .topbar__logo img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.55));
+}
+body.is-home .topbar__actions {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  background: transparent !important;
+}

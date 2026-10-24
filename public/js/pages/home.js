@@ -64,38 +64,33 @@ function spotlight(item) {
   const rate = getRating(item);
   const chapter = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || '');
   const views = getViews(item);
-  const facts = [
-    rate ? `${starIcon}<span>${esc(rate)}</span>` : '',
-    chapter ? esc(chapter) : '',
-    views ? `${eyeIcon}<span>${esc(views)} pembaca</span>` : '',
-  ].filter(Boolean);
+  const genres = Array.isArray(item.genres) ? item.genres.slice(0, 4).join(', ') : '';
+  const sub = genres || status;
   return `
-    <a class="spotlight" data-spotlight href="${link('detail', item.url)}" aria-label="Lihat ${esc(item.title)}">
-      <div class="spotlight__bg" style="background-image:url('${esc(img(item.poster, 240))}')"></div>
+    <section class="spotlight" data-spotlight>
+      <div class="spotlight__bg" style="background-image:url('${esc(img(item.banner || item.poster, 720))}')"></div>
       <div class="spotlight__fade"></div>
       <div class="spotlight__content">
-        <div class="spotlight__copy">
-          <div class="spotlight__meta-row">
-            <span class="spotlight__label" data-spotlight-label>#1</span>
-          </div>
-          <h1 class="spotlight__title">${esc(item.title)}</h1>
-          <p class="spotlight__desc" data-spotlight-status>${esc(status)}</p>
-          <div class="spotlight__facts">${facts.map((fact) => `<span class="spotlight__fact">${fact}</span>`).join('')}</div>
-          <span class="spotlight__cta">Baca sekarang <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        <p class="spotlight__label" data-spotlight-label>#1 Trending</p>
+        <h1 class="spotlight__title">${esc(item.title)}</h1>
+        <p class="spotlight__desc" data-spotlight-status>${esc(sub)}</p>
+        <div class="spotlight__facts">
+          ${rate ? `<span class="spotlight__fact">${starIcon}<span>${esc(rate)}</span></span>` : ''}
+          ${chapter ? `<span class="spotlight__fact" data-spotlight-chapter>${esc(chapter)}</span>` : ''}
+          ${views ? `<span class="spotlight__fact">${eyeIcon}<span>${esc(views)} pembaca</span></span>` : ''}
         </div>
-        <div class="spotlight__art">
-          <i class="spotlight__ghost spotlight__ghost--b"></i>
-          <i class="spotlight__ghost spotlight__ghost--a"></i>
-          <div class="spotlight__poster">
-            <span class="spotlight__chapter" data-spotlight-chapter>${esc(chapter || 'Chapter terbaru')}</span>
-            <img src="${esc(img(item.poster, 480))}" alt="" decoding="async" fetchpriority="high">
-          </div>
+        <div class="spotlight__actions">
+          <a class="spotlight__cta spotlight__cta--primary" href="${link('detail', item.url)}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.2 5.3a1 1 0 0 1 0 1.7l-9.2 5.3c-.7.4-1.6-.1-1.6-.9V5.8Z"/></svg>
+            Baca
+          </a>
+          <a class="spotlight__cta spotlight__cta--ghost" href="${link('detail', item.url)}" aria-label="Detail ${esc(item.title)}">Detail</a>
         </div>
       </div>
       <div class="spotlight__dots" data-spotlight-dots aria-hidden="true">
         <i class="is-on"></i><i></i><i></i>
       </div>
-    </a>`;
+    </section>`;
 }
 
 function rail(title, body, moreHref = '') {
@@ -222,43 +217,45 @@ function startSpotlightRotation(items, root, alive) {
     index = (index + 1) % items.length;
     const item = items[index];
     const bg = hero.querySelector('.spotlight__bg');
-    const cover = hero.querySelector('.spotlight__poster img');
     const title = hero.querySelector('.spotlight__title');
     const desc = hero.querySelector('.spotlight__desc');
     const factsEl = hero.querySelector('.spotlight__facts');
     const label = hero.querySelector('.spotlight__label');
-    const chapterBadge = hero.querySelector('[data-spotlight-chapter]');
+    const cta = hero.querySelectorAll('.spotlight__cta');
     const dots = hero.querySelectorAll('[data-spotlight-dots] i');
     hero.classList.add('is-changing');
-    const nextUrl = img(item.poster, 480);
-    const bgUrl = img(item.poster, 240);
+    const bgUrl = img(item.banner || item.poster, 720);
     const preload = new Image();
     preload.onload = () => {
       if (!alive() || !root.contains(hero)) return;
-      hero.href = link('detail', item.url);
-      hero.setAttribute('aria-label', `Lihat ${item.title}`);
       if (bg) bg.style.backgroundImage = `url("${bgUrl.replace(/["\\]/g, '')}")`;
-      if (cover) { cover.src = nextUrl; cover.alt = item.title || ''; }
       if (title) title.textContent = item.title || '';
       if (desc) {
+        const genres = Array.isArray(item.genres) ? item.genres.slice(0, 4).join(', ') : '';
         const statusRaw = String(item.status || (item.meta || '').split(' · ')[0] || '').trim();
-        desc.textContent = /complete|selesai|tamat/i.test(statusRaw) ? 'Completed' : (statusRaw || 'Ongoing');
+        const status = /complete|selesai|tamat/i.test(statusRaw) ? 'Completed' : (statusRaw || 'Ongoing');
+        desc.textContent = genres || status;
       }
       if (factsEl) {
         const rate = getRating(item);
         const chapter = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || '');
         const views = getViews(item);
-        factsEl.innerHTML = [rate ? `${starIcon}<span>${esc(rate)}</span>` : '', chapter ? esc(chapter) : '', views ? `${eyeIcon}<span>${esc(views)} pembaca</span>` : ''].filter(Boolean).map((fact) => `<span class="spotlight__fact">${fact}</span>`).join('');
+        factsEl.innerHTML = [
+          rate ? `<span class="spotlight__fact">${starIcon}<span>${esc(rate)}</span></span>` : '',
+          chapter ? `<span class="spotlight__fact">${esc(chapter)}</span>` : '',
+          views ? `<span class="spotlight__fact">${eyeIcon}<span>${esc(views)} pembaca</span></span>` : '',
+        ].filter(Boolean).join('');
       }
-      if (label) label.textContent = `#${index + 1}`;
-      if (chapterBadge) chapterBadge.textContent = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || 'Chapter terbaru');
+      if (label) label.textContent = `#${index + 1} Trending`;
+      const href = link('detail', item.url);
+      cta.forEach((a) => { a.href = href; });
       dots.forEach((d, i) => d.classList.toggle('is-on', i === index));
       hero.classList.remove('is-changing');
     };
     preload.onerror = () => hero.classList.remove('is-changing');
-    preload.src = nextUrl;
+    preload.src = bgUrl;
   };
-  timer = window.setInterval(change, reducedMotion ? 12000 : 5500);
+  timer = window.setInterval(change, reducedMotion ? 12000 : 6000);
   const onVisibility = () => {
     if (!alive() || !root.contains(hero)) {
       if (timer) clearInterval(timer);
@@ -267,7 +264,7 @@ function startSpotlightRotation(items, root, alive) {
       return;
     }
     if (document.hidden && timer) { clearInterval(timer); timer = null; }
-    else if (!document.hidden && !timer) timer = window.setInterval(change, reducedMotion ? 12000 : 5500);
+    else if (!document.hidden && !timer) timer = window.setInterval(change, reducedMotion ? 12000 : 6000);
   };
   document.addEventListener('visibilitychange', onVisibility);
 }
