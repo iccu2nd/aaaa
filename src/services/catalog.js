@@ -10,6 +10,7 @@ const shinigami = require('./shinigami');
 const voratoon = require('./voratoon');
 const axios = require('axios');
 const sharp = require('sharp');
+const { ANALYZE_WIDTH, FACE_MIN_SCORE, findFace, findArt } = require('./faceFocus');
 
 const THUMB_UA =
   'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 Chrome/124.0.0.0 Mobile Safari/537.36';
@@ -144,8 +145,8 @@ const all = async (query = '') => {
 async function fetchImageBuffer(url) {
   const res = await axios.get(url, {
     responseType: 'arraybuffer',
-    timeout: 6500,
-    maxContentLength: 3 * 1024 * 1024,
+    timeout: 9000,
+    maxContentLength: 12 * 1024 * 1024,
     headers: {
       'User-Agent': THUMB_UA,
       Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
@@ -156,222 +157,48 @@ async function fetchImageBuffer(url) {
   return Buffer.from(res.data);
 }
 
-function skinScore(r, g, b) {
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-  const sat = max === 0 ? 0 : (max - min) / max;
-  if (lum < 45 || lum > 235 || sat > 0.58) return 0;
-  const dRG = r - g;
-  const dRB = r - b;
-  // fair / east-asian
-  if (r > 145 && g > 105 && b > 85 && dRG > 4 && dRB > 12 && sat > 0.04 && sat < 0.4) return 4;
-  // medium
-  if (r > 100 && r > g && g >= b * 0.82 && lum > 70 && lum < 205 && sat > 0.07 && sat < 0.5) return 3.4;
-  // warm
-  if (r > 75 && r > g + 6 && g > b && lum > 55 && lum < 165 && sat > 0.09 && sat < 0.55) return 2.8;
-  // blush / lip zone
-  if (r > 165 && g > 115 && b > 115 && dRG > 8 && lum > 130 && lum < 225 && sat < 0.35) return 2.2;
-  return 0;
-}
-
-/**
- * Analisis satu panel.
- * pageScore < 0 = tolak (teks/balon/putih).
- * focus = object-position ke wajah.
- */
-function analyzePage(data, width, height, channels) {
-  const stepX = Math.max(1, Math.floor(width / 48));
-  const stepY = Math.max(1, Math.floor(height / 80));
-
-  let total = 0;
-  let white = 0;
-  let inkOnWhite = 0; // indikasi teks di balon
-  let skinW = 0;
-  let skinN = 0;
-  let colorN = 0;
-
-  // histogram Y untuk zona kulit terbaik
-  const bands = 20;
-  const skinBand = new Array(bands).fill(0);
-  const whiteBand = new Array(bands).fill(0);
-  const bandCount = new Array(bands).fill(0);
-  const skinXs = [];
-  const skinYs = [];
-
-  for (let y = 0; y < height; y += stepY) {
-    const bi = Math.min(bands - 1, Math.floor((y / height) * bands));
-    for (let x = 0; x < width; x += stepX) {
-      const i = (y * width + x) * channels;
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-      const sat = max === 0 ? 0 : (max - min) / max;
-      total += 1;
-      bandCount[bi] += 1;
-
-      // putih / balon
-      if (lum > 215 && sat < 0.12) {
-        white += 1;
-        whiteBand[bi] += 1;
-        // tinta teks: tetangga gelap di area putih
-        if (x + stepX < width) {
-          const j = (y * width + (x + stepX)) * channels;
-          const lum2 = 0.299 * data[j] + 0.587 * data[j + 1] + 0.114 * data[j + 2];
-          if (lum2 < 90) inkOnWhite += 1;
-        }
-        continue;
-      }
-
-      if (sat > 0.2 && lum > 40 && lum < 200) colorN += 1;
-
-      const sk = skinScore(r, g, b);
-      if (sk > 0) {
-        skinW += sk;
-        skinN += 1;
-        skinBand[bi] += sk;
-        skinXs.push(x);
-        skinYs.push(y);
-      }
-    }
-  }
-
-  if (!total) return { pageScore: -1, focus: null };
-
-  const whiteRatio = white / total;
-  const skinRatio = skinN / total;
-  const textHint = inkOnWhite / total;
-  const colorRatio = colorN / total;
-
-  // —— TOLAK panel balon teks / hampir putih ——
-  if (whiteRatio > 0.42) return { pageScore: -3, focus: null };
-  if (whiteRatio > 0.32 && textHint > 0.02) return { pageScore: -2.5, focus: null };
-  if (skinRatio < 0.02 && whiteRatio > 0.25) return { pageScore: -2, focus: null };
-  if (skinRatio < 0.015 && colorRatio < 0.08) return { pageScore: -1.5, focus: null };
-
-  // band terbaik untuk wajah (hindari kaki & header)
-  let bestBand = 3;
-  let bestBandS = -1;
-  const loB = Math.max(1, Math.floor(bands * 0.1));
-  const hiB = Math.min(bands - 2, Math.floor(bands * 0.65));
-  for (let i = loB; i <= hiB; i += 1) {
-    const n = Math.max(1, bandCount[i]);
-    const s = skinBand[i] / n - (whiteBand[i] / n) * 2;
-    if (s > bestBandS) {
-      bestBandS = s;
-      bestBand = i;
-    }
-  }
-
-  // centroid kulit di sekitar best band (±2 band)
-  let sx = 0;
-  let sy = 0;
-  let sw = 0;
-  const yLo = ((bestBand - 1.2) / bands) * height;
-  const yHi = ((bestBand + 2.2) / bands) * height;
-  for (let k = 0; k < skinXs.length; k += 1) {
-    const y = skinYs[k];
-    if (y < yLo || y > yHi) continue;
-    // skip ekstrem kiri/kanan sedikit
-    const x = skinXs[k];
-    sx += x;
-    sy += y;
-    sw += 1;
-  }
-
-  // fallback: semua kulit di zona aman
-  if (sw < 4) {
-    sx = 0;
-    sy = 0;
-    sw = 0;
-    for (let k = 0; k < skinXs.length; k += 1) {
-      const y = skinYs[k];
-      if (y < height * 0.08 || y > height * 0.72) continue;
-      sx += skinXs[k];
-      sy += y;
-      sw += 1;
-    }
-  }
-
-  if (sw < 2) return { pageScore: -1, focus: null };
-
-  const cx = sx / sw;
-  const cy = sy / sw;
-
-  // geser ke atas sedikit (rambut)
-  let posY = (cy / height) * 100 - 5;
-  let posX = (cx / width) * 100;
-  posY = Math.max(16, Math.min(48, posY));
-  posX = Math.max(25, Math.min(75, posX));
-
-  // skor halaman: kulit tinggi, putih rendah, sedikit teks
-  const pageScore =
-    skinRatio * 28 +
-    Math.min(6, skinW / 40) +
-    colorRatio * 3 -
-    whiteRatio * 18 -
-    textHint * 40 +
-    (bestBandS > 0 ? bestBandS * 2 : 0);
-
-  if (pageScore < 0.8) return { pageScore: -0.5, focus: null };
-
-  return {
-    pageScore,
-    focus: {
-      x: Math.round(posX),
-      pos: Math.round(posY),
-      score: pageScore,
-    },
-  };
-}
-
 async function analyzeFocus(url) {
   try {
     const buf = await fetchImageBuffer(url);
-    const { data, info } = await sharp(buf)
+    const { data, info } = await sharp(buf, { limitInputPixels: 80e6 })
       .rotate()
-      .resize(72, 240, { fit: 'inside', withoutEnlargement: true })
+      .resize({ width: ANALYZE_WIDTH })
       .removeAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true });
     const { width, height, channels } = info;
     if (!width || !height || channels < 3) return null;
-    return analyzePage(data, width, height, channels);
+    return {
+      face: findFace(data, width, height, channels),
+      art: findArt(data, width, height, channels),
+    };
   } catch {
     return null;
   }
 }
 
-function candidateIndexes(n, seed) {
-  // Skip intro watermark & ending credit lebih agresif
+function candidateIndexes(n) {
   let lo = 0;
   let hi = n - 1;
   if (n >= 20) {
-    lo = Math.floor(n * 0.32);
-    hi = Math.floor(n * 0.62);
+    lo = Math.floor(n * 0.2);
+    hi = Math.floor(n * 0.8);
   } else if (n >= 12) {
-    lo = Math.floor(n * 0.28);
-    hi = Math.floor(n * 0.65);
+    lo = Math.floor(n * 0.2);
+    hi = Math.floor(n * 0.8);
   } else if (n >= 7) {
-    lo = 2;
-    hi = n - 3;
-  } else if (n >= 4) {
     lo = 1;
     hi = n - 2;
+  } else if (n >= 4) {
+    lo = 1;
+    hi = n - 1;
   }
   if (hi < lo) hi = lo;
   const span = hi - lo + 1;
+  const count = Math.min(7, span);
   const picks = new Set();
-  const count = Math.min(5, span);
-  for (let s = 0; s < count; s += 1) {
-    picks.add(lo + Math.floor(((s + 0.35) * span) / count) % span);
-  }
-  // sedikit offset seed agar chapter beda tidak sama semua
-  picks.add(lo + ((Math.floor(span / 2) + (seed % Math.max(1, span))) % span));
-  return [...picks].slice(0, 5);
+  for (let s = 0; s < count; s += 1) picks.add(lo + Math.floor(((s + 0.5) * span) / count));
+  return [...picks];
 }
 
 const thumb = async (chapterUrl) => {
@@ -380,43 +207,37 @@ const thumb = async (chapterUrl) => {
   const imgs = (r.data.images || []).filter(Boolean);
   if (!imgs.length) return { status: false, message: 'Tidak ada gambar' };
 
-  let h = 0;
-  for (const ch of String(chapterUrl)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-
-  const idxs = candidateIndexes(imgs.length, h);
+  const idxs = candidateIndexes(imgs.length);
   const results = await Promise.all(
-    idxs.map(async (i) => {
-      const analysis = await analyzeFocus(imgs[i]);
-      return { i, analysis };
-    }),
+    idxs.map(async (i) => ({ i, a: await analyzeFocus(imgs[i]) })),
   );
 
-  let best = null;
+  let bestFace = null;
+  let bestArt = null;
   for (const row of results) {
-    if (!row.analysis || !row.analysis.focus) continue;
-    if (row.analysis.pageScore < 0.8) continue;
-    if (!best || row.analysis.pageScore > best.analysis.pageScore) best = row;
+    if (!row.a) continue;
+    if (row.a.face && row.a.face.score >= FACE_MIN_SCORE && (!bestFace || row.a.face.score > bestFace.f.score)) {
+      bestFace = { i: row.i, f: row.a.face };
+    }
+    if (row.a.art && (!bestArt || row.a.art.score > bestArt.f.score)) bestArt = { i: row.i, f: row.a.art };
   }
 
-  if (best) {
-    return {
-      status: true,
-      data: {
-        url: imgs[best.i],
-        pos: best.analysis.focus.pos,
-        x: best.analysis.focus.x,
-      },
-    };
+  const pick = bestFace || bestArt;
+  if (!pick) {
+    const mid = Math.min(imgs.length - 1, Math.max(1, Math.floor(imgs.length * 0.4)));
+    return { status: true, data: { url: imgs[mid], fx: 0.5, fy: 0.3, fw: 0.6, face: false, v: 6 } };
   }
-
-  // fallback: coba index tengah-tengah chapter (bukan page 0)
-  const mid = Math.min(
-    imgs.length - 1,
-    Math.max(1, Math.floor(imgs.length * 0.4) + (h % Math.max(1, Math.floor(imgs.length * 0.15)))),
-  );
+  const { f } = pick;
   return {
     status: true,
-    data: { url: imgs[mid], pos: 28, x: 50 },
+    data: {
+      url: imgs[pick.i],
+      fx: +f.fx.toFixed(4),
+      fy: +f.fy.toFixed(4),
+      fw: +f.fw.toFixed(4),
+      face: !!bestFace,
+      v: 6,
+    },
   };
 };
 

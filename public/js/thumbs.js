@@ -13,21 +13,52 @@ function pump() {
   }
 }
 
+/**
+ * Letakkan titik fokus (wajah) tepat di tengah kotak thumbnail.
+ * fx/fy = pusat wajah (0..1 dari seluruh gambar), fw = lebar wajah (0..1).
+ */
+function frame(el, im, t) {
+  const bw = el.clientWidth;
+  const bh = el.clientHeight;
+  const iw = im.naturalWidth;
+  const ih = im.naturalHeight;
+  if (!bw || !bh || !iw || !ih) return;
+  const fw = Number.isFinite(Number(t.fw)) ? Number(t.fw) : 0.3;
+  const show = Math.min(1, Math.max(0.4, fw / 0.34));
+  const rw = bw / show;
+  const rh = rw * (ih / iw);
+  const fx = Number.isFinite(Number(t.fx)) ? Number(t.fx) : 0.5;
+  const fy = Number.isFinite(Number(t.fy)) ? Number(t.fy) : 0.3;
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const left = clamp(bw / 2 - fx * rw, Math.min(0, bw - rw), 0);
+  const top = clamp(bh / 2 - fy * rh, Math.min(0, bh - rh), 0);
+  im.style.objectFit = 'fill';
+  im.style.width = `${rw}px`;
+  im.style.height = `${rh}px`;
+  im.style.inset = 'auto';
+  im.style.left = `${left}px`;
+  im.style.top = `${top}px`;
+}
+
 async function load(el) {
   const url = el.dataset.thumb;
   if (!url || el.dataset.state) return;
   el.dataset.state = 'loading';
   try {
-    const t = await api('/api/thumb?url=' + encodeURIComponent(url));
+    const t = await api('/api/thumb?v=6&url=' + encodeURIComponent(url));
     const im = new Image();
     im.alt = '';
     im.decoding = 'async';
-    // pos dari server: area wajah/karakter hasil analisis panel
-    const y = Number.isFinite(Number(t.pos)) ? Number(t.pos) : 30;
-    const x = Number.isFinite(Number(t.x)) ? Number(t.x) : 50;
-    im.style.objectFit = 'cover';
-    im.style.objectPosition = `${x}% ${y}%`;
-    im.onload = () => { el.classList.add('is-ready'); el.classList.remove('loading-surface'); el.dataset.state = 'done'; };
+    im.onload = () => {
+      if (Number.isFinite(Number(t.fx))) frame(el, im, t);
+      else {
+        im.style.objectFit = 'cover';
+        im.style.objectPosition = `${Number(t.x) || 50}% ${Number(t.pos) || 30}%`;
+      }
+      el.classList.add('is-ready');
+      el.classList.remove('loading-surface');
+      el.dataset.state = 'done';
+    };
     im.onerror = () => { im.remove(); el.dataset.state = 'error'; el.classList.remove('loading-surface'); };
     im.src = img(t.url);
     el.appendChild(im);
