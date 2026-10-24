@@ -716,3 +716,85 @@ body.is-home .topbar__icon svg {
 body.is-home #app.container {
   padding-top: calc(44px + env(safe-area-inset-top, 0px)) !important;
 }
+
+/* RiMwa brand-only topbar */
+body.is-home .topbar,
+body.is-home #topbar {
+  position: fixed !important;
+  inset: 0 0 auto 0 !important;
+  z-index: 50 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  min-height: calc(58px + env(safe-area-inset-top, 0px)) !important;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 18px 8px !important;
+  background: rgba(7, 8, 11, .97) !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(64, 119, 231, .34) !important;
+  box-shadow: 0 5px 22px rgba(0, 0, 0, .2) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  pointer-events: auto !important;
+}
+body.is-home .topbar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(48, 112, 244, .8) 18%, rgba(48, 112, 244, .18) 72%, transparent 100%);
+  pointer-events: none;
+}
+body.is-home .topbar__logo {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 9px !important;
+  width: auto !important;
+  height: 40px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+body.is-home .topbar__logo img {
+  display: block !important;
+  flex: 0 0 auto !important;
+  width: 42px !important;
+  height: 30px !important;
+  object-fit: contain !important;
+  filter: brightness(1.48) saturate(1.08) !important;
+}
+body.is-home .topbar__wordmark {
+  display: inline-block !important;
+  color: #e5e7eb !important;
+  font-family: var(--font) !important;
+  font-size: 21px !important;
+  line-height: 1 !important;
+  font-weight: 700 !important;
+  font-style: italic !important;
+  letter-spacing: -1.15px !important;
+  white-space: nowrap !important;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, .35);
+}
+body.is-home #app.container {
+  padding-top: 58px !important;
+}
+@media (min-width: 720px) {
+  body.is-home .topbar,
+  body.is-home #topbar {
+    padding-left: max(28px, calc((100vw - 1120px) / 2)) !important;
+    min-height: 64px !important;
+  }
+  body.is-home .topbar__logo { height: 44px !important; gap: 11px !important; }
+  body.is-home .topbar__logo img { width: 48px !important; height: 34px !important; }
+  body.is-home .topbar__wordmark { font-size: 23px !important; }
+  body.is-home #app.container { padding-top: 64px !important; }
+}

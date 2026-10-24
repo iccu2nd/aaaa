@@ -21,7 +21,7 @@
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
   <link rel="stylesheet" href="/css/base.css?v=60">
-  <link rel="stylesheet" href="/css/layout.css?v=60">
+  <link rel="stylesheet" href="/css/layout.css?v=61">
   <link rel="stylesheet" href="/css/components.css?v=60">
   <link rel="stylesheet" href="/css/pages.css?v=60">
   <link rel="stylesheet" href="/css/perf.css?v=60">
@@ -49,22 +49,9 @@
 <body>
   <header class="topbar" id="topbar">
     <a class="topbar__logo" href="/" aria-label="RiMwa Home">
-      <img src="/icons/logo-rimwa.png" alt="RiMwa" width="28" height="28" decoding="async">
+      <img src="/icons/logo-rimwa-mark.png" alt="" width="40" height="28" decoding="async">
+      <span class="topbar__wordmark">RiMwa</span>
     </a>
-    <div class="topbar__actions">
-      <a class="topbar__icon" href="/search" id="topbar-search-btn" aria-label="Cari">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.7"/>
-          <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-        </svg>
-      </a>
-      <button type="button" class="topbar__icon" id="topbar-notif" aria-label="Notifikasi">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 13.5 6 9.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-          <path d="M10 18.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </div>
   </header>
 
   <main id="app" class="container"></main>
