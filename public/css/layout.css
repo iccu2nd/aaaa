@@ -489,3 +489,27 @@ body.is-library .topbar,
 body.is-profile .topbar {
   display: none !important;
 }
+
+/* Final override: topbar icons must never show a black box */
+body.is-home .topbar,
+body.is-home #topbar {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+body.is-home .topbar__actions {
+  background: transparent !important;
+  gap: 0 !important;
+}
+body.is-home .topbar__icon,
+body.is-home .topbar__icon.is-on,
+body.is-home #topbar-notif,
+body.is-home #topbar-search-btn {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}

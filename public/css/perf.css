@@ -39,11 +39,13 @@
   }
 }
 
+/* Topbar home: transparan total (ikon tanpa kotak hitam) */
 .topbar {
-  background: #000 !important;
+  background: transparent !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
-  border-bottom: 0.5px solid rgba(255, 255, 255, 0.08) !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
 }
 
 body::before {

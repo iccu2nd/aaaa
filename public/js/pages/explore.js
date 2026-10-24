@@ -22,7 +22,8 @@ const icon = (name) => ({
 })[name];
 const fmt = (n) => Number(n || 0).toLocaleString('id-ID');
 
-export async function explore({ root, alive }, q = '', genre = '', sortMode = 'latest', format = '') {
+export async function explore({ root, alive }, q = '', genre = '', sortMode = 'latest', format = '', mode = 'browse') {
+  const isSearchMode = mode === 'search';
   let currentQuery = q;
   let currentGenres = String(genre || '')
     .split(',')
@@ -112,6 +113,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
   let io = null;
   let requestId = 0;
 
+  const basePath = isSearchMode ? '/search' : '/explore';
   const navigate = () => {
     const params = new URLSearchParams();
     if (currentQuery) params.set('q', currentQuery);
@@ -119,7 +121,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     if (currentFormat) params.set('format', currentFormat);
     params.set('sort', sort === 'popular' ? 'popular' : 'latest');
     const qs = params.toString();
-    navigateTo(qs ? `/explore?${qs}` : '/explore');
+    navigateTo(qs ? `${basePath}?${qs}` : basePath);
   };
 
   const paintQuick = () => {
@@ -303,7 +305,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
       if (currentFormat) params.set('format', currentFormat);
       params.set('sort', sort === 'popular' ? 'popular' : 'latest');
       const qs = params.toString();
-      const path = qs ? `/explore?${qs}` : '/explore';
+      const path = qs ? `${basePath}?${qs}` : basePath;
       try { history.replaceState(history.state, '', path); } catch { /* ignore */ }
       loadResults();
     }, 160);
@@ -314,10 +316,12 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     currentQuery = '';
     navigate();
   });
-  // auto-focus saat dibuka dari ikon search home
-  requestAnimationFrame(() => {
-    if (!q) searchInput.focus({ preventScroll: true });
-  });
+  // auto-focus hanya dari ikon search Home
+  if (isSearchMode) {
+    requestAnimationFrame(() => {
+      searchInput.focus({ preventScroll: true });
+    });
+  }
 
   root.querySelector('#format-row')?.addEventListener('click', (e) => {
     const b = e.target.closest('[data-format]');
@@ -427,19 +431,16 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     paintQuick();
 
     const isQuery = currentQuery.trim().length >= 2;
-    const isBare = !isQuery && !currentGenres.length && !currentFormat;
+    // Panel Recent searches HANYA di mode search (ikon Home), bukan Explore
+    const isBareSearch = isSearchMode && !isQuery && !currentGenres.length && !currentFormat;
 
-    // Mode kosong: recent searches + browse chips (UI tidak kosong)
-    if (isBare) {
+    if (isBareSearch) {
       paintEmpty();
-      // tetap tampilkan grid rekomendasi di bawah
       grid.insertAdjacentHTML('beforeend', '<div class="search-suggest-label">Popular now</div><div class="grid explore-grid" id="ex-suggest"></div>');
-    }
-
-    if (isQuery) {
+    } else if (isQuery && isSearchMode) {
       grid.className = 'search-hits';
       grid.innerHTML = '<div class="search-hit search-hit--skel loading-surface"></div>'.repeat(6);
-    } else if (!isBare) {
+    } else {
       grid.className = 'grid explore-grid';
       grid.innerHTML = '<div class="explore-skeleton loading-surface"></div>'.repeat(9);
     }
@@ -452,7 +453,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
       const first = await api(url(1));
       if (!alive() || myRequest !== requestId) return;
 
-      if (isBare) {
+      if (isBareSearch) {
         const target = root.querySelector('#ex-suggest') || grid;
         target.innerHTML = (first.items || []).slice(0, 12).map(card).join('')
           || '<p class="search-empty__hint">Belum ada rekomendasi.</p>';
@@ -469,9 +470,10 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
         count.hidden = false;
         return;
       }
+      const useList = isSearchMode && isQuery;
       const add = (data) => {
         const items = (data.items || []).filter((c) => c?.url && !seen.has(c.url) && seen.add(c.url));
-        grid.insertAdjacentHTML('beforeend', items.map(isQuery ? listRow : card).join(''));
+        grid.insertAdjacentHTML('beforeend', items.map(useList ? listRow : card).join(''));
         count.textContent = `${fmt(data.total)} judul`;
         count.hidden = false;
       };
