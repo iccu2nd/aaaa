@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "RiMwa",
-  "short_name": "RiMwa",
-  "description": "Baca manhwa & manga online — cepat, rapi, offline-ready",
+  "name": "Komikta",
+  "short_name": "Komikta",
+  "description": "Baca komik, manhwa & manga online — cepat, rapi, offline-ready",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

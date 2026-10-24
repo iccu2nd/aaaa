@@ -29,6 +29,6 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
 });
 
 app.listen(port, () => {
-  console.log(`RiMwa http://localhost:${port}`);
+  console.log(`Komikta http://localhost:${port}`);
   api.warm();
 });

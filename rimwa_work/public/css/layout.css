@@ -717,7 +717,7 @@ body.is-home #app.container {
   padding-top: calc(44px + env(safe-area-inset-top, 0px)) !important;
 }
 
-/* RiMwa brand-only topbar */
+/* Komikta brand-only topbar */
 body.is-home .topbar,
 body.is-home #topbar {
   position: fixed !important;
@@ -767,8 +767,8 @@ body.is-home .topbar__logo {
 body.is-home .topbar__logo img {
   display: block !important;
   flex: 0 0 auto !important;
-  width: 42px !important;
-  height: 30px !important;
+  width: 34px !important;
+  height: 34px !important;
   object-fit: contain !important;
   filter: brightness(1.48) saturate(1.08) !important;
 }
@@ -779,10 +779,13 @@ body.is-home .topbar__wordmark {
   font-size: 21px !important;
   line-height: 1 !important;
   font-weight: 700 !important;
-  font-style: italic !important;
-  letter-spacing: -1.15px !important;
+  font-style: normal !important;
+  letter-spacing: -.8px !important;
   white-space: nowrap !important;
   text-shadow: 0 1px 10px rgba(0, 0, 0, .35);
+}
+body.is-home .topbar__wordmark::first-letter {
+  color: #5b96ff;
 }
 body.is-home #app.container {
   padding-top: 58px !important;
@@ -794,7 +797,7 @@ body.is-home #app.container {
     min-height: 64px !important;
   }
   body.is-home .topbar__logo { height: 44px !important; gap: 11px !important; }
-  body.is-home .topbar__logo img { width: 48px !important; height: 34px !important; }
+  body.is-home .topbar__logo img { width: 36px !important; height: 36px !important; }
   body.is-home .topbar__wordmark { font-size: 23px !important; }
   body.is-home #app.container { padding-top: 64px !important; }
 }

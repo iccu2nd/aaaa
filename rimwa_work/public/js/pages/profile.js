@@ -45,7 +45,7 @@ export function profile({ root }) {
             <span class="profile-menu__ico">${ico.phone}</span>
             <span class="profile-menu__text">
               <span class="profile-menu__title">Pasang aplikasi</span>
-              <span class="profile-menu__desc">Tambahkan RiMwa ke layar utama</span>
+              <span class="profile-menu__desc">Tambahkan Komikta ke layar utama</span>
             </span>
             <span class="profile-menu__chev">${ico.chevron}</span>
           </button>
@@ -117,7 +117,7 @@ export function profile({ root }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `rimwa-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `komikta-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     status.textContent = 'Backup berhasil dibuat.';

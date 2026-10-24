@@ -1,7 +1,7 @@
 {
-  "name": "rimwa",
+  "name": "komikta",
   "version": "1.4.0",
-  "description": "RiMwa — baca komik online",
+  "description": "Komikta — baca komik online",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

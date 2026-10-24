@@ -45,9 +45,9 @@ export const readingProgress = {
 };
 
 export const libraryBackup = {
-  export() { return { app: 'RiMwa', version: 1, exportedAt: new Date().toISOString(), bookmarks: bookmarks.list(), history: history.list(), progress: readingProgress.list() }; },
+  export() { return { app: 'Komikta', version: 1, exportedAt: new Date().toISOString(), bookmarks: bookmarks.list(), history: history.list(), progress: readingProgress.list() }; },
   import(data) {
-    if (!data || data.app !== 'RiMwa' || !Array.isArray(data.bookmarks) || !Array.isArray(data.history)) throw new Error('File backup tidak valid.');
+    if (!data || !['Komikta', 'RiMwa'].includes(data.app) || !Array.isArray(data.bookmarks) || !Array.isArray(data.history)) throw new Error('File backup tidak valid.');
     const safeItems = (items) => items.filter((item) => item && typeof item === 'object' && typeof item.url === 'string' && typeof item.title === 'string').slice(0, 500);
     write(KEYS.bookmarks, safeItems(data.bookmarks));
     write(KEYS.history, safeItems(data.history).slice(0, 30));

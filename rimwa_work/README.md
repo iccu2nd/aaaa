@@ -1,6 +1,6 @@
-# RiMwa
+# Komikta
 
-RiMwa — platform baca komik dengan katalog terintegrasi.
+Komikta — platform baca komik dengan katalog terintegrasi.
 
 ## Jalankan
 ```bash
