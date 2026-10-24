@@ -801,3 +801,37 @@ body.is-home #app.container {
   body.is-home .topbar__wordmark { font-size: 23px !important; }
   body.is-home #app.container { padding-top: 64px !important; }
 }
+
+
+/* Komikta mask identity — white trim, original red/white emblem */
+body.is-home .topbar,
+body.is-home #topbar {
+  background: rgba(0, 0, 0, .96) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, .16) !important;
+  box-shadow: 0 5px 22px rgba(0, 0, 0, .24) !important;
+}
+body.is-home .topbar::after {
+  height: 1px !important;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.82) 18%, rgba(255,255,255,.24) 76%, transparent 100%) !important;
+}
+body.is-home .topbar__logo {
+  gap: 10px !important;
+}
+body.is-home .topbar__logo img {
+  width: 32px !important;
+  height: 42px !important;
+  object-fit: contain !important;
+  filter: none !important;
+}
+body.is-home .topbar__wordmark {
+  color: #fff !important;
+  font-size: 21px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.65px !important;
+  text-shadow: 0 1px 10px rgba(0,0,0,.45) !important;
+}
+body.is-home .topbar__wordmark::first-letter { color: #fff !important; }
+@media (min-width: 720px) {
+  body.is-home .topbar__logo img { width: 34px !important; height: 44px !important; }
+  body.is-home .topbar__wordmark { font-size: 23px !important; }
+}
