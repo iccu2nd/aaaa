@@ -192,3 +192,73 @@ body .spotlight.is-changing .spotlight__desc,
 body .spotlight.is-changing .spotlight__facts,
 body .spotlight.is-changing .spotlight__label { opacity: .35; }
 .home-skel .spotlight--skel { height: 268px; }
+
+/* Final mobile chrome fix: remove the accidental white chevron and extra gap. */
+body.is-home .topbar,
+body.is-home #topbar {
+  position: sticky !important;
+  inset: auto !important;
+  top: 0 !important;
+  z-index: 50 !important;
+  height: 64px !important;
+  min-height: 64px !important;
+  box-sizing: border-box !important;
+  padding: 4px 16px !important;
+  margin: 0 !important;
+  background: #050505 !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(255, 55, 70, .18) !important;
+  border-radius: 0 !important;
+  box-shadow: 0 5px 16px rgba(0, 0, 0, .24) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+body.is-home .topbar::before,
+body.is-home .topbar::after,
+body.is-home #topbar::before,
+body.is-home #topbar::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  clip-path: none !important;
+  box-shadow: none !important;
+}
+body.is-home #app.container {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Keep the selected destination clearly red, never white-lit. */
+.bottom-nav {
+  border-top: 1px solid rgba(255, 55, 70, .16) !important;
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, .48) !important;
+}
+.bottom-nav a[aria-current="page"],
+.bottom-nav a.is-active {
+  color: #fff !important;
+}
+.bottom-nav a[aria-current="page"]::before,
+.bottom-nav a.is-active::before {
+  background: radial-gradient(ellipse at center, rgba(255, 40, 58, .24) 0%, rgba(255, 40, 58, .10) 44%, transparent 76%) !important;
+  filter: blur(6px) !important;
+}
+.bottom-nav a[aria-current="page"]::after,
+.bottom-nav a.is-active::after {
+  background: #ff3548 !important;
+  box-shadow: 0 0 6px rgba(255, 40, 58, .9), 0 0 14px rgba(255, 40, 58, .52) !important;
+}
+.bottom-nav a[aria-current="page"] svg,
+.bottom-nav a.is-active svg {
+  filter: drop-shadow(0 0 5px rgba(255, 40, 58, .48)) !important;
+}
+@media (max-width: 380px) {
+  body.is-home .topbar,
+  body.is-home #topbar { padding-left: 12px !important; padding-right: 12px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav a,
+  .bottom-nav a::before,
+  .bottom-nav a::after,
+  .bottom-nav a svg,
+  .bottom-nav a span { transition: none !important; }
+}
