@@ -11,7 +11,7 @@ const voratoon = require('./voratoon');
 const axios = require('axios');
 const sharp = require('sharp');
 const humanFace = require('./humanFace');
-const { ANALYZE_WIDTH, FACE_MIN_SCORE, findFace, findArt, cropRect, THUMB_RATIO } = require('./faceFocus');
+const { ANALYZE_WIDTH, FACE_MIN_SCORE, findFace, findArt, cropRect, cropDirt, THUMB_RATIO } = require('./faceFocus');
 
 const THUMB_UA =
   'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 Chrome/124.0.0.0 Mobile Safari/537.36';
@@ -213,30 +213,34 @@ const thumbImage = async (chapterUrl) => {
   const idxs = candidateIndexes(imgs.length);
   const results = await Promise.all(idxs.map(async (i) => ({ i, a: await analyzeFocus(imgs[i]) })));
 
-  let best = null;
-  let bestArt = null;
-  let bestModel = null;
+  const cands = [];
   for (const row of results) {
     if (!row.a) continue;
-    const m = row.a.model;
-    if (m && (!bestModel || m.score > bestModel.f.score)) bestModel = { row, f: m, face: true };
-    const f = row.a.face;
-    if (f && f.score >= FACE_MIN_SCORE && (!best || f.score > best.f.score)) best = { row, f, face: true };
-    const art = row.a.art;
-    if (art && (!bestArt || art.score > bestArt.f.score)) bestArt = { row, f: art, face: false };
+    if (row.a.model) cands.push({ tier: 0, by: 'model', row, f: row.a.model, face: true });
+    if (row.a.face && row.a.face.score >= FACE_MIN_SCORE) cands.push({ tier: 1, by: 'warna', row, f: row.a.face, face: true });
+    if (row.a.art) cands.push({ tier: 2, by: 'area', row, f: row.a.art, face: false });
   }
-  const pick = bestModel || best || bestArt;
-  if (!pick) return { status: false, message: 'Gambar tidak bisa dianalisis' };
+  if (!cands.length) return { status: false, message: 'Gambar tidak bisa dianalisis' };
+  cands.sort((x, y) => x.tier - y.tier || y.f.score - x.f.score);
 
-  const meta = await sharp(pick.row.a.buf).metadata();
-  const rect = cropRect(meta.width, meta.height, pick.f, pick.face);
-  const out = await sharp(pick.row.a.buf)
-    .rotate()
-    .extract(rect)
+  let chosen = null;
+  for (const c of cands.slice(0, 8)) {
+    const meta = await sharp(c.row.a.buf).metadata();
+    const rect = cropRect(meta.width, meta.height, c.f, c.face);
+    const base = sharp(c.row.a.buf).rotate().extract(rect);
+    const probe = await base.clone().resize(120).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    const d = cropDirt(probe.data, probe.info.width, probe.info.height, probe.info.channels);
+    const cur = { c, rect, base, dirt: d.dirt };
+    if (d.clean) { chosen = cur; break; }
+    if (!chosen || d.dirt < chosen.dirt) chosen = cur;
+  }
+
+  const out = await chosen.base
     .resize(240, Math.round(240 / THUMB_RATIO), { fit: 'cover' })
     .webp({ quality: 72 })
     .toBuffer();
-  return { status: true, data: out, face: pick.face, by: bestModel ? 'model' : best ? 'warna' : 'area', score: pick.f.score, page: pick.row.i, rect };
+  const { c } = chosen;
+  return { status: true, data: out, face: c.face, by: c.by, score: c.f.score, page: c.row.i, rect: chosen.rect };
 };
 
 const detail = async (url) => {

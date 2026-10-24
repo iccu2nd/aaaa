@@ -224,6 +224,14 @@ function findArt(data, w, h, ch = 3, ratioWH = 1.45) {
 
 const THUMB_RATIO = 1.45;
 
+/** Seberapa "kotor" sebuah crop: porsi putih/balon dan tinta teks di atas putih. */
+function cropDirt(data, w, h, ch = 3) {
+  const cls = classify(data, w, h, ch);
+  const white = ratio(cls, w, h, 0, 0, w - 1, h - 1, WHITE);
+  const ink = inkOnWhite(cls, w, h, 0, 0, w - 1, h - 1);
+  return { white, ink, dirt: white * 1.8 + ink * 14, clean: white <= 0.22 && ink <= 0.004 };
+}
+
 /** Jendela crop (piksel gambar asli) yang memuat wajah + rambut dengan ekspresi terlihat jelas. */
 function cropRect(iw, ih, f, isFace) {
   let cw = isFace ? (f.fw * iw) / 0.42 : iw;
@@ -240,4 +248,4 @@ function cropRect(iw, ih, f, isFace) {
   return { left, top, width: Math.round(cw), height: Math.round(chh) };
 }
 
-module.exports = { THUMB_RATIO, cropRect, ANALYZE_WIDTH, FACE_MIN_SCORE, findFace, findArt, skinScore };
+module.exports = { cropDirt, THUMB_RATIO, cropRect, ANALYZE_WIDTH, FACE_MIN_SCORE, findFace, findArt, skinScore };

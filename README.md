@@ -47,3 +47,4 @@ npm start
 - Deteksi: `src/services/faceFocus.js` (gumpalan kulit berbentuk wajah + fitur gelap + rambut, menjauhi balon teks). Bila tidak yakin, dipilih area gambar paling bersih dari teks.
 - Uji dengan chapter acak dari sumber asli: `npm run test:thumb 8` → hasil di `thumb-test/`.
 - Deteksi utama: `@vladmandic/human` (BlazeFace, backend WASM, dipasang sebagai optionalDependencies). Halaman panjang dipindai per jendela persegi. Jika paket tidak terpasang/gagal dimuat, otomatis pakai deteksi warna kulit lalu area bersih (lihat log `[humanFace]`).
+- Setiap crop diperiksa sebelum dipakai (porsi putih/balon dan tinta teks). Crop kotor ditolak dan diganti kandidat berikutnya (model → warna → area bersih).
