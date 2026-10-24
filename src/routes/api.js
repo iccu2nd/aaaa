@@ -112,6 +112,7 @@ router.get('/thumbimg', sourceUrl, async (req, res) => {
     const out = await cache.wrap('ti1:' + req.query.url, cfg.ttl.thumb, () => source.thumbImage(String(req.query.url)));
     if (!out || !out.status) return res.status(404).end();
     res.set('Content-Type', 'image/webp');
+    res.set('X-Thumb-By', String(out.by || ''));
     res.set('Cache-Control', 'public, max-age=604800, immutable');
     res.send(out.data);
   } catch {

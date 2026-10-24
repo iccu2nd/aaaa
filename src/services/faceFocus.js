@@ -18,8 +18,7 @@ function skinScore(r, g, b) {
   const dRG = r - g;
   const dRB = r - b;
   if (r > 145 && g > 105 && b > 85 && dRG > 4 && dRB > 12 && sat > 0.04 && sat < 0.4) return 4;
-  if (r > 100 && r > g && g >= b * 0.82 && lum > 70 && lum < 205 && sat > 0.07 && sat < 0.5) return 3.4;
-  if (r > 75 && r > g + 6 && g > b && lum > 55 && lum < 165 && sat > 0.09 && sat < 0.55) return 2.8;
+  if (r > 150 && g > 110 && b > 90 && r > g && g >= b && lum > 110 && lum < 215 && sat > 0.07 && sat < 0.38) return 3.2;
   if (r > 165 && g > 115 && b > 115 && dRG > 8 && lum > 130 && lum < 225 && sat < 0.35) return 2.2;
   return 0;
 }
@@ -132,6 +131,30 @@ function inkOnWhite(cls, w, h, x0, y0, x1, y1) {
   return n ? k / n : 0;
 }
 
+function eyeEvidence(cls, w, h, c) {
+  const bw = c.maxx - c.minx + 1;
+  const bh = c.maxy - c.miny + 1;
+  const xa = Math.round(c.minx + bw * 0.12);
+  const xb = Math.round(c.maxx - bw * 0.12);
+  const ya = Math.round(c.miny + bh * 0.12);
+  const yb = Math.round(c.miny + bh * 0.85);
+  const reach = Math.max(2, Math.round(bw * 0.12));
+  let n = 0;
+  for (let y = ya; y <= yb; y += 1) {
+    for (let x = xa; x <= xb; x += 1) {
+      if (cls[y * w + x] !== DARK) continue;
+      let l = false;
+      let r = false;
+      for (let d = 1; d <= reach && !(l && r); d += 1) {
+        if (x - d >= 0 && cls[y * w + x - d] === SKIN) l = true;
+        if (x + d < w && cls[y * w + x + d] === SKIN) r = true;
+      }
+      if (l && r) n += 1;
+    }
+  }
+  return n / (bw * bh);
+}
+
 function scoreFace(cls, w, h, c) {
   const bw = c.maxx - c.minx + 1;
   const bh = c.maxy - c.miny + 1;
@@ -158,13 +181,16 @@ function scoreFace(cls, w, h, c) {
   const ideal = w * 0.24;
   const size = Math.max(0.15, 1 - Math.abs(Math.log(bw / ideal)) / Math.log(3.2));
   const shape = Math.max(0.3, 1 - Math.abs(Math.log(aspect / 1.25)) / Math.log(2.4));
-  const solid = Math.min(1, (fill - 0.3) / 0.35);
+  const solid = Math.max(0.08, Math.min(1, (0.95 - fill) / 0.2));
 
   const feat = ratio(cls, w, h, c.minx, c.miny + bh * 0.15, c.maxx, c.miny + bh * 0.8, DARK);
   if (feat < 0.012) return null;
+  const eyes = eyeEvidence(cls, w, h, c);
+  if (eyes < 0.006) return null;
+  const eyeBonus = Math.min(1, eyes / 0.025);
   const featBonus = Math.min(1, feat / 0.04);
 
-  const score = hairBonus * size * shape * solid * clean * (0.5 + 0.5 * featBonus);
+  const score = hairBonus * size * shape * solid * clean * (0.5 + 0.5 * featBonus) * (0.6 + 0.4 * eyeBonus);
   return {
     score,
     fx: cx / w,
@@ -197,7 +223,7 @@ function findFace(data, w, h, ch = 3) {
   return best && best.score >= 0.1 ? best : null;
 }
 
-const FACE_MIN_SCORE = 0.25;
+const FACE_MIN_SCORE = 0.14;
 
 /**
  * Cadangan bila tidak ada wajah yang meyakinkan: jendela gambar (rasio thumbnail)
