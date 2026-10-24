@@ -685,3 +685,34 @@ body.is-home #app.container {
 body.is-home .spotlight {
   margin-top: 0 !important;
 }
+
+/* Topbar lebih besar + abu, bukan hitam pekat */
+body.is-home .topbar,
+body.is-home #topbar {
+  min-height: 56px !important;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 12px !important;
+  background: #1c1c1e !important;
+  background-color: #1c1c1e !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
+body.is-home .topbar__logo {
+  height: 36px !important;
+}
+body.is-home .topbar__logo img {
+  width: 34px !important;
+  height: 34px !important;
+}
+body.is-home .topbar__icon,
+body.is-home .topbar__icon.is-on,
+body.is-home #topbar-notif,
+body.is-home #topbar-search-btn {
+  width: 44px !important;
+  height: 44px !important;
+}
+body.is-home .topbar__icon svg {
+  width: 24px !important;
+  height: 24px !important;
+}
+body.is-home #app.container {
+  padding-top: calc(56px + env(safe-area-inset-top, 0px)) !important;
+}
