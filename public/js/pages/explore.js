@@ -1,6 +1,6 @@
 import { navigate as navigateTo } from '../router.js';
 import { api } from '../api.js';
-import { card } from '../components/card.js';
+import { richCard as card } from '../components/card.js';
 import { esc } from '../utils.js';
 
 const SIZE = 24;
@@ -14,7 +14,7 @@ const FORMATS = [
 const icon = (name) => ({
   search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>',
   filter: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.3 7.2v5.4l-3.4 1.8v-7.2L4 5z"/></svg>',
-  sort: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg>',
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg>',
   close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>',
 })[name];
 const fmt = (n) => Number(n || 0).toLocaleString('id-ID');
@@ -25,11 +25,10 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     .split(',')
     .map((g) => g.trim())
     .filter(Boolean);
-  let sort = sortMode === 'title' ? 'title' : 'latest';
+  let sort = sortMode === 'popular' ? 'popular' : sortMode === 'title' ? 'title' : 'latest';
   let currentFormat = String(format || '').trim().toLowerCase();
   const genreKey = () => currentGenres.join(',');
-
-  const topGenres = ['Action', 'Adaptation', 'Adult', 'Adventure', 'Romance', 'Fantasy', 'Comedy'];
+  const topGenres = ['Action', 'Comedy', 'Adaptation', 'Adventure', 'Romance', 'Fantasy', 'Drama'];
 
   root.innerHTML = `
     <section class="section explore-page">
@@ -46,19 +45,27 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
       </div>
 
       <div class="explore-genres" id="genre-row">
-        <button type="button" class="explore-chip explore-chip--filter ${currentGenres.length ? 'is-active' : ''}" id="genre-open" aria-label="Filter genre" aria-expanded="false">${icon('filter')}<span>Filters</span></button>
+        <button type="button" class="explore-chip explore-chip--filter ${currentGenres.length ? 'is-active' : ''}" id="genre-open" aria-label="Filter genre" aria-expanded="false">
+          ${icon('filter')}<span id="filters-label">Filters${currentGenres.length ? ` · ${currentGenres.length}` : ''}</span>
+        </button>
         ${topGenres.map((g) => {
           const on = currentGenres.some((x) => x.toLowerCase() === g.toLowerCase());
-          return `<button type="button" class="explore-chip ${on ? 'is-active' : ''}" data-quick-genre="${esc(g)}">${esc(g)}</button>`;
+          return `<button type="button" class="explore-chip ${on ? 'is-active' : ''}" data-quick-genre="${esc(g)}">${on ? icon('check') : ''}<span>${esc(g)}</span></button>`;
         }).join('')}
       </div>
 
       <div class="explore-toolbar">
-        <span class="explore-toolbar__label" id="explore-scope">${currentGenres.length || currentFormat ? 'Filtered' : 'All types'}</span>
-        <button type="button" class="explore-toolbar__sort" id="sort-toggle" title="Urutkan">
-          <span aria-hidden="true">↕</span>
-          <span id="sort-label">${sort === 'title' ? 'A–Z' : 'Latest update'}</span>
-        </button>
+        <span class="explore-toolbar__label" id="explore-scope"></span>
+        <div class="explore-sort">
+          <button type="button" class="explore-toolbar__sort" id="sort-toggle" aria-haspopup="listbox" aria-expanded="false">
+            <span aria-hidden="true">↕</span>
+            <span id="sort-label">${sort === 'popular' ? 'Most popular' : 'Latest update'}</span>
+          </button>
+          <div class="explore-sort__menu" id="sort-menu" hidden role="listbox">
+            <button type="button" role="option" data-sort="latest" class="${sort === 'latest' ? 'is-selected' : ''}">Latest update ${sort === 'latest' ? '✓' : ''}</button>
+            <button type="button" role="option" data-sort="popular" class="${sort === 'popular' ? 'is-selected' : ''}">Most popular ${sort === 'popular' ? '✓' : ''}</button>
+          </div>
+        </div>
       </div>
 
       <div class="grid explore-grid" id="ex-grid">${'<div class="explore-skeleton loading-surface"></div>'.repeat(9)}</div>
@@ -70,7 +77,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     <section class="genre-sheet" id="genre-sheet" role="dialog" aria-modal="true" aria-label="Filter genre" hidden>
       <div class="genre-sheet__handle"></div>
       <div class="genre-sheet__head"><h2>Filter komik</h2><button type="button" id="genre-close" aria-label="Tutup filter">${icon('close')}</button></div>
-      <div class="genre-sheet__head"><h2>Genre</h2></div>
+      <p class="genre-sheet__hint">Pilih satu atau lebih genre</p>
       <div class="genre-sheet__chips" id="genre-chips">${[...new Set(GENRES)].map((g) => {
         const on = currentGenres.some((x) => x.toLowerCase() === g.toLowerCase());
         return `<button type="button" class="genre-chip ${on ? 'is-selected' : ''}" data-genre="${esc(g)}" aria-pressed="${on}">${esc(g)}</button>`;
@@ -86,6 +93,8 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
   const count = root.querySelector('#ex-count');
   const sheet = root.querySelector('#genre-sheet');
   const backdrop = root.querySelector('#genre-backdrop');
+  const sortMenu = root.querySelector('#sort-menu');
+  const sortToggle = root.querySelector('#sort-toggle');
   let draftGenres = [...currentGenres];
   let seen = new Set();
   let page = 0;
@@ -99,27 +108,50 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     if (currentQuery) params.set('q', currentQuery);
     if (currentGenres.length) params.set('genre', currentGenres.join(','));
     if (currentFormat) params.set('format', currentFormat);
+    if (sort === 'popular') params.set('sort', 'popular');
     if (sort === 'title') params.set('sort', 'title');
     const qs = params.toString();
     navigateTo(qs ? `/search?${qs}` : '/search');
   };
 
   const paintQuick = () => {
-    root.querySelectorAll('[data-format]').forEach((b) => {
+    root.querySelectorAll('#format-row [data-format]').forEach((b) => {
       const on = b.dataset.format === currentFormat;
       b.classList.toggle('is-active', on);
       b.setAttribute('aria-selected', String(on));
     });
-    root.querySelectorAll('[data-quick-genre]').forEach((b) => {
-      const on = currentGenres.some((g) => g.toLowerCase() === b.dataset.quickGenre.toLowerCase());
-      b.classList.toggle('is-active', on);
-    });
-    const filterBtn = root.querySelector('#genre-open');
-    filterBtn?.classList.toggle('is-active', currentGenres.length > 0);
+
+    // rebuild quick genre chips to show checks
+    const row = root.querySelector('#genre-row');
+    if (row) {
+      const filterBtn = row.querySelector('#genre-open');
+      const chips = topGenres.map((g) => {
+        const on = currentGenres.some((x) => x.toLowerCase() === g.toLowerCase());
+        return `<button type="button" class="explore-chip ${on ? 'is-active' : ''}" data-quick-genre="${esc(g)}">${on ? icon('check') : ''}<span>${esc(g)}</span></button>`;
+      }).join('');
+      row.innerHTML = `
+        <button type="button" class="explore-chip explore-chip--filter ${currentGenres.length ? 'is-active' : ''}" id="genre-open" aria-label="Filter genre" aria-expanded="false">
+          ${icon('filter')}<span id="filters-label">Filters${currentGenres.length ? ` · ${currentGenres.length}` : ''}</span>
+        </button>${chips}`;
+      row.querySelector('#genre-open')?.addEventListener('click', openSheet);
+    }
+
     const scope = root.querySelector('#explore-scope');
-    if (scope) scope.textContent = currentGenres.length || currentFormat ? 'Filtered' : 'All types';
+    if (scope) {
+      const parts = ['All types'];
+      if (currentFormat) parts.push(currentFormat[0].toUpperCase() + currentFormat.slice(1));
+      currentGenres.forEach((g) => parts.push(g));
+      scope.textContent = parts.join(' · ');
+    }
     const sortLabel = root.querySelector('#sort-label');
-    if (sortLabel) sortLabel.textContent = sort === 'title' ? 'A–Z' : 'Latest update';
+    if (sortLabel) sortLabel.textContent = sort === 'popular' ? 'Most popular' : 'Latest update';
+    root.querySelectorAll('#sort-menu [data-sort]').forEach((b) => {
+      const on = b.dataset.sort === sort || (sort === 'latest' && b.dataset.sort === 'latest');
+      b.classList.toggle('is-selected', b.dataset.sort === (sort === 'title' ? 'latest' : sort));
+      b.textContent = b.dataset.sort === 'latest'
+        ? `Latest update${sort === 'latest' || sort === 'title' ? ' ✓' : ''}`
+        : `Most popular${sort === 'popular' ? ' ✓' : ''}`;
+    });
   };
 
   const openSheet = () => {
@@ -131,12 +163,10 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     });
     sheet.hidden = false;
     backdrop.hidden = false;
-    root.querySelector('#genre-open')?.setAttribute('aria-expanded', 'true');
   };
   const closeSheet = () => {
     sheet.hidden = true;
     backdrop.hidden = true;
-    root.querySelector('#genre-open')?.setAttribute('aria-expanded', 'false');
   };
 
   searchForm.addEventListener('submit', (e) => {
@@ -161,17 +191,18 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
   });
 
   root.querySelector('#genre-row')?.addEventListener('click', (e) => {
-    const quick = e.target.closest('[data-quick-genre]');
-    if (quick) {
-      const name = quick.dataset.quickGenre;
-      const i = currentGenres.findIndex((g) => g.toLowerCase() === name.toLowerCase());
-      if (i >= 0) currentGenres.splice(i, 1);
-      else currentGenres = [name]; // single select quick for simplicity
-      paintQuick();
-      navigate();
+    if (e.target.closest('#genre-open')) {
+      openSheet();
       return;
     }
-    if (e.target.closest('#genre-open')) openSheet();
+    const quick = e.target.closest('[data-quick-genre]');
+    if (!quick) return;
+    const name = quick.dataset.quickGenre;
+    const i = currentGenres.findIndex((g) => g.toLowerCase() === name.toLowerCase());
+    if (i >= 0) currentGenres.splice(i, 1);
+    else currentGenres.push(name); // multi-select
+    paintQuick();
+    navigate();
   });
 
   root.querySelector('#genre-close')?.addEventListener('click', closeSheet);
@@ -199,11 +230,28 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     paintQuick();
     navigate();
   });
-  root.querySelector('#sort-toggle')?.addEventListener('click', () => {
-    sort = sort === 'title' ? 'latest' : 'title';
+
+  sortToggle?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = sortMenu.hidden;
+    sortMenu.hidden = !open;
+    sortToggle.setAttribute('aria-expanded', String(open));
+  });
+  sortMenu?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-sort]');
+    if (!b) return;
+    sort = b.dataset.sort === 'popular' ? 'popular' : 'latest';
+    sortMenu.hidden = true;
+    sortToggle.setAttribute('aria-expanded', 'false');
     paintQuick();
     navigate();
   });
+  document.addEventListener('click', () => {
+    if (sortMenu && !sortMenu.hidden) {
+      sortMenu.hidden = true;
+      sortToggle?.setAttribute('aria-expanded', 'false');
+    }
+  }, { once: false });
 
   async function loadResults() {
     io?.disconnect();
@@ -225,7 +273,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
       grid.innerHTML = '';
       if (!first.items?.length) {
         end.textContent = currentGenres.length
-          ? `Belum ada judul untuk genre: ${currentGenres.join(', ')}.`
+          ? `Belum ada judul untuk: ${currentGenres.join(', ')}.`
           : 'Tidak ada hasil yang cocok.';
         count.textContent = '0 judul';
         count.hidden = false;
@@ -233,14 +281,16 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
       }
       const add = (data) => {
         let items = data.items.filter((c) => c?.url && !seen.has(c.url) && seen.add(c.url));
-        if (sort === 'title') {
-          items = items.slice().sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'id'));
+        if (sort === 'popular') {
+          items = items.slice().sort((a, b) => Number(b.views || 0) - Number(a.views || 0));
         }
         grid.insertAdjacentHTML('beforeend', items.map(card).join(''));
         count.textContent = `${fmt(data.total)} judul`;
         count.hidden = false;
       };
-      if (sort === 'title') first.items.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'id'));
+      if (sort === 'popular') {
+        first.items.sort((a, b) => Number(b.views || 0) - Number(a.views || 0));
+      }
       add(first);
       page = 1;
       pages = first.pages || 1;
@@ -248,7 +298,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
       io = new IntersectionObserver(async (entries) => {
         if (!entries.some((e) => e.isIntersecting) || loading || page >= pages || !alive() || myRequest !== requestId) return;
         loading = true;
-        end.innerHTML = '<div class="inline-loading" aria-label="Memuat judul"><i></i><i></i><i></i></div>';
+        end.innerHTML = '<div class="inline-loading" aria-label="Memuat"><i></i><i></i><i></i></div>';
         try {
           const data = await api(url(page + 1));
           if (!alive() || myRequest !== requestId) return;
@@ -267,7 +317,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     } catch (e) {
       if (!alive() || myRequest !== requestId) return;
       grid.innerHTML = '';
-      end.innerHTML = `${esc(e.message || 'Gagal memuat katalog')} · <button type="button" class="text-action" id="ex-retry">Coba lagi</button>`;
+      end.innerHTML = `${esc(e.message || 'Gagal memuat')} · <button type="button" class="text-action" id="ex-retry">Coba lagi</button>`;
       root.querySelector('#ex-retry')?.addEventListener('click', loadResults);
     }
   }
