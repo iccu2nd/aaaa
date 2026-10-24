@@ -64,7 +64,36 @@ router.get('/explore', async (req, res) => {
       return values.some((v) => v.includes(format));
     });
   }
-  res.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
+
+  // Sort server-side supaya Latest / Popular benar di semua halaman
+  const sort = String(req.query.sort || 'latest').toLowerCase();
+  const timeOf = (item) => {
+    const raw = item.latest_chapter_time || item.updated_at || item.time || '';
+    const t = Date.parse(raw);
+    return Number.isFinite(t) ? t : 0;
+  };
+  const chOf = (item) => {
+    const n = Number(item.latest_chapter ?? item.chapter_count ?? 0);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const viewsOf = (item) => {
+    const n = Number(item.views ?? item.view_count ?? item.views_count ?? 0);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  if (sort === 'popular') {
+    list = list.slice().sort((a, b) => viewsOf(b) - viewsOf(a) || chOf(b) - chOf(a));
+  } else {
+    // latest update: waktu chapter terbaru, fallback nomor chapter
+    list = list.slice().sort((a, b) => {
+      const tb = timeOf(b);
+      const ta = timeOf(a);
+      if (tb !== ta) return tb - ta;
+      return chOf(b) - chOf(a);
+    });
+  }
+
+  res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
   res.json({
     status: true,
     data: {
@@ -72,6 +101,7 @@ router.get('/explore', async (req, res) => {
       total: list.length,
       page,
       pages: Math.max(1, Math.ceil(list.length / size)),
+      sort: sort === 'popular' ? 'popular' : 'latest',
     },
   });
 });

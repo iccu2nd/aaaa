@@ -119,7 +119,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     if (currentFormat) params.set('format', currentFormat);
     params.set('sort', sort === 'popular' ? 'popular' : 'latest');
     const qs = params.toString();
-    navigateTo(qs ? `/search?${qs}` : '/search');
+    navigateTo(qs ? `/explore?${qs}` : '/explore');
   };
 
   const paintQuick = () => {
@@ -305,7 +305,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     end.textContent = '';
     count.hidden = true;
     const url = (n) =>
-      `/api/explore?q=${encodeURIComponent(currentQuery)}&genre=${encodeURIComponent(genreKey())}&format=${encodeURIComponent(currentFormat)}&page=${n}&size=${SIZE}`;
+      `/api/explore?q=${encodeURIComponent(currentQuery)}&genre=${encodeURIComponent(genreKey())}&format=${encodeURIComponent(currentFormat)}&sort=${encodeURIComponent(sort === 'popular' ? 'popular' : 'latest')}&page=${n}&size=${SIZE}`;
     try {
       const first = await api(url(1));
       if (!alive() || myRequest !== requestId) return;
@@ -319,17 +319,11 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
         return;
       }
       const add = (data) => {
-        let items = data.items.filter((c) => c?.url && !seen.has(c.url) && seen.add(c.url));
-        if (sort === 'popular') {
-          items = items.slice().sort((a, b) => Number(b.views || 0) - Number(a.views || 0));
-        }
+        const items = (data.items || []).filter((c) => c?.url && !seen.has(c.url) && seen.add(c.url));
         grid.insertAdjacentHTML('beforeend', items.map(card).join(''));
         count.textContent = `${fmt(data.total)} judul`;
         count.hidden = false;
       };
-      if (sort === 'popular') {
-        first.items.sort((a, b) => Number(b.views || 0) - Number(a.views || 0));
-      }
       add(first);
       page = 1;
       pages = first.pages || 1;

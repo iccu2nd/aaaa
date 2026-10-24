@@ -169,7 +169,7 @@ export async function home({ root, alive }) {
   const recRails = layerTitles.map((title, i) => {
     const slice = rekomendasi.slice(i * PER_LAYER, (i + 1) * PER_LAYER);
     if (!slice.length) return '';
-    return rail(title, `<div class="rail rail--inset">${slice.map(railCard).join('')}</div>`, i === 0 ? '/search' : '');
+    return rail(title, `<div class="rail rail--inset">${slice.map(railCard).join('')}</div>`, i === 0 ? '/explore' : '');
   }).join('');
 
   const feature = (popular && popular[0]) || rekomendasi[0] || updateRail[0];

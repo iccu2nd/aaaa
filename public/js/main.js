@@ -10,9 +10,18 @@ import { initChrome } from './chrome.js';
 
 route(/^\/$/, home);
 route(/^\/update$/, update); // legacy route; updates remain accessible from Home
-route(/^\/explore\/genre\/(.+)$/, (ctx, genre) => explore(ctx, '', genre));
-route(/^\/explore$/, (ctx) => explore(ctx));
+route(/^\/explore\/genre\/(.+)$/, (ctx, genre) => {
+  const query = new URLSearchParams(location.search);
+  return explore(ctx, query.get('q') || '', genre || query.get('genre') || '', query.get('sort') || 'latest', query.get('format') || '');
+});
+route(/^\/explore$/, (ctx) => {
+  const query = new URLSearchParams(location.search);
+  return explore(ctx, query.get('q') || '', query.get('genre') || '', query.get('sort') || 'latest', query.get('format') || '');
+});
+// legacy /search → /explore (keep query)
 route(/^\/search$/, (ctx) => {
+  const qs = location.search || '';
+  history.replaceState(null, '', `/explore${qs}`);
   const query = new URLSearchParams(location.search);
   return explore(ctx, query.get('q') || '', query.get('genre') || '', query.get('sort') || 'latest', query.get('format') || '');
 });
