@@ -947,3 +947,227 @@ body.is-home .topbar__icon.is-on {
   body.is-home #topbar-search-btn,
   body.is-home #topbar-notif { flex-basis: 40px !important; width: 40px !important; height: 40px !important; }
 }
+
+/* =========================================================
+   Komikta polish: clean reference-style header + glowing active tab
+   Keep these final overrides together to avoid older cascade conflicts.
+   ========================================================= */
+body.is-home .topbar,
+body.is-home #topbar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 50 !important;
+  min-height: calc(62px + env(safe-area-inset-top, 0px)) !important;
+  height: auto !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  padding: calc(5px + env(safe-area-inset-top, 0px)) 18px 7px !important;
+  background: #050505 !important;
+  border: 0 !important;
+  border-bottom: 2px solid rgba(255,255,255,.9) !important;
+  box-shadow: 0 5px 18px rgba(0,0,0,.32) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.is-home .topbar::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: -2px !important;
+  height: 7px !important;
+  pointer-events: none !important;
+  background: linear-gradient(90deg, #fff 0 4%, transparent 4% 96%, #fff 96% 100%) !important;
+  clip-path: polygon(0 0, 100% 0, 96% 100%, 4% 100%) !important;
+  opacity: .9 !important;
+}
+body.is-home .topbar__logo {
+  position: relative !important;
+  z-index: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  width: auto !important;
+  height: 49px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+body.is-home .topbar__mask {
+  display: block !important;
+  flex: 0 0 31px !important;
+  width: 31px !important;
+  height: 42px !important;
+  object-fit: contain !important;
+}
+body.is-home .topbar__wordmark {
+  display: block !important;
+  flex: 0 1 auto !important;
+  width: clamp(100px, 31vw, 132px) !important;
+  max-width: 132px !important;
+  height: 52px !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+}
+body.is-home .topbar__actions {
+  position: relative !important;
+  z-index: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: clamp(10px, 3vw, 20px) !important;
+  margin-left: auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+body.is-home .topbar__icon,
+body.is-home .topbar__icon:visited,
+body.is-home #topbar-search-btn,
+body.is-home #topbar-notif {
+  display: inline-flex !important;
+  flex: 0 0 40px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  height: 42px !important;
+  padding: 0 !important;
+  color: #f7f7f7 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  transition: color .18s ease, background .18s ease, transform .18s ease !important;
+}
+body.is-home .topbar__icon svg {
+  display: block !important;
+  width: 27px !important;
+  height: 27px !important;
+  stroke-width: 1.8 !important;
+}
+body.is-home .topbar__icon:hover,
+body.is-home .topbar__icon:active,
+body.is-home .topbar__icon.is-on {
+  color: #fff !important;
+  background: rgba(255,255,255,.09) !important;
+  transform: scale(.96) !important;
+}
+
+/* Bottom bar: black glass and a soft halo behind the current destination. */
+.bottom-nav {
+  height: calc(max(var(--nav-h), 66px) + var(--safe-b)) !important;
+  padding: 5px 7px var(--safe-b) !important;
+  box-sizing: border-box !important;
+  align-items: stretch !important;
+  background: rgba(5,5,7,.96) !important;
+  border-top: 1px solid rgba(255,255,255,.13) !important;
+  box-shadow: 0 -8px 28px rgba(0,0,0,.42) !important;
+  backdrop-filter: blur(18px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.25) !important;
+}
+.bottom-nav a {
+  position: relative !important;
+  isolation: isolate !important;
+  overflow: visible !important;
+  gap: 4px !important;
+  margin: 0 3px !important;
+  border-radius: 15px !important;
+  color: #858792 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: .01em !important;
+  transition: color .22s ease, transform .22s ease !important;
+}
+.bottom-nav a::before {
+  content: "" !important;
+  position: absolute !important;
+  z-index: -1 !important;
+  left: 14% !important;
+  right: 14% !important;
+  top: 5px !important;
+  bottom: 15px !important;
+  border-radius: 16px !important;
+  background: radial-gradient(ellipse at center, rgba(239,42,55,.20) 0%, rgba(239,42,55,.08) 42%, transparent 76%) !important;
+  opacity: 0 !important;
+  transform: scale(.82) !important;
+  filter: blur(5px) !important;
+  transition: opacity .24s ease, transform .24s ease !important;
+  pointer-events: none !important;
+}
+.bottom-nav a::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 3px !important;
+  width: 20px !important;
+  height: 3px !important;
+  border-radius: 999px !important;
+  background: #f33b48 !important;
+  box-shadow: 0 0 7px rgba(255,45,62,.8), 0 0 16px rgba(255,45,62,.42) !important;
+  opacity: 0 !important;
+  transform: translateX(-50%) scaleX(.35) !important;
+  transition: opacity .22s ease, transform .22s ease !important;
+  pointer-events: none !important;
+}
+.bottom-nav a svg {
+  position: relative !important;
+  z-index: 1 !important;
+  width: 24px !important;
+  height: 24px !important;
+  opacity: .92 !important;
+  transition: transform .22s ease, filter .22s ease, opacity .22s ease !important;
+}
+.bottom-nav a span {
+  position: relative !important;
+  z-index: 1 !important;
+  line-height: 1.15 !important;
+  transition: color .22s ease, text-shadow .22s ease !important;
+}
+.bottom-nav a[aria-current="page"] {
+  color: #fff !important;
+  font-weight: 650 !important;
+}
+.bottom-nav a[aria-current="page"]::before {
+  opacity: 1 !important;
+  transform: scale(1.12) !important;
+}
+.bottom-nav a[aria-current="page"]::after {
+  opacity: 1 !important;
+  transform: translateX(-50%) scaleX(1) !important;
+}
+.bottom-nav a[aria-current="page"] svg {
+  opacity: 1 !important;
+  transform: translateY(-2px) scale(1.06) !important;
+  filter: drop-shadow(0 0 5px rgba(255,50,66,.35)) !important;
+}
+.bottom-nav a[aria-current="page"] span {
+  color: #fff !important;
+  text-shadow: 0 0 12px rgba(255,255,255,.16) !important;
+}
+.bottom-nav a:active { transform: scale(.96) !important; }
+@media (min-width: 720px) {
+  body.is-home .topbar,
+  body.is-home #topbar {
+    padding-left: max(24px, calc((100vw - 1120px) / 2)) !important;
+    padding-right: max(24px, calc((100vw - 1120px) / 2)) !important;
+  }
+}
+@media (max-width: 380px) {
+  body.is-home .topbar,
+  body.is-home #topbar { padding-left: 12px !important; padding-right: 12px !important; }
+  body.is-home .topbar__mask { flex-basis: 27px !important; width: 27px !important; }
+  body.is-home .topbar__wordmark { width: clamp(88px, 29vw, 108px) !important; }
+  body.is-home .topbar__actions { gap: 4px !important; }
+  body.is-home .topbar__icon,
+  body.is-home #topbar-search-btn,
+  body.is-home #topbar-notif { flex-basis: 36px !important; width: 36px !important; }
+}
