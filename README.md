@@ -48,3 +48,10 @@ npm start
 - Uji dengan chapter acak dari sumber asli: `npm run test:thumb 8` → hasil di `thumb-test/`.
 - Deteksi utama: `@vladmandic/human` (BlazeFace, backend WASM, dipasang sebagai optionalDependencies). Halaman panjang dipindai per jendela persegi. Jika paket tidak terpasang/gagal dimuat, otomatis pakai deteksi warna kulit lalu area bersih (lihat log `[humanFace]`).
 - Setiap crop diperiksa sebelum dipakai (porsi putih/balon dan tinta teks). Crop kotor ditolak dan diganti kandidat berikutnya (model → warna → area bersih).
+
+## Performa & aplikasi Android (v15)
+- Sampul di daftar dimuat lewat `/api/img?url=...&w=<160|240|360|480|720>` (di-resize ke webp oleh `sharp`, di-cache CDN `s-maxage`); halaman reader tetap ukuran asli.
+- `public/css/perf.css`: tanpa `backdrop-filter` pada badge di daftar, blur bottom-nav lebih ringan, `content-visibility` untuk baris chapter/library/halaman reader.
+- `index.html`: `modulepreload` untuk semua modul JS (tanpa waterfall), font Google dimuat non-blocking.
+- Header cache statis di `vercel.json` dan `src/server.js`; `sw.js` tetap `no-cache`.
+- APK (TWA): `manifest.webmanifest` sudah punya `id`. Setelah paket dibuat di pwabuilder.com, taruh isi `assetlinks.json` di `public/.well-known/assetlinks.json`.

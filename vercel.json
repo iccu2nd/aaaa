@@ -1,12 +1,87 @@
 {
   "rewrites": [
-    { "source": "/detail/:path*", "destination": "/index.html" },
-    { "source": "/read/:path*", "destination": "/index.html" },
-    { "source": "/search", "destination": "/index.html" },
-    { "source": "/explore", "destination": "/index.html" },
-    { "source": "/explore/:path*", "destination": "/index.html" },
-    { "source": "/library", "destination": "/index.html" },
-    { "source": "/profile", "destination": "/index.html" },
-    { "source": "/update", "destination": "/index.html" }
+    {
+      "source": "/detail/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/read/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/search",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/explore",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/explore/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/library",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/profile",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/update",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/css/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/js/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/icons/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800, stale-while-revalidate=2592000"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/assetlinks.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
   ]
 }

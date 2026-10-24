@@ -4,7 +4,7 @@ export const feed = (items) =>
   items.length
     ? `<div class="feed">${items.map((s) => `
       <div class="feed__row">
-        <img class="feed__thumb" loading="lazy" src="${esc(img(s.poster))}" alt="">
+        <img class="feed__thumb" loading="lazy" src="${esc(img(s.poster, 160))}" alt="">
         <div class="feed__body">
           <a class="feed__title" href="${link('detail', s.url)}">${esc(s.title)}</a>
           <div class="feed__chapters">

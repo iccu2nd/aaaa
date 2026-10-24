@@ -88,7 +88,7 @@ export async function detail({ root, alive }, url) {
   root.innerHTML = `
     <article class="detail">
       <div class="detail__hero">
-        <img class="detail__hero-bg" src="${esc(img(d.banner || d.poster))}" alt="" aria-hidden="true">
+        <img class="detail__hero-bg" src="${esc(img(d.banner || d.poster, 240))}" alt="" aria-hidden="true">
         <div class="detail__hero-fade"></div>
         <div class="detail__hero-actions">
           <a class="detail__icon-btn" href="/" aria-label="Kembali">
@@ -102,7 +102,7 @@ export async function detail({ root, alive }, url) {
 
       <div class="detail__body">
         <div class="detail__header">
-          <img class="detail__cover" src="${esc(img(d.poster))}" alt="">
+          <img class="detail__cover" src="${esc(img(d.poster, 480))}" alt="">
           <div class="detail__meta">
             <div class="detail__badges">
               ${status ? `<span class="detail__badge">${esc(status)}</span>` : ''}

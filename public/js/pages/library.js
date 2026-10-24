@@ -28,7 +28,7 @@ function historyItems(items) {
   if (!items.length) return empty('Belum ada riwayat baca', 'Komik yang kamu baca akan muncul di sini.', '/search', 'Jelajahi komik');
   return `<div class="library-list">${items.map((item) => `
     <article class="library-entry">
-      <a class="library-entry__cover" href="${link('detail', item.url)}" aria-label="Buka ${esc(item.title)}"><img loading="lazy" decoding="async" src="${esc(img(item.poster))}" alt=""></a>
+      <a class="library-entry__cover" href="${link('detail', item.url)}" aria-label="Buka ${esc(item.title)}"><img loading="lazy" decoding="async" src="${esc(img(item.poster, 240))}" alt=""></a>
       <div class="library-entry__info">
         <a class="library-entry__title" href="${link('detail', item.url)}">${esc(item.title)}</a>
         <span class="library-entry__chapter">${esc(item.chapterTitle || 'Belum ada chapter')}</span>
@@ -42,7 +42,7 @@ function favoriteItems(items) {
   if (!items.length) return empty('Belum ada favorit', 'Simpan komik yang ingin kamu baca lagi.', '/search', 'Cari komik');
   return `<div class="library-list">${items.map((item) => `
     <article class="library-entry">
-      <a class="library-entry__cover" href="${link('detail', item.url)}" aria-label="Buka ${esc(item.title)}"><img loading="lazy" decoding="async" src="${esc(img(item.poster))}" alt=""></a>
+      <a class="library-entry__cover" href="${link('detail', item.url)}" aria-label="Buka ${esc(item.title)}"><img loading="lazy" decoding="async" src="${esc(img(item.poster, 240))}" alt=""></a>
       <div class="library-entry__info"><a class="library-entry__title" href="${link('detail', item.url)}">${esc(item.title)}</a><span class="library-entry__chapter">${esc(item.status || 'Tersimpan di favorit')}</span></div>
       <a class="library-entry__action" href="${link('detail', item.url)}" aria-label="Lihat detail"><span aria-hidden="true">›</span></a>
     </article>`).join('')}</div>`;

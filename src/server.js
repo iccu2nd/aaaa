@@ -10,8 +10,11 @@ app.disable('x-powered-by');
 // Batasi seluruh endpoint termasuk proxy gambar agar tidak bisa dipakai sebagai proxy terbuka tanpa batas.
 app.use('/api', rateLimit, api);
 app.use(express.static(path.join(__dirname, '..', 'public'), {
+  dotfiles: 'allow',
   setHeaders(res, file) {
     if (file.endsWith('sw.js')) res.set('Cache-Control', 'no-cache');
+    else if (file.includes(`${path.sep}icons${path.sep}`)) res.set('Cache-Control', 'public, max-age=604800, stale-while-revalidate=2592000');
+    else res.set('Cache-Control', 'public, max-age=3600, stale-while-revalidate=604800');
   },
 }));
 

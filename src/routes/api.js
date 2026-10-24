@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const https = require('https');
 const http = require('http');
+const sharp = require('sharp');
 const cfg = require('../config');
 const cache = require('../services/cache');
 const source = require('../services/catalog');
@@ -113,7 +114,7 @@ router.get('/thumbimg', sourceUrl, async (req, res) => {
     if (!out || !out.status) return res.status(404).end();
     res.set('Content-Type', 'image/webp');
     res.set('X-Thumb-By', String(out.by || ''));
-    res.set('Cache-Control', 'public, max-age=604800, immutable');
+    res.set('Cache-Control', 'public, max-age=604800, s-maxage=2592000, immutable');
     res.send(out.data);
   } catch {
     res.status(404).end();
@@ -131,6 +132,56 @@ router.get(
   handler((r) => 'r:' + r.query.url, cfg.ttl.read, (r) => source.read(String(r.query.url))),
 );
 
+
+const IMG_HEADERS = {
+  Referer: 'https://shinigami.id/',
+  'User-Agent': 'Mozilla/5.0 (Android 14; Mobile; rv:153.0) Gecko/153.0 Firefox/153.0',
+};
+const IMG_MAX = 15 * 1024 * 1024;
+const IMG_WIDTHS = new Set([160, 240, 360, 480, 720]);
+
+function fetchImageBuffer(href) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(href, { timeout: 15000, headers: IMG_HEADERS }, (res) => {
+      const type = String(res.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+      if (res.statusCode < 200 || res.statusCode >= 300 || !type.startsWith('image/')) {
+        res.resume();
+        return reject(new Error('bad image response'));
+      }
+      const chunks = [];
+      let bytes = 0;
+      res.on('data', (c) => {
+        bytes += c.length;
+        if (bytes > IMG_MAX) {
+          res.destroy();
+          reject(new Error('image too large'));
+        } else chunks.push(c);
+      });
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    });
+    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    req.on('error', reject);
+  });
+}
+
+async function sendResized(href, width, res) {
+  try {
+    const buf = await fetchImageBuffer(href);
+    const out = await sharp(buf, { limitInputPixels: 80e6 })
+      .rotate()
+      .resize({ width, withoutEnlargement: true })
+      .webp({ quality: 76 })
+      .toBuffer();
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.set('Content-Type', 'image/webp');
+    res.set('Cache-Control', 'public, max-age=604800, s-maxage=2592000, immutable');
+    res.send(out);
+  } catch {
+    if (!res.headersSent) res.status(502).send('Gagal memuat gambar');
+  }
+}
+
 router.get('/img', async (req, res) => {
   try {
     const u = new URL(String(req.query.url || ''));
@@ -138,6 +189,9 @@ router.get('/img', async (req, res) => {
       u.protocol === 'https:' &&
       cfg.imgHosts.some((h) => u.hostname === h || u.hostname.endsWith('.' + h));
     if (!ok) return res.status(400).send('Host tidak diizinkan');
+
+    const width = Number(req.query.w);
+    if (IMG_WIDTHS.has(width)) return sendResized(u.href, width, res);
 
     const lib = u.protocol === 'https:' ? https : http;
     const proxyReq = lib.get(

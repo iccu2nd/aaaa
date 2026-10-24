@@ -1,0 +1,40 @@
+.card__badge,
+.rail-card__rate,
+.rail-card__cover .card__ch-total,
+.rail-card__cover .card__rate-badge {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.bottom-nav {
+  -webkit-backdrop-filter: saturate(150%) blur(18px) !important;
+  backdrop-filter: saturate(150%) blur(18px) !important;
+}
+
+.detail__start-link {
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  backdrop-filter: blur(12px) saturate(140%);
+}
+
+.ch-row,
+.library-entry {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 82px;
+}
+
+.reader__page {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1200px;
+}
+
+#app img {
+  -webkit-user-drag: none;
+}
+
+@media (hover: none) {
+  .card,
+  .rail-card,
+  .ch-row {
+    transition-duration: 0.12s;
+  }
+}

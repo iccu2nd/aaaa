@@ -2,7 +2,7 @@ export const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /** Bungkus URL gambar lewat proxy server. */
-export const img = (u) => (u ? '/api/img?url=' + encodeURIComponent(u) : '');
+export const img = (u, w) => (u ? '/api/img?url=' + encodeURIComponent(u) + (w ? '&w=' + w : '') : '');
 
 /**
  * URL aplikasi. Detail/reader menyimpan URL sumber sebagai token Base64URL agar

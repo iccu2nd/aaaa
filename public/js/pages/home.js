@@ -16,7 +16,7 @@ function continueCard(h) {
   return `
     <a class="rail-card rail-card--continue" href="${link('read', h.chapterUrl)}">
       <div class="rail-card__cover">
-        <img loading="lazy" src="${esc(img(h.poster))}" alt="">
+        <img loading="lazy" src="${esc(img(h.poster, 360))}" alt="">
         <div class="rail-card__overlay">
           <span class="rail-card__ch">${esc(ch)}</span>
           <div class="rail-card__bar"><i style="width:62%"></i></div>
@@ -66,7 +66,7 @@ function spotlight(item) {
   const facts = [rate ? `${starIcon}<span>${esc(rate)}</span>` : '', chapter ? esc(chapter) : '', views ? `${eyeIcon}<span>${esc(views)} pembaca</span>` : ''].filter(Boolean);
   return `
     <a class="spotlight" data-spotlight href="${link('detail', item.url)}" aria-label="Lihat ${esc(item.title)}">
-      <div class="spotlight__bg" style="background-image:url('${esc(img(item.poster))}')"></div>
+      <div class="spotlight__bg" style="background-image:url('${esc(img(item.poster, 240))}')"></div>
       <div class="spotlight__fade"></div>
       <div class="spotlight__content">
         <div class="spotlight__copy">
@@ -83,7 +83,7 @@ function spotlight(item) {
           <i class="spotlight__ghost spotlight__ghost--a"></i>
           <div class="spotlight__poster">
             <span class="spotlight__chapter" data-spotlight-chapter>${esc(chapter || 'Chapter terbaru')}</span>
-            <img src="${esc(img(item.poster))}" alt="" decoding="async" fetchpriority="high">
+            <img src="${esc(img(item.poster, 480))}" alt="" decoding="async" fetchpriority="high">
           </div>
         </div>
       </div>
@@ -225,13 +225,14 @@ function startSpotlightRotation(items, root, alive) {
     const chapterBadge = hero.querySelector('[data-spotlight-chapter]');
     const dots = hero.querySelectorAll('[data-spotlight-dots] i');
     hero.classList.add('is-changing');
-    const nextUrl = img(item.poster);
+    const nextUrl = img(item.poster, 480);
+    const bgUrl = img(item.poster, 240);
     const preload = new Image();
     preload.onload = () => {
       if (!alive() || !root.contains(hero)) return;
       hero.href = link('detail', item.url);
       hero.setAttribute('aria-label', `Lihat ${item.title}`);
-      if (bg) bg.style.backgroundImage = `url("${nextUrl.replace(/["\\]/g, '')}")`;
+      if (bg) bg.style.backgroundImage = `url("${bgUrl.replace(/["\\]/g, '')}")`;
       if (cover) { cover.src = nextUrl; cover.alt = item.title || ''; }
       if (title) title.textContent = item.title || '';
       if (desc) desc.textContent = item.status || (item.meta || '').split(' · ')[0] || 'Pilihan untukmu';

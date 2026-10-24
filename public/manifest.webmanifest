@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "RiMwa",
   "short_name": "RiMwa",
   "description": "Baca manhwa & manga online — cepat, rapi, offline-ready",
@@ -9,7 +10,10 @@
   "background_color": "#000000",
   "theme_color": "#000000",
   "lang": "id",
-  "categories": ["books", "entertainment"],
+  "categories": [
+    "books",
+    "entertainment"
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -35,5 +39,6 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "prefer_related_applications": false
 }

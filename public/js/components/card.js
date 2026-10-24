@@ -185,7 +185,7 @@ export const card = (c) => {
   return `
   <a class="card card--explore" href="${link('detail', c.url)}">
     <div class="card__cover">
-      <img loading="lazy" decoding="async" src="${esc(img(c.poster))}" alt="">
+      <img loading="lazy" decoding="async" src="${esc(img(c.poster, 360))}" alt="">
       ${coverBadges(c, { showFormat: true })}
     </div>
     <div class="card__body">
@@ -199,7 +199,7 @@ export const card = (c) => {
 export const richCard = (c) => `
   <a class="card" href="${link('detail', c.url)}">
     <div class="card__cover">
-      <img loading="lazy" decoding="async" src="${esc(img(c.poster))}" alt="">
+      <img loading="lazy" decoding="async" src="${esc(img(c.poster, 360))}" alt="">
       ${coverBadges(c)}
     </div>
     <div class="card__body">
@@ -216,7 +216,7 @@ export const cardGrid = (items) =>
 export const railCard = (item) => `
     <a class="rail-card" href="${link('detail', item.url)}">
       <div class="rail-card__cover">
-        <img loading="lazy" decoding="async" src="${esc(img(item.poster))}" alt="">
+        <img loading="lazy" decoding="async" src="${esc(img(item.poster, 360))}" alt="">
         ${coverBadges(item)}
       </div>
       <div class="rail-card__title">${esc(item.title)}</div>
