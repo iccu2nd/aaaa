@@ -110,7 +110,7 @@ router.get('/explore', async (req, res) => {
 // Thumbnail chapter: crop kecil (±8KB) tepat di wajah, bukan halaman penuh
 router.get('/thumbimg', sourceUrl, async (req, res) => {
   try {
-    const out = await cache.wrap('ti2:' + req.query.url, cfg.ttl.thumb, () => source.thumbImage(String(req.query.url)));
+    const out = await cache.wrap('ti3:' + req.query.url, cfg.ttl.thumb, () => source.thumbImage(String(req.query.url)));
     if (!out || !out.status) return res.status(404).end();
     res.set('Content-Type', 'image/webp');
     res.set('X-Thumb-By', String(out.by || ''));

@@ -241,7 +241,7 @@ function findArt(data, w, h, ch = 3, ratioWH = 1.45) {
     const ink = inkOnWhite(cls, w, h, 0, y0, w - 1, y1);
     const dark = ratio(cls, w, h, 0, y0, w - 1, y1, DARK);
     const skin = ratio(cls, w, h, 0, y0, w - 1, y1, SKIN);
-    const score = 1 - white * 2.2 - ink * 16 - Math.max(0, dark - 0.55) * 2 + skin * 1.5;
+    const score = 1 - white * 2.2 - ink * 16 - Math.max(0, dark - 0.55) * 2 + Math.min(skin, 0.22) * 0.8 - Math.max(0, skin - 0.38) * 4;
     if (!best || score > best.score) best = { score, fx: 0.5, fy: (y0 + wh / 2) / h, fw: 0.6, fh: wh / h };
     if (y0 + wh >= h) break;
   }
@@ -260,8 +260,8 @@ function cropDirt(data, w, h, ch = 3) {
 
 /** Jendela crop (piksel gambar asli) yang memuat wajah + rambut dengan ekspresi terlihat jelas. */
 function cropRect(iw, ih, f, isFace) {
-  let cw = isFace ? (f.fw * iw) / 0.42 : iw;
-  cw = Math.min(iw, Math.max(isFace ? iw * 0.45 : iw, cw));
+  let cw = isFace ? (f.fw * iw) / 0.48 : iw;
+  cw = Math.min(iw, Math.max(isFace ? iw * 0.3 : iw, cw));
   let chh = cw / THUMB_RATIO;
   if (chh > ih) {
     chh = ih;

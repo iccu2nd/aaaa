@@ -180,20 +180,25 @@ async function analyzeFocus(url) {
   }
 }
 
-function candidateIndexes(n) {
+function candidateIndexes(n, wide = false, skip = new Set()) {
   const head = n >= 12 ? 3 : n >= 7 ? 2 : n >= 4 ? 1 : 0;
   const tail = n >= 12 ? 4 : n >= 7 ? 3 : n >= 4 ? 2 : 0;
-  let lo = Math.max(head, Math.floor(n * 0.3));
-  let hi = Math.min(n - 1 - tail, Math.floor(n * 0.7));
+  const from = wide ? 0.14 : 0.3;
+  const to = wide ? 0.86 : 0.7;
+  let lo = Math.max(head, Math.floor(n * from));
+  let hi = Math.min(n - 1 - tail, Math.floor(n * to));
   if (hi < lo) {
     lo = Math.max(0, Math.min(head, n - 1));
     hi = Math.max(lo, n - 1 - tail);
   }
   const span = hi - lo + 1;
-  const count = Math.min(4, span);
-  const picks = new Set();
-  for (let s = 0; s < count; s += 1) picks.add(lo + Math.floor(((s + 0.5) * span) / count));
-  return [...picks];
+  const count = Math.min(wide ? 10 : 4, span);
+  const picks = [];
+  for (let k = 0; k < count; k += 1) {
+    const i = lo + Math.floor(((k + 0.5) * span) / count);
+    if (!skip.has(i) && !picks.includes(i)) picks.push(i);
+  }
+  return picks;
 }
 
 const thumbImage = async (chapterUrl) => {
@@ -202,15 +207,27 @@ const thumbImage = async (chapterUrl) => {
   const imgs = (r.data.images || []).filter(Boolean);
   if (!imgs.length) return { status: false, message: 'Tidak ada gambar' };
 
-  const idxs = candidateIndexes(imgs.length);
-  const results = await Promise.all(idxs.map(async (i) => ({ i, a: await analyzeFocus(imgs[i]) })));
+  const collect = (rows) => {
+    const out = [];
+    for (const row of rows) {
+      if (!row.a) continue;
+      if (row.a.model) out.push({ tier: 0, by: 'model', row, f: row.a.model, face: true });
+      if (row.a.face && row.a.face.score >= FACE_MIN_SCORE) out.push({ tier: 1, by: 'warna', row, f: row.a.face, face: true });
+      if (row.a.art) out.push({ tier: 2, by: 'area', row, f: row.a.art, face: false });
+    }
+    return out;
+  };
 
-  const cands = [];
-  for (const row of results) {
-    if (!row.a) continue;
-    if (row.a.model) cands.push({ tier: 0, by: 'model', row, f: row.a.model, face: true });
-    if (row.a.face && row.a.face.score >= FACE_MIN_SCORE) cands.push({ tier: 1, by: 'warna', row, f: row.a.face, face: true });
-    if (row.a.art) cands.push({ tier: 2, by: 'area', row, f: row.a.art, face: false });
+  const used = new Set();
+  const analyze = async (idxs) => {
+    idxs.forEach((i) => used.add(i));
+    return Promise.all(idxs.map(async (i) => ({ i, a: await analyzeFocus(imgs[i]) })));
+  };
+
+  const cands = collect(await analyze(candidateIndexes(imgs.length)));
+  if (!cands.some((c) => c.face)) {
+    const more = candidateIndexes(imgs.length, true, used);
+    if (more.length) cands.push(...collect(await analyze(more)));
   }
   if (!cands.length) return { status: false, message: 'Gambar tidak bisa dianalisis' };
   cands.sort((x, y) => x.tier - y.tier || y.f.score - x.f.score);
