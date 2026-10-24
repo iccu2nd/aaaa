@@ -84,3 +84,136 @@ body.chrome-collapsed {
   contain-intrinsic-size: auto 236px;
   transition: transform 0.12s ease !important;
 }
+
+/* ===== Spotlight (final, ringkas & rapi di HP) ===== */
+body .spotlight {
+  position: relative;
+  min-height: 0 !important;
+  height: 268px;
+  margin: 0 calc(-1 * var(--page-x)) 20px !important;
+  width: calc(100% + 2 * var(--page-x)) !important;
+  background: #000;
+  overflow: hidden;
+}
+body .spotlight::after { display: none; }
+body .spotlight__bg {
+  inset: 0 !important;
+  background-size: cover;
+  background-position: center 22% !important;
+  filter: brightness(.62) saturate(1.05) !important;
+  transform: none !important;
+  animation: none !important;
+}
+body .spotlight__fade {
+  background:
+    linear-gradient(to top, #000 0%, rgba(0,0,0,.82) 32%, rgba(0,0,0,.25) 68%, rgba(0,0,0,.1) 100%) !important;
+}
+body .spotlight__content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-end !important;
+  gap: 0 !important;
+  padding: 0 var(--page-x) 34px !important;
+  animation: none !important;
+}
+body .spotlight__label {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: .02em;
+  color: rgba(255,255,255,.6) !important;
+  margin: 0 0 4px !important;
+}
+body .spotlight__title {
+  max-width: 100%;
+  font-size: 24px !important;
+  line-height: 1.15 !important;
+  letter-spacing: -.02em !important;
+  font-weight: 700;
+  margin: 0 0 4px !important;
+  color: #fff !important;
+  text-shadow: none;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+body .spotlight__desc {
+  max-width: 100%;
+  font-size: 12.5px !important;
+  color: rgba(255,255,255,.7) !important;
+  margin: 0 0 6px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body .spotlight .spotlight__facts {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: rgba(255,255,255,.72);
+}
+body .spotlight .spotlight__fact {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,.78);
+}
+body .spotlight__actions { gap: 8px; flex-wrap: nowrap; }
+body .spotlight__cta {
+  height: 36px;
+  padding: 0 16px !important;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none !important;
+}
+body .spotlight__cta svg { width: 14px; height: 14px; }
+body .spotlight__cta--ghost {
+  background: rgba(255,255,255,.14) !important;
+  border: none !important;
+  color: #fff;
+}
+body .spotlight__dots {
+  position: absolute;
+  left: auto !important;
+  right: var(--page-x);
+  bottom: 22px !important;
+  transform: none !important;
+  gap: 5px !important;
+  z-index: 3;
+}
+body .spotlight__dots i { width: 5px !important; height: 5px !important; }
+body .spotlight__dots i.is-on { width: 16px !important; }
+body .spotlight.is-changing .spotlight__title,
+body .spotlight.is-changing .spotlight__desc,
+body .spotlight.is-changing .spotlight__facts,
+body .spotlight.is-changing .spotlight__label { opacity: .35; }
+.home-skel .spotlight--skel { height: 268px; }
+
+/* ===== Nuansa aplikasi (PWA): bukan website ===== */
+html {
+  background: #000;
+  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  overscroll-behavior-y: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+img, a { -webkit-user-drag: none; }
+a, button, [role="button"] { -webkit-tap-highlight-color: transparent; }
+a:focus:not(:focus-visible), button:focus:not(:focus-visible) { outline: none; }
+.rail { overscroll-behavior-x: contain; }
+@media (display-mode: standalone) {
+  html { scroll-behavior: auto; }
+}
