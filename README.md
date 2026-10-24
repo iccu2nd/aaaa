@@ -41,3 +41,9 @@ npm start
 - Legacy `/#/detail/...` and other hash routes are migrated to clean paths on startup.
 - Client-side navigation supports browser Back/Forward and direct deep links.
 - Express and Vercel rewrites serve the SPA entry point for application routes while leaving `/api/*` unchanged.
+
+## Thumbnail chapter fokus wajah (v14)
+- `/api/thumbimg?url=<chapter>` mengirim crop webp kecil (±8KB) yang berpusat di wajah + rambut, bukan halaman penuh; hasilnya di-cache server dan Service Worker.
+- Deteksi: `src/services/faceFocus.js` (gumpalan kulit berbentuk wajah + fitur gelap + rambut, menjauhi balon teks). Bila tidak yakin, dipilih area gambar paling bersih dari teks.
+- Uji dengan chapter acak dari sumber asli: `npm run test:thumb 8` → hasil di `thumb-test/`.
+- Deteksi utama: `@vladmandic/human` (BlazeFace, backend WASM, dipasang sebagai optionalDependencies). Halaman panjang dipindai per jendela persegi. Jika paket tidak terpasang/gagal dimuat, otomatis pakai deteksi warna kulit lalu area bersih (lihat log `[humanFace]`).

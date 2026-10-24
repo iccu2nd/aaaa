@@ -10,7 +10,8 @@ const shinigami = require('./shinigami');
 const voratoon = require('./voratoon');
 const axios = require('axios');
 const sharp = require('sharp');
-const { ANALYZE_WIDTH, FACE_MIN_SCORE, findFace, findArt } = require('./faceFocus');
+const humanFace = require('./humanFace');
+const { ANALYZE_WIDTH, FACE_MIN_SCORE, findFace, findArt, cropRect, THUMB_RATIO } = require('./faceFocus');
 
 const THUMB_UA =
   'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 Chrome/124.0.0.0 Mobile Safari/537.36';
@@ -169,6 +170,8 @@ async function analyzeFocus(url) {
     const { width, height, channels } = info;
     if (!width || !height || channels < 3) return null;
     return {
+      buf,
+      model: await humanFace.detectFace(buf).catch(() => null),
       face: findFace(data, width, height, channels),
       art: findArt(data, width, height, channels),
     };
@@ -195,52 +198,46 @@ function candidateIndexes(n) {
   }
   if (hi < lo) hi = lo;
   const span = hi - lo + 1;
-  const count = Math.min(7, span);
+  const count = Math.min(4, span);
   const picks = new Set();
   for (let s = 0; s < count; s += 1) picks.add(lo + Math.floor(((s + 0.5) * span) / count));
   return [...picks];
 }
 
-const thumb = async (chapterUrl) => {
+const thumbImage = async (chapterUrl) => {
   const r = await read(chapterUrl);
   if (!r.status) return r;
   const imgs = (r.data.images || []).filter(Boolean);
   if (!imgs.length) return { status: false, message: 'Tidak ada gambar' };
 
   const idxs = candidateIndexes(imgs.length);
-  const results = await Promise.all(
-    idxs.map(async (i) => ({ i, a: await analyzeFocus(imgs[i]) })),
-  );
+  const results = await Promise.all(idxs.map(async (i) => ({ i, a: await analyzeFocus(imgs[i]) })));
 
-  let bestFace = null;
+  let best = null;
   let bestArt = null;
+  let bestModel = null;
   for (const row of results) {
     if (!row.a) continue;
-    if (row.a.face && row.a.face.score >= FACE_MIN_SCORE && (!bestFace || row.a.face.score > bestFace.f.score)) {
-      bestFace = { i: row.i, f: row.a.face };
-    }
-    if (row.a.art && (!bestArt || row.a.art.score > bestArt.f.score)) bestArt = { i: row.i, f: row.a.art };
+    const m = row.a.model;
+    if (m && (!bestModel || m.score > bestModel.f.score)) bestModel = { row, f: m, face: true };
+    const f = row.a.face;
+    if (f && f.score >= FACE_MIN_SCORE && (!best || f.score > best.f.score)) best = { row, f, face: true };
+    const art = row.a.art;
+    if (art && (!bestArt || art.score > bestArt.f.score)) bestArt = { row, f: art, face: false };
   }
+  const pick = bestModel || best || bestArt;
+  if (!pick) return { status: false, message: 'Gambar tidak bisa dianalisis' };
 
-  const pick = bestFace || bestArt;
-  if (!pick) {
-    const mid = Math.min(imgs.length - 1, Math.max(1, Math.floor(imgs.length * 0.4)));
-    return { status: true, data: { url: imgs[mid], fx: 0.5, fy: 0.3, fw: 0.6, face: false, v: 6 } };
-  }
-  const { f } = pick;
-  return {
-    status: true,
-    data: {
-      url: imgs[pick.i],
-      fx: +f.fx.toFixed(4),
-      fy: +f.fy.toFixed(4),
-      fw: +f.fw.toFixed(4),
-      face: !!bestFace,
-      v: 6,
-    },
-  };
+  const meta = await sharp(pick.row.a.buf).metadata();
+  const rect = cropRect(meta.width, meta.height, pick.f, pick.face);
+  const out = await sharp(pick.row.a.buf)
+    .rotate()
+    .extract(rect)
+    .resize(240, Math.round(240 / THUMB_RATIO), { fit: 'cover' })
+    .webp({ quality: 72 })
+    .toBuffer();
+  return { status: true, data: out, face: pick.face, by: bestModel ? 'model' : best ? 'warna' : 'area', score: pick.f.score, page: pick.row.i, rect };
 };
-
 
 const detail = async (url) => {
   const src = detectSource(url);
@@ -258,4 +255,4 @@ const read = async (url) => {
   return { status: true, data: result.data };
 };
 
-module.exports = { home, search, update, detail, read, all, thumb, detectSource, normTitle };
+module.exports = { home, search, update, detail, read, all, thumbImage, analyzeFocus, candidateIndexes, detectSource, normTitle };

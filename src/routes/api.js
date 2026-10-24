@@ -106,12 +106,18 @@ router.get('/explore', async (req, res) => {
   });
 });
 
-// Thumbnail chapter: potongan gambar acak dari isi chapter
-router.get(
-  '/thumb',
-  sourceUrl,
-  handler((r) => 't6:' + r.query.url, cfg.ttl.thumb, (r) => source.thumb(String(r.query.url))),
-);
+// Thumbnail chapter: crop kecil (±8KB) tepat di wajah, bukan halaman penuh
+router.get('/thumbimg', sourceUrl, async (req, res) => {
+  try {
+    const out = await cache.wrap('ti1:' + req.query.url, cfg.ttl.thumb, () => source.thumbImage(String(req.query.url)));
+    if (!out || !out.status) return res.status(404).end();
+    res.set('Content-Type', 'image/webp');
+    res.set('Cache-Control', 'public, max-age=604800, immutable');
+    res.send(out.data);
+  } catch {
+    res.status(404).end();
+  }
+});
 
 router.get(
   '/detail',

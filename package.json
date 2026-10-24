@@ -1,12 +1,13 @@
 {
   "name": "rimwa",
   "version": "1.4.0",
-  "description": "RiMwa \u2014 baca komik online",
+  "description": "RiMwa — baca komik online",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "check": "node --check src/server.js && node --check src/routes/api.js && node --check src/services/shinigami.js && node --check src/services/voratoon.js && node --check src/services/catalog.js && node --check src/middleware/validate.js && node --check src/middleware/rateLimit.js"
+    "check": "node --check src/server.js && node --check src/routes/api.js && node --check src/services/shinigami.js && node --check src/services/voratoon.js && node --check src/services/catalog.js && node --check src/middleware/validate.js && node --check src/middleware/rateLimit.js && node --check src/services/faceFocus.js && node --check scripts/test-thumb.js && node --check src/services/humanFace.js",
+    "test:thumb": "node scripts/test-thumb.js"
   },
   "engines": {
     "node": ">=18"
@@ -16,5 +17,9 @@
     "cheerio": "^1.0.0",
     "express": "^4.19.2",
     "sharp": "^0.33.5"
+  },
+  "optionalDependencies": {
+    "@vladmandic/human": "^3.3.0",
+    "@tensorflow/tfjs-backend-wasm": "^4.22.0"
   }
 }

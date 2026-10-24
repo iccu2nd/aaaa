@@ -160,7 +160,11 @@ function scoreFace(cls, w, h, c) {
   const shape = Math.max(0.3, 1 - Math.abs(Math.log(aspect / 1.25)) / Math.log(2.4));
   const solid = Math.min(1, (fill - 0.3) / 0.35);
 
-  const score = hairBonus * size * shape * solid * clean;
+  const feat = ratio(cls, w, h, c.minx, c.miny + bh * 0.15, c.maxx, c.miny + bh * 0.8, DARK);
+  if (feat < 0.012) return null;
+  const featBonus = Math.min(1, feat / 0.04);
+
+  const score = hairBonus * size * shape * solid * clean * (0.5 + 0.5 * featBonus);
   return {
     score,
     fx: cx / w,
@@ -218,4 +222,22 @@ function findArt(data, w, h, ch = 3, ratioWH = 1.45) {
   return best;
 }
 
-module.exports = { ANALYZE_WIDTH, FACE_MIN_SCORE, findFace, findArt, skinScore };
+const THUMB_RATIO = 1.45;
+
+/** Jendela crop (piksel gambar asli) yang memuat wajah + rambut dengan ekspresi terlihat jelas. */
+function cropRect(iw, ih, f, isFace) {
+  let cw = isFace ? (f.fw * iw) / 0.42 : iw;
+  cw = Math.min(iw, Math.max(isFace ? iw * 0.45 : iw, cw));
+  let chh = cw / THUMB_RATIO;
+  if (chh > ih) {
+    chh = ih;
+    cw = chh * THUMB_RATIO;
+  }
+  const cx = f.fx * iw;
+  const cy = (isFace ? f.fy - f.fh * 0.2 : f.fy) * ih;
+  const left = Math.round(Math.min(iw - cw, Math.max(0, cx - cw / 2)));
+  const top = Math.round(Math.min(ih - chh, Math.max(0, cy - chh / 2)));
+  return { left, top, width: Math.round(cw), height: Math.round(chh) };
+}
+
+module.exports = { THUMB_RATIO, cropRect, ANALYZE_WIDTH, FACE_MIN_SCORE, findFace, findArt, skinScore };

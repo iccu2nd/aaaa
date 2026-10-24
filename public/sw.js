@@ -1,5 +1,5 @@
 /* RiMwa Service Worker — cache gambar, API, aset; mendukung chapter offline */
-const V = 'v38';
+const V = 'v39';
 const STATIC = `rimwa-static-${V}`;
 const IMG = `rimwa-img-${V}`;
 const API = `rimwa-api-${V}`;
@@ -84,7 +84,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
 
-  if (url.pathname === '/api/img') return e.respondWith(imgStrategy(req));
+  if (url.pathname === '/api/img' || url.pathname === '/api/thumbimg') return e.respondWith(imgStrategy(req));
   if (url.pathname.startsWith('/api/')) return e.respondWith(apiStrategy(req, url));
   if (url.pathname === '/sw.js') return;
   e.respondWith(staticStrategy(req));
