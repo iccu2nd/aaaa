@@ -196,10 +196,10 @@ export const card = (c) => {
 };
 
 /** Kartu penuh (home rail) dengan author / views / 1 chapter pill. */
-export const richCard = (c) => `
+export const richCardAt = (c, w) => `
   <a class="card" href="${link('detail', c.url)}">
     <div class="card__cover">
-      <img loading="lazy" decoding="async" src="${esc(img(c.poster, 360))}" alt="">
+      <img loading="lazy" decoding="async" src="${esc(img(c.poster, w))}" alt="">
       ${coverBadges(c)}
     </div>
     <div class="card__body">
@@ -208,6 +208,8 @@ export const richCard = (c) => `
       ${chaptersHtml(c)}
     </div>
   </a>`;
+
+export const richCard = (c) => richCardAt(c, 360);
 
 export const cardGrid = (items) =>
   items.length ? `<div class="grid">${items.map(card).join('')}</div>` : '<div class="state">Tidak ada hasil.</div>';

@@ -1,9 +1,10 @@
 import { navigate as navigateTo } from '../router.js';
 import { api } from '../api.js';
-import { richCard as card } from '../components/card.js';
+import { richCardAt } from '../components/card.js';
 import { esc, link, img } from '../utils.js';
 
-const SIZE = 24;
+const SIZE = 18;
+const card = (c) => richCardAt(c, 240);
 const GENRES = ['Action','Adaptation','Adult','Adventure','Comedy','Cooking','Crime','Drama','Ecchi','Fantasy','Harem','Historical','Horror','Isekai','Martial Arts','Mature','Mystery','Psychological','Reincarnation','Revenge','Romance','School Life','Sci-fi','Seinen','Shoujo','Shounen','Slice of Life','Sports','Supernatural','Thriller','Tragedy'];
 const FORMATS = [
   { id: '', label: 'All' },
@@ -222,7 +223,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
       const path = qs ? `${basePath}?${qs}` : basePath;
       try { history.replaceState(history.state, '', path); } catch { /* ignore */ }
       loadResults();
-    }, 160);
+    }, 300);
   });
   searchClear.addEventListener('click', () => {
     searchInput.value = '';
@@ -320,19 +321,15 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
 
   // Tutup menu hanya jika klik di luar
   const onDocClick = (e) => {
+    if (!root.isConnected) {
+      document.removeEventListener('click', onDocClick);
+      return;
+    }
     if (!sortMenu || sortMenu.hidden) return;
     if (e.target.closest('#sort-toggle') || e.target.closest('#sort-menu')) return;
     closeSortMenu();
   };
   document.addEventListener('click', onDocClick);
-  // bersihkan saat page unmount (route change)
-  const obs = new MutationObserver(() => {
-    if (!root.isConnected) {
-      document.removeEventListener('click', onDocClick);
-      obs.disconnect();
-    }
-  });
-  obs.observe(document.body, { childList: true, subtree: true });
 
   async function loadResults() {
     io?.disconnect();

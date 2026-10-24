@@ -399,3 +399,34 @@ body.is-home #topbar::after {
   pointer-events: none !important;
   z-index: 61 !important;
 }
+
+
+/* Final topbar treatment: straight, very thin white-to-muted-red gradient; no chamfer. */
+body.is-home #topbar {
+  overflow: visible !important;
+  background: #050505 !important;
+  background-color: #050505 !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+}
+body.is-home #topbar::before {
+  content: none !important;
+  display: none !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+}
+body.is-home #topbar::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: 1px !important;
+  background: linear-gradient(90deg, rgba(255, 58, 72, 0) 0%, rgba(255, 58, 72, .20) 18%, rgba(255, 255, 255, .18) 50%, rgba(255, 58, 72, .20) 82%, rgba(255, 58, 72, 0) 100%) !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  z-index: 61 !important;
+}
