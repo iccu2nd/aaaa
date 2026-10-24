@@ -1347,3 +1347,20 @@ body.is-home #app.container {
     height: 82px !important;
   }
 }
+
+
+/* Dekorasi garis bawah topbar: ujung chamfer putih, tanpa mengubah layout isi. */
+body.is-home .topbar::after,
+body.is-home #topbar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -9px;
+  height: 10px;
+  background: #fff;
+  clip-path: polygon(0 0, 3.2% 100%, 96.8% 100%, 100% 0, 99.2% 0, 96.3% 72%, 3.7% 72%, 0.8% 0);
+  -webkit-clip-path: polygon(0 0, 3.2% 100%, 96.8% 100%, 100% 0, 99.2% 0, 96.3% 72%, 3.7% 72%, 0.8% 0);
+  pointer-events: none;
+  z-index: 1;
+}
