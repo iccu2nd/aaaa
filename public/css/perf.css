@@ -430,3 +430,71 @@ body.is-home #topbar::after {
   pointer-events: none !important;
   z-index: 61 !important;
 }
+
+/* ===== Spotlight: gambar jelas, teks terbaca ===== */
+body .spotlight { height: 300px; }
+body .spotlight__bg {
+  background-position: center 18% !important;
+  filter: brightness(.92) saturate(1.1) !important;
+  transition: opacity .35s ease;
+}
+body .spotlight.is-changing .spotlight__bg { opacity: .35; }
+body .spotlight__fade {
+  background:
+    linear-gradient(to top, #000 0%, rgba(0,0,0,.78) 30%, rgba(0,0,0,0) 72%),
+    linear-gradient(90deg, rgba(0,0,0,.5) 0%, rgba(0,0,0,0) 62%) !important;
+}
+body .spotlight__title {
+  font-size: 26px !important;
+  text-shadow: 0 2px 14px rgba(0,0,0,.55);
+}
+body .spotlight__desc,
+body .spotlight .spotlight__fact { text-shadow: 0 1px 8px rgba(0,0,0,.6); }
+body .spotlight .spotlight__facts { gap: 4px 12px; }
+body .spotlight .spotlight__fact { color: rgba(255,255,255,.9); font-weight: 600; }
+.home-skel .spotlight--skel { height: 300px; }
+
+/* ===== Search: hanya satu tombol hapus (X bawaan browser disembunyikan) ===== */
+.explore-search input[type="search"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.explore-search input[type="search"]::-webkit-search-cancel-button,
+.explore-search input[type="search"]::-webkit-search-decoration,
+.explore-search input[type="search"]::-webkit-search-results-button,
+.explore-search input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+/* ===== Topbar + bottom-nav: hilang saat scroll turun, muncul saat scroll naik ===== */
+.bottom-nav,
+#topbar {
+  will-change: transform;
+  transition: transform .26s cubic-bezier(.2, .8, .2, 1) !important;
+}
+.bottom-nav {
+  background: rgba(5, 5, 7, .98) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.nav-away .bottom-nav {
+  transform: translate3d(0, calc(100% + 8px), 0) !important;
+  pointer-events: none;
+}
+body.nav-away #topbar {
+  transform: translate3d(0, -110%, 0) !important;
+  pointer-events: none;
+}
+body.chrome-collapsed { padding-bottom: calc(var(--nav-h) + var(--safe-b) + 8px); }
+
+/* ===== Gambar: muncul halus, tanpa pop-in ===== */
+.card__cover img,
+.rail-card__cover img,
+.search-hit__cover,
+.library-entry__cover img,
+.feed__thumb {
+  transition: opacity .25s ease;
+}
+img.is-pending { opacity: 0; }

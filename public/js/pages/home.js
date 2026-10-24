@@ -2,7 +2,8 @@ import { api } from '../api.js';
 import { history } from '../store.js';
 import { esc, img, link } from '../utils.js';
 import { skeletonGrid, state as msg } from '../components/section.js';
-import { railCard } from '../components/card.js';
+import { railCard, getChapterRows } from '../components/card.js';
+import { stage, fillRest } from '../images.js';
 
 const starIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8l-6.2 3.2L7 14.2 2 9.3l6.9-1L12 2z"/></svg>';
 const eyeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -57,13 +58,23 @@ function getViews(item) {
 }
 
 
+function spotlightFacts(item) {
+  const rate = getRating(item);
+  const row = getChapterRows(item)[0];
+  const chapter = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (row?.label || item.chapter || '');
+  const time = row?.time || '';
+  const views = getViews(item);
+  return [
+    rate ? `<span class="spotlight__fact">${starIcon}<span>${esc(rate)}</span></span>` : '',
+    chapter ? `<span class="spotlight__fact"><span>${esc(time ? `${chapter} · ${time}` : chapter)}</span></span>` : '',
+    views ? `<span class="spotlight__fact">${eyeIcon}<span>${esc(views)}</span></span>` : '',
+  ].filter(Boolean).join('');
+}
+
 function spotlight(item) {
   if (!item) return '';
   const statusRaw = String(item.status || (item.meta || '').split(' · ')[0] || '').trim();
   const status = /complete|selesai|tamat/i.test(statusRaw) ? 'Completed' : (statusRaw || 'Ongoing');
-  const rate = getRating(item);
-  const chapter = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || '');
-  const views = getViews(item);
   const genres = Array.isArray(item.genres) ? item.genres.slice(0, 4).join(', ') : '';
   const sub = genres || status;
   return `
@@ -74,11 +85,7 @@ function spotlight(item) {
         <p class="spotlight__label" data-spotlight-label>#1 Trending</p>
         <h1 class="spotlight__title">${esc(item.title)}</h1>
         <p class="spotlight__desc" data-spotlight-status>${esc(sub)}</p>
-        <div class="spotlight__facts">
-          ${rate ? `<span class="spotlight__fact">${starIcon}<span>${esc(rate)}</span></span>` : ''}
-          ${chapter ? `<span class="spotlight__fact" data-spotlight-chapter>${esc(chapter)}</span>` : ''}
-          ${views ? `<span class="spotlight__fact">${eyeIcon}<span>${esc(views)} pembaca</span></span>` : ''}
-        </div>
+        <div class="spotlight__facts">${spotlightFacts(item)}</div>
         <div class="spotlight__actions">
           <a class="spotlight__cta spotlight__cta--primary" href="${link('detail', item.url)}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.2 5.3a1 1 0 0 1 0 1.7l-9.2 5.3c-.7.4-1.6-.1-1.6-.9V5.8Z"/></svg>
@@ -177,12 +184,15 @@ export async function home({ root, alive }) {
     ? `<div class="rail">${hist.map(continueCard).join('')}</div>`
     : '';
 
-  root.innerHTML = `
+  const box = await stage(`
     ${spotlight(feature)}
     ${hist.length ? rail('Continue reading', contHtml, '/library') : ''}
     ${rail('Update', `<div class="rail rail--inset">${updateRail.map(railCard).join('')}</div>`, '/update')}
     ${recRails}
-  `;
+  `);
+  if (!alive()) return;
+  root.replaceChildren(...box.childNodes);
+  fillRest(root, alive);
 
   // Spotlight: prioritaskan popular, fallback rekomendasi (bukan update saja)
   startSpotlightRotation(
@@ -236,16 +246,7 @@ function startSpotlightRotation(items, root, alive) {
         const status = /complete|selesai|tamat/i.test(statusRaw) ? 'Completed' : (statusRaw || 'Ongoing');
         desc.textContent = genres || status;
       }
-      if (factsEl) {
-        const rate = getRating(item);
-        const chapter = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || '');
-        const views = getViews(item);
-        factsEl.innerHTML = [
-          rate ? `<span class="spotlight__fact">${starIcon}<span>${esc(rate)}</span></span>` : '',
-          chapter ? `<span class="spotlight__fact">${esc(chapter)}</span>` : '',
-          views ? `<span class="spotlight__fact">${eyeIcon}<span>${esc(views)} pembaca</span></span>` : '',
-        ].filter(Boolean).join('');
-      }
+      if (factsEl) factsEl.innerHTML = spotlightFacts(item);
       if (label) label.textContent = `#${index + 1} Trending`;
       const href = link('detail', item.url);
       cta.forEach((a) => { a.href = href; });

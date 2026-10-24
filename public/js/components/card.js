@@ -97,7 +97,7 @@ function chapterNum(label) {
 }
 
 /** Ambil 1 chapter nomor terbesar (max / terbaru). */
-function getChapterRows(item) {
+export function getChapterRows(item) {
   const rows = [];
   if (Array.isArray(item.chapters) && item.chapters.length) {
     for (const ch of item.chapters) {

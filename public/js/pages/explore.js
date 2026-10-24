@@ -2,6 +2,7 @@ import { navigate as navigateTo } from '../router.js';
 import { api } from '../api.js';
 import { richCardAt } from '../components/card.js';
 import { esc, link, img } from '../utils.js';
+import { stage, fillRest } from '../images.js';
 
 const SIZE = 18;
 const card = (c) => richCardAt(c, 240);
@@ -360,8 +361,8 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
       const first = await api(url(1));
       if (!alive() || myRequest !== requestId) return;
 
-      grid.innerHTML = '';
       if (!first.items?.length) {
+        grid.innerHTML = '';
         end.textContent = currentGenres.length
           ? `Belum ada judul untuk: ${currentGenres.join(', ')}.`
           : 'Tidak ada hasil yang cocok.';
@@ -370,13 +371,18 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
         return;
       }
       const useList = isQuery;
-      const add = (data) => {
+      const add = async (data, first = 9, reset = false) => {
         const items = (data.items || []).filter((c) => c?.url && !seen.has(c.url) && seen.add(c.url));
-        grid.insertAdjacentHTML('beforeend', items.map(useList ? listRow : card).join(''));
+        const box = await stage(items.map(useList ? listRow : card).join(''), { first, timeout: 2200 });
+        if (!alive() || myRequest !== requestId) return;
+        if (reset) grid.innerHTML = '';
+        grid.append(...box.childNodes);
         count.textContent = `${fmt(data.total)} judul`;
         count.hidden = false;
+        fillRest(grid, () => alive() && myRequest === requestId);
       };
-      add(first);
+      await add(first, 9, true);
+      if (!alive() || myRequest !== requestId) return;
       page = 1;
       pages = first.pages || 1;
       if (page >= pages) return;
@@ -387,7 +393,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
         try {
           const data = await api(url(page + 1));
           if (!alive() || myRequest !== requestId) return;
-          add(data);
+          await add(data, 6);
           page += 1;
           pages = data.pages || pages;
           end.textContent = '';
