@@ -107,6 +107,14 @@ router.get('/explore', async (req, res) => {
   });
 });
 
+router.get('/detector', async (req, res) => {
+  const humanFace = require('../services/humanFace');
+  const t0 = Date.now();
+  await humanFace.getHuman();
+  res.set('Cache-Control', 'no-store');
+  res.json({ ...humanFace.status(), loadMs: Date.now() - t0 });
+});
+
 // Thumbnail chapter: crop kecil (±8KB) tepat di wajah, bukan halaman penuh
 router.get('/thumbimg', sourceUrl, async (req, res) => {
   try {

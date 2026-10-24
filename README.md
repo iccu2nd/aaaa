@@ -57,3 +57,4 @@ npm start
 - APK (TWA): `manifest.webmanifest` sudah punya `id`. Setelah paket dibuat di pwabuilder.com, taruh isi `assetlinks.json` di `public/.well-known/assetlinks.json`.
 - v16: topbar dan bar atas reader hitam solid; bottom nav hilang saat scroll turun dan muncul saat scroll naik (tanpa lompatan layout); bar bawah reader mengambang; ikon Explore berupa kompas diagonal; kartu Explore memakai `content-visibility`.
 - v17: bila 4 halaman tengah chapter tidak menghasilkan wajah, dicari lagi di sampai 10 halaman lain (14–86% chapter); crop wajah lebih rapat; pemilih cadangan tidak lagi menyukai area penuh kulit (tangan).
+- Cek detektor model: buka `/api/detector` → `{"ready":true}` berarti aktif; `{"ready":false,"error":"..."}` berarti pakai cadangan warna. Asal tiap thumbnail ada di header `X-Thumb-By`.
