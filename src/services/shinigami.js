@@ -148,6 +148,9 @@ function mapMangaCard(manga) {
     latest_chapter: ch,
     latest_chapter_time: manga.latest_chapter_time,
     genres: getTaxonomy(manga.taxonomy).genre,
+    authors: getTaxonomy(manga.taxonomy).author,
+    formats: getTaxonomy(manga.taxonomy).format,
+    types: getTaxonomy(manga.taxonomy).type,
     source: 'shinigami',
   };
 }

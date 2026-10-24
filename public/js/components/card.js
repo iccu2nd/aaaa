@@ -2,6 +2,8 @@ import { esc, img, link } from '../utils.js';
 
 const starIcon = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8l-6.2 3.2L7 14.2 2 9.3l6.9-1L12 2z"/></svg>';
 const eyeIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const userIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 19c0-3.4 3-5.5 7-5.5s7 2.1 7 5.5"/></svg>';
+const bookIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21V5.5Z"/><path d="M4 6v15M8 7h8M8 11h8"/></svg>';
 
 function getRating(item) {
   const raw = item?.user_rate ?? item?.rating ?? item?.rate ?? item?.score ?? item?.rating_score;
@@ -42,7 +44,6 @@ function normalizeChapterLabel(ch) {
   return s.replace(/^ch\.?\s*/i, 'Chapter ');
 }
 
-/** Nomor total chapter (untuk badge cover). */
 function getChapterTotalNum(item) {
   const candidates = [
     item?.total_chapter,
@@ -64,6 +65,30 @@ function getChapterTotalNum(item) {
     if (m) return Math.round(Number(m[1]));
   }
   return null;
+}
+
+function getAuthor(item) {
+  if (Array.isArray(item?.authors) && item.authors.length) return String(item.authors[0]).trim();
+  if (item?.author) return String(item.author).trim();
+  if (Array.isArray(item?.artists) && item.artists.length) return String(item.artists[0]).trim();
+  return '';
+}
+
+function getFormat(item) {
+  const raw =
+    (Array.isArray(item?.formats) && item.formats[0]) ||
+    item?.format ||
+    (Array.isArray(item?.types) && item.types[0]) ||
+    item?.type ||
+    '';
+  const s = String(raw).trim();
+  if (!s) return '';
+  const lower = s.toLowerCase();
+  if (lower.includes('manhwa')) return 'Manhwa';
+  if (lower.includes('manhua')) return 'Manhua';
+  if (lower.includes('manga')) return 'Manga';
+  if (lower.includes('comic') || lower.includes('webtoon')) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function getChapterRows(item) {
@@ -90,27 +115,33 @@ function getChapterRows(item) {
   return rows;
 }
 
-/** Stats di bawah judul: rating + views saja (total chapter pindah ke badge cover). */
-function statsHtml(item) {
-  const rate = getRating(item);
+/**
+ * Meta di bawah judul:
+ *  - Author (icon)
+ *  - Views (icon)
+ *  - Format manhwa/manhua/manga (icon)
+ * Rating hanya di badge cover.
+ */
+function metaHtml(item) {
+  const author = getAuthor(item);
   const views = formatViews(item);
+  const format = getFormat(item);
   const parts = [
-    rate ? `<span class="card__stat card__stat--rate">${starIcon}<b>${esc(rate)}</b></span>` : '',
-    views ? `<span class="card__stat card__stat--views">${eyeIcon}<b>${esc(views)}</b></span>` : '',
+    author ? `<span class="card__meta-row card__meta-row--author">${userIcon}<span>${esc(author)}</span></span>` : '',
+    views ? `<span class="card__meta-row card__meta-row--views">${eyeIcon}<span>${esc(views)}</span></span>` : '',
+    format ? `<span class="card__meta-row card__meta-row--format">${bookIcon}<span>${esc(format)}</span></span>` : '',
   ].filter(Boolean);
-  return parts.length ? `<div class="card__stats">${parts.join('')}</div>` : '';
+  return parts.length ? `<div class="card__meta-list">${parts.join('')}</div>` : '';
 }
 
 function chaptersHtml(item) {
   const chRows = getChapterRows(item);
   if (!chRows.length) return '';
   return `<div class="card__chs">${chRows
-    .map(
-      (r) => `<div class="card__ch-row">
-        <span class="card__ch-badge">${esc(r.label)}</span>
-        ${r.time ? `<span class="card__ch-time">${esc(r.time)}</span>` : ''}
-      </div>`
-    )
+    .map((r) => {
+      const text = r.time ? `${r.label} · ${r.time}` : r.label;
+      return `<div class="card__ch-pill">${esc(text)}</div>`;
+    })
     .join('')}</div>`;
 }
 
@@ -135,7 +166,7 @@ export const card = (c) => `
     </div>
     <div class="card__body">
       <div class="card__title">${esc(c.title)}</div>
-      ${statsHtml(c)}
+      ${metaHtml(c)}
       ${chaptersHtml(c)}
     </div>
   </a>`;
@@ -143,7 +174,7 @@ export const card = (c) => `
 export const cardGrid = (items) =>
   items.length ? `<div class="grid">${items.map(card).join('')}</div>` : '<div class="state">Tidak ada hasil.</div>';
 
-/** Kartu horizontal rail (home Update / rekomendasi). */
+/** Kartu horizontal rail (home). */
 export const railCard = (item) => `
     <a class="rail-card" href="${link('detail', item.url)}">
       <div class="rail-card__cover">
@@ -151,6 +182,6 @@ export const railCard = (item) => `
         ${coverBadges(item)}
       </div>
       <div class="rail-card__title">${esc(item.title)}</div>
-      ${statsHtml(item)}
+      ${metaHtml(item)}
       ${chaptersHtml(item)}
     </a>`;

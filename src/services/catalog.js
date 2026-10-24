@@ -126,6 +126,12 @@ const all = async (query = '') => {
     status: c.status || '',
     meta: c.meta || '',
     genres: Array.isArray(c.genres) ? c.genres : [],
+    authors: Array.isArray(c.authors) ? c.authors : (c.author ? [c.author] : []),
+    author: Array.isArray(c.authors) && c.authors[0] ? c.authors[0] : (c.author || ''),
+    formats: Array.isArray(c.formats) ? c.formats : (c.format ? [c.format] : []),
+    format: Array.isArray(c.formats) && c.formats[0]
+      ? c.formats[0]
+      : (c.format || (Array.isArray(c.types) && c.types[0]) || c.type || ''),
     source: c.source,
   }));
   return { status: data.length > 0, data, message: data.length ? undefined : 'Daftar kosong' };
@@ -133,8 +139,8 @@ const all = async (query = '') => {
 
 /**
  * Cuplikan chapter untuk list.
- * Pilih panel tengah chapter, lalu analisis warna/detail supaya
- * object-position CSS mengarah ke area wajah/karakter (bukan langit/kaki).
+ * Pilih panel yang kaya karakter/wajah, hindari balon teks, kaki, watermark.
+ * object-position diarahkan ke zona wajah / momen menarik.
  */
 async function fetchImageBuffer(url) {
   const res = await axios.get(url, {
@@ -151,22 +157,56 @@ async function fetchImageBuffer(url) {
   return Buffer.from(res.data);
 }
 
-/**
- * Deteksi area wajah/karakter (2D grid).
- * Kombinasi: skin-tone multi-etnis + tepi/detail + hindari balon teks & gutter.
- * Mengembalikan object-position x/y (%) yang mengarahkan crop ke wajah.
- */
-function analyzeGrid(data, width, height, channels) {
-  const cols = 12;
-  const rows = 20;
-  const scores = Array.from({ length: rows }, () => new Array(cols).fill(0));
-  const counts = Array.from({ length: rows }, () => new Array(cols).fill(0));
-  const edge = Array.from({ length: rows }, () => new Array(cols).fill(0));
+function isSkin(r, g, b, lum, sat) {
+  const diffRG = r - g;
+  const diffRB = r - b;
+  // fair / light east-asian
+  if (
+    r > 145 && g > 105 && b > 85 &&
+    diffRG > 4 && diffRB > 12 &&
+    lum > 115 && lum < 235 && sat > 0.04 && sat < 0.42
+  ) return 4.2;
+  // medium
+  if (
+    r > 100 && r < 215 && g > 65 && b > 45 &&
+    r > g && g >= b * 0.82 &&
+    lum > 75 && lum < 205 && sat > 0.07 && sat < 0.52
+  ) return 3.8;
+  // warm / deeper
+  if (
+    r > 75 && r < 175 && g > 45 && b > 30 &&
+    r > g + 6 && g > b &&
+    lum > 55 && lum < 165 && sat > 0.1 && sat < 0.58
+  ) return 3.2;
+  // pale pinkish (blush / lips zone)
+  if (
+    r > 170 && g > 120 && b > 120 &&
+    r > g + 10 && lum > 140 && lum < 230 && sat > 0.05 && sat < 0.35
+  ) return 2.4;
+  return 0;
+}
 
+/**
+ * Skor keseluruhan halaman: tolak yang dominan teks/putih/watermark.
+ * Return { pageScore, focus: {x, pos, score} } atau null jika jelek.
+ */
+function analyzePage(data, width, height, channels) {
+  const cols = 10;
+  const rows = 24;
   const cellW = width / cols;
   const cellH = height / rows;
 
-  // Pass 1: color / skin / midtone
+  const skinC = Array.from({ length: rows }, () => new Array(cols).fill(0));
+  const edgeC = Array.from({ length: rows }, () => new Array(cols).fill(0));
+  const whiteC = Array.from({ length: rows }, () => new Array(cols).fill(0));
+  const darkC = Array.from({ length: rows }, () => new Array(cols).fill(0));
+  const pixC = Array.from({ length: rows }, () => new Array(cols).fill(0));
+  const colorVar = Array.from({ length: rows }, () => new Array(cols).fill(0));
+
+  let totalWhite = 0;
+  let totalSkin = 0;
+  let totalPix = 0;
+
   for (let y = 0; y < height; y += 1) {
     const ry = Math.min(rows - 1, Math.floor(y / cellH));
     for (let x = 0; x < width; x += 1) {
@@ -179,116 +219,152 @@ function analyzeGrid(data, width, height, channels) {
       const min = Math.min(r, g, b);
       const lum = 0.299 * r + 0.587 * g + 0.114 * b;
       const sat = max === 0 ? 0 : (max - min) / max;
-      const diffRG = r - g;
-      const diffRB = r - b;
 
-      // gutter / pure bg
-      if (lum < 10 || lum > 248) continue;
-      // speech bubble / white panel
-      if (lum > 225 && sat < 0.07) continue;
+      pixC[ry][cx] += 1;
+      totalPix += 1;
 
-      let s = 0;
+      // white / speech-bubble-like
+      if (lum > 220 && sat < 0.1) {
+        whiteC[ry][cx] += 1;
+        totalWhite += 1;
+        continue;
+      }
+      // near-black gutter
+      if (lum < 18) {
+        darkC[ry][cx] += 1;
+        continue;
+      }
 
-      // --- multi skin ranges (manhwa: light east-asian, tan, warm) ---
-      // light / fair
-      if (
-        r > 140 && g > 100 && b > 80 &&
-        diffRG > 5 && diffRB > 15 &&
-        lum > 110 && lum < 235 && sat > 0.05 && sat < 0.45
-      ) s += 4.0;
-      // medium
-      if (
-        r > 95 && r < 210 && g > 60 && b > 40 &&
-        r > g && g >= b * 0.85 &&
-        lum > 70 && lum < 200 && sat > 0.08 && sat < 0.55
-      ) s += 3.5;
-      // deeper / warm
-      if (
-        r > 70 && r < 170 && g > 40 && b > 25 &&
-        r > g + 8 && g > b &&
-        lum > 50 && lum < 160 && sat > 0.1 && sat < 0.6
-      ) s += 3.0;
+      const sk = isSkin(r, g, b, lum, sat);
+      if (sk > 0) {
+        skinC[ry][cx] += sk;
+        totalSkin += 1;
+      }
 
-      // hair / dark features near face
-      if (lum > 15 && lum < 75 && sat < 0.3) s += 0.55;
-      // saturated mid (eyes, clothes near bust-up)
-      if (sat > 0.2 && lum > 35 && lum < 190) s += 0.9;
-      // general living midtone
-      if (lum > 45 && lum < 205 && sat > 0.04) s += 0.25;
-
-      scores[ry][cx] += s;
-      counts[ry][cx] += 1;
-
-      // simple horizontal edge (detail)
+      // edge / detail (mata, rambut, garis wajah)
       if (x + 1 < width) {
         const j = (y * width + (x + 1)) * channels;
         const dl =
           Math.abs(r - data[j]) +
           Math.abs(g - data[j + 1]) +
           Math.abs(b - data[j + 2]);
-        if (dl > 40) edge[ry][cx] += 1;
+        if (dl > 45) edgeC[ry][cx] += 1;
       }
+      if (y + 1 < height) {
+        const j = ((y + 1) * width + x) * channels;
+        const dl =
+          Math.abs(r - data[j]) +
+          Math.abs(g - data[j + 1]) +
+          Math.abs(b - data[j + 2]);
+        if (dl > 45) edgeC[ry][cx] += 0.7;
+      }
+
+      // color interest (aksi / efek)
+      if (sat > 0.22 && lum > 40 && lum < 200) colorVar[ry][cx] += 1;
     }
   }
 
-  // normalize + blend edge
+  const whiteRatio = totalPix ? totalWhite / totalPix : 1;
+  const skinRatio = totalPix ? totalSkin / totalPix : 0;
+
+  // Tolak halaman yang kebanyakan balon teks / putih
+  if (whiteRatio > 0.55) {
+    return { pageScore: -1, focus: null };
+  }
+  // Tolak yang hampir tanpa kulit/karakter (logo, pure FX, kaki saja sering rendah skin)
+  // tapi jangan terlalu ketat — aksi gelap tetap boleh
+  if (skinRatio < 0.01 && whiteRatio > 0.35) {
+    return { pageScore: -1, focus: null };
+  }
+
+  // Grid score per cell
   const grid = Array.from({ length: rows }, () => new Array(cols).fill(0));
   for (let ry = 0; ry < rows; ry += 1) {
     for (let cx = 0; cx < cols; cx += 1) {
-      const n = counts[ry][cx] || 1;
-      const color = scores[ry][cx] / n;
-      const ed = edge[ry][cx] / n;
-      grid[ry][cx] = color + Math.min(2.2, ed * 0.08);
+      const n = Math.max(1, pixC[ry][cx]);
+      const whiteR = whiteC[ry][cx] / n;
+      const skin = skinC[ry][cx] / n;
+      const edge = edgeC[ry][cx] / n;
+      const darkR = darkC[ry][cx] / n;
+      const col = colorVar[ry][cx] / n;
+
+      // hukuman keras untuk sel penuh teks putih
+      if (whiteR > 0.45) {
+        grid[ry][cx] = -2;
+        continue;
+      }
+
+      let s = 0;
+      s += skin * 1.15; // wajah/tubuh
+      s += Math.min(2.8, edge * 0.12); // detail wajah
+      s += Math.min(1.4, col * 0.08); // momen berwarna / epic
+      s -= whiteR * 3.5; // teks
+      s -= darkR * 0.4; // void
+
+      // kaki/alas biasanya di sepertiga bawah — turunkan
+      if (ry > rows * 0.78) s *= 0.35;
+      // header / watermark sering di atas ekstrem
+      if (ry < rows * 0.06) s *= 0.5;
+
+      grid[ry][cx] = s;
     }
   }
 
-  // smooth 3x3
+  // smooth
   const smooth = Array.from({ length: rows }, () => new Array(cols).fill(0));
   for (let ry = 0; ry < rows; ry += 1) {
     for (let cx = 0; cx < cols; cx += 1) {
       let sum = 0;
-      let wsum = 0;
+      let w = 0;
       for (let dy = -1; dy <= 1; dy += 1) {
         for (let dx = -1; dx <= 1; dx += 1) {
           const yy = ry + dy;
           const xx = cx + dx;
           if (yy < 0 || yy >= rows || xx < 0 || xx >= cols) continue;
-          const w = dy === 0 && dx === 0 ? 2.5 : 1;
-          sum += grid[yy][xx] * w;
-          wsum += w;
+          const ww = dy === 0 && dx === 0 ? 3 : 1;
+          sum += grid[yy][xx] * ww;
+          w += ww;
         }
       }
-      smooth[ry][cx] = sum / wsum;
+      smooth[ry][cx] = sum / w;
     }
   }
 
-  // cari peak di zona wajah tipikal (bukan footer/header)
-  const rowLo = Math.max(1, Math.floor(rows * 0.08));
-  const rowHi = Math.min(rows - 2, Math.floor(rows * 0.72)); // wajah jarang di kaki
+  // cari peak di zona wajah (atas–tengah, hindari kaki & header)
+  const rowLo = Math.max(1, Math.floor(rows * 0.1));
+  const rowHi = Math.min(rows - 2, Math.floor(rows * 0.68));
   const colLo = 1;
   const colHi = cols - 2;
 
-  let best = { s: -1, r: rowLo, c: Math.floor(cols / 2) };
+  let best = { s: -99, r: rowLo, c: Math.floor(cols / 2) };
   for (let ry = rowLo; ry <= rowHi; ry += 1) {
     for (let cx = colLo; cx <= colHi; cx += 1) {
-      // slight preference upper-center (close-up faces)
-      const bias = 1 + (1 - Math.abs(cx - (cols - 1) / 2) / cols) * 0.08;
-      const val = smooth[ry][cx] * bias;
+      // prefer sedikit ke tengah horizontal
+      const centerBias = 1 + (1 - Math.abs(cx - (cols - 1) / 2) / (cols / 2)) * 0.1;
+      // prefer sedikit ke atas (wajah di atas torso)
+      const upperBias = 1 + ((rowHi - ry) / (rowHi - rowLo + 1)) * 0.12;
+      const val = smooth[ry][cx] * centerBias * upperBias;
       if (val > best.s) best = { s: val, r: ry, c: cx };
     }
   }
 
-  if (best.s <= 0.05) return null;
+  if (best.s < 0.15) {
+    return { pageScore: best.s, focus: null };
+  }
 
-  // expand cluster around peak for more stable center
-  const thresh = best.s * 0.78;
+  // cluster di sekitar peak
+  const thresh = best.s * 0.7;
   let r0 = best.r;
   let r1 = best.r;
   let c0 = best.c;
   let c1 = best.c;
   for (let ry = rowLo; ry <= rowHi; ry += 1) {
     for (let cx = colLo; cx <= colHi; cx += 1) {
-      if (smooth[ry][cx] >= thresh && Math.abs(ry - best.r) <= 3 && Math.abs(cx - best.c) <= 3) {
+      if (
+        smooth[ry][cx] >= thresh &&
+        Math.abs(ry - best.r) <= 3 &&
+        Math.abs(cx - best.c) <= 3
+      ) {
         if (ry < r0) r0 = ry;
         if (ry > r1) r1 = ry;
         if (cx < c0) c0 = cx;
@@ -297,26 +373,36 @@ function analyzeGrid(data, width, height, channels) {
     }
   }
 
-  // bias sedikit ke atas cluster (mata/wajah di atas centroid tubuh)
-  const faceRow = r0 + (r1 - r0) * 0.32;
+  // pusat wajah: bias ke atas cluster
+  const faceRow = r0 + (r1 - r0) * 0.28;
   const faceCol = (c0 + c1) / 2;
-
   const y = Math.round(((faceRow + 0.5) / rows) * 100);
   const x = Math.round(((faceCol + 0.5) / cols) * 100);
 
+  // pageScore: kombinasikan kualitas halaman + kekuatan fokus
+  const pageScore =
+    best.s * 2.2 +
+    skinRatio * 8 -
+    whiteRatio * 6 +
+    (1 - Math.abs(0.35 - y / 100)) * 0.5;
+
   return {
-    x: Math.max(20, Math.min(80, x)),
-    pos: Math.max(16, Math.min(58, y)),
-    score: best.s,
+    pageScore,
+    focus: {
+      x: Math.max(22, Math.min(78, x)),
+      pos: Math.max(14, Math.min(55, y)),
+      score: best.s,
+    },
   };
 }
 
 async function analyzeFocus(url) {
   try {
     const buf = await fetchImageBuffer(url);
+    // resolusi sampel lebih tinggi sedikit agar mata/wajah kebaca
     const { data, info } = await sharp(buf)
       .rotate()
-      .resize(72, 240, { fit: 'inside', withoutEnlargement: true })
+      .resize(96, 320, { fit: 'inside', withoutEnlargement: true })
       .removeAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true });
@@ -324,37 +410,41 @@ async function analyzeFocus(url) {
     const { width, height, channels } = info;
     if (!width || !height || channels < 3) return null;
 
-    return analyzeGrid(data, width, height, channels);
+    return analyzePage(data, width, height, channels);
   } catch {
     return null;
   }
 }
 
 function candidateIndexes(n, seed) {
-  // Skip intro/iklan di awal & credit di akhir
+  // Skip keras intro/iklan/watermark awal & credit akhir
   let lo = 0;
   let hi = n - 1;
-  if (n >= 12) {
+  if (n >= 16) {
+    lo = Math.floor(n * 0.28);
+    hi = Math.floor(n * 0.68);
+  } else if (n >= 10) {
     lo = Math.floor(n * 0.22);
-    hi = Math.floor(n * 0.72);
+    hi = Math.floor(n * 0.7);
   } else if (n >= 6) {
-    lo = 1;
-    hi = n - 2;
+    lo = 2;
+    hi = n - 3;
   } else if (n >= 3) {
     lo = 1;
-    hi = n - 1;
+    hi = n - 2;
   }
   if (hi < lo) hi = lo;
 
   const span = hi - lo + 1;
-  const primary = lo + (seed % span);
-  // coba beberapa kandidat di sekitar primary
-  const set = new Set([primary]);
-  if (span > 1) set.add(lo + ((seed + Math.floor(span / 3)) % span));
-  if (span > 2) set.add(lo + ((seed + Math.floor((2 * span) / 3)) % span));
-  // panel tengah absolut sering bagus
-  set.add(lo + Math.floor(span / 2));
-  return [...set].slice(0, 3);
+  const picks = new Set();
+  // sebar merata di zona aman + sedikit offset seed
+  const steps = Math.min(6, span);
+  for (let s = 0; s < steps; s += 1) {
+    const offset = Math.floor((s * span) / steps);
+    picks.add(lo + ((offset + (seed % Math.max(1, Math.floor(span / steps)))) % span));
+  }
+  picks.add(lo + Math.floor(span / 2));
+  return [...picks].slice(0, 6);
 }
 
 const thumb = async (chapterUrl) => {
@@ -369,33 +459,38 @@ const thumb = async (chapterUrl) => {
   const idxs = candidateIndexes(imgs.length, h);
   let best = null;
 
-  // Analisis paralel terbatas (maks 3 gambar)
   const results = await Promise.all(
     idxs.map(async (i) => {
-      const focus = await analyzeFocus(imgs[i]);
-      return { i, focus };
+      const analysis = await analyzeFocus(imgs[i]);
+      return { i, analysis };
     }),
   );
 
   for (const row of results) {
-    if (!row.focus) continue;
-    if (!best || row.focus.score > best.focus.score) best = row;
+    if (!row.analysis || !row.analysis.focus) continue;
+    if (row.analysis.pageScore < 0) continue;
+    if (!best || row.analysis.pageScore > best.analysis.pageScore) best = row;
   }
 
-  if (best) {
+  if (best && best.analysis.focus) {
     return {
       status: true,
-      data: { url: imgs[best.i], pos: best.focus.pos, x: best.focus.x ?? 50 },
+      data: {
+        url: imgs[best.i],
+        pos: best.analysis.focus.pos,
+        x: best.analysis.focus.x,
+      },
     };
   }
 
-  // fallback: panel primary + posisi karakter tipikal manhwa
-  const fallbackIdx = idxs[0];
+  // fallback: panel tengah, fokus upper-mid (zona wajah tipikal)
+  const mid = idxs[Math.floor(idxs.length / 2)] ?? idxs[0];
   return {
     status: true,
-    data: { url: imgs[fallbackIdx], pos: 28 + (h % 14), x: 50 },
+    data: { url: imgs[mid], pos: 30, x: 50 },
   };
 };
+
 
 const detail = async (url) => {
   const src = detectSource(url);
