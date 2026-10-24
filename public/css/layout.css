@@ -544,11 +544,11 @@ body.is-home .topbar__logo {
   -webkit-tap-highlight-color: transparent;
 }
 body.is-home .topbar__logo img {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
   display: block;
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,.55));
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,.65));
 }
 body.is-home .topbar__actions {
   pointer-events: auto;

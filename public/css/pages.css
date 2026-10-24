@@ -2916,7 +2916,7 @@ body.is-detail .detail__body {
   position: absolute;
   inset: 0;
   background-size: cover;
-  background-position: center top;
+  background-position: center 28%;
   filter: none;
   transform: none;
   transition: opacity .45s ease;
@@ -2988,14 +2988,24 @@ body.is-detail .detail__body {
 .spotlight__fact {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.1);
-  border: 1px solid rgba(255,255,255,.1);
-  color: #f0f0f2;
-  font-size: 12px;
+  gap: 5px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,.88);
+  font-size: 13px;
   font-weight: 600;
+}
+.spotlight__fact + .spotlight__fact::before {
+  content: '·';
+  margin: 0 8px 0 2px;
+  color: rgba(255,255,255,.35);
+  font-weight: 500;
+}
+.spotlight__facts {
+  gap: 0 !important;
+  align-items: center;
 }
 .spotlight__actions {
   display: flex;
@@ -3073,4 +3083,35 @@ body.is-detail .detail__body {
 /* body padding under fixed topbar on home */
 body.is-home #app.container {
   padding-top: 0 !important;
+}
+
+/* Clean meta row under spotlight title — no pill borders */
+.spotlight .spotlight__facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  margin: 0 0 16px;
+}
+.spotlight .spotlight__fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: rgba(255,255,255,.9);
+  font-size: 13px;
+  font-weight: 600;
+}
+.spotlight .spotlight__fact + .spotlight__fact::before {
+  content: '·';
+  margin: 0 10px 0 4px;
+  color: rgba(255,255,255,.35);
+  font-weight: 500;
+}
+.spotlight__bg {
+  background-position: center 30% !important;
 }
