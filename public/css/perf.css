@@ -262,3 +262,81 @@ body.is-home #app.container {
   .bottom-nav a svg,
   .bottom-nav a span { transition: none !important; }
 }
+
+/* Komikta home brand: larger, legible mask + transparent red/white wordmark. */
+body.is-home .topbar,
+body.is-home #topbar {
+  min-height: calc(76px + env(safe-area-inset-top, 0px)) !important;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 16px 12px !important;
+  box-sizing: border-box !important;
+  background: #050505 !important;
+  border: 0 !important;
+  border-bottom: 2px solid rgba(255,255,255,.88) !important;
+  border-radius: 0 !important;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), 96.5% 100%, 3.5% 100%, 0 calc(100% - 8px)) !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+body.is-home .topbar__logo {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  width: auto !important;
+  max-width: calc(100% - 104px) !important;
+  height: 56px !important;
+  flex: 0 1 auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+body.is-home .topbar__logo .topbar__mask {
+  display: block !important;
+  flex: 0 0 auto !important;
+  width: 42px !important;
+  height: 54px !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.65)) !important;
+}
+body.is-home .topbar__logo .topbar__wordmark {
+  display: block !important;
+  flex: 0 1 auto !important;
+  width: clamp(100px, 31vw, 142px) !important;
+  height: 54px !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.65)) !important;
+}
+body.is-home .topbar__actions {
+  flex: 0 0 auto !important;
+  gap: 4px !important;
+  margin-left: auto !important;
+  padding-left: 8px !important;
+}
+body.is-home .topbar__icon,
+body.is-home .topbar__icon.is-on,
+body.is-home #topbar-notif,
+body.is-home #topbar-search-btn {
+  width: 40px !important;
+  height: 42px !important;
+  flex: 0 0 40px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #fff !important;
+}
+body.is-home .topbar__icon svg { width: 24px !important; height: 24px !important; }
+@media (max-width: 380px) {
+  body.is-home .topbar__logo { gap: 5px !important; }
+  body.is-home .topbar__logo .topbar__mask { width: 36px !important; height: 48px !important; }
+  body.is-home .topbar__logo .topbar__wordmark { width: clamp(92px, 29vw, 112px) !important; height: 48px !important; }
+  body.is-home .topbar__actions { gap: 0 !important; padding-left: 4px !important; }
+  body.is-home .topbar__icon,
+  body.is-home .topbar__icon.is-on,
+  body.is-home #topbar-notif,
+  body.is-home #topbar-search-btn { width: 36px !important; flex-basis: 36px !important; }
+}
