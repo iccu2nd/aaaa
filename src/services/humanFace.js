@@ -8,7 +8,9 @@ const PAGE_WIDTH = 384;
 const MIN_BOX_SCORE = 0.3;
 const MIN_FACE_FRAC = 0.05;
 
+const VERSION = 'v18-trace-wasm';
 let loading = null;
+let failedAt = 0;
 let state = { ready: false, error: null };
 let chain = Promise.resolve();
 
@@ -177,7 +179,11 @@ async function load() {
 }
 
 function getHuman() {
-  if (!loading) loading = load();
+  if (loading && !(failedAt && Date.now() - failedAt > 60000)) return loading;
+  loading = load().then((human) => {
+    failedAt = human ? 0 : Date.now();
+    return human;
+  });
   return loading;
 }
 
@@ -251,6 +257,6 @@ async function detectFace(buf) {
   });
 }
 
-const status = () => ({ ...state });
+const status = () => ({ version: VERSION, ...state });
 
 module.exports = { detectFace, getHuman, status };
