@@ -213,15 +213,11 @@ body.is-home #topbar {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+/* Keep other header pseudo-elements available; the final chamfer rule is below. */
 body.is-home .topbar::before,
-body.is-home .topbar::after,
-body.is-home #topbar::before,
-body.is-home #topbar::after {
+body.is-home #topbar::before {
   content: none !important;
   display: none !important;
-  background: none !important;
-  clip-path: none !important;
-  box-shadow: none !important;
 }
 body.is-home #app.container {
   padding-top: 0 !important;
@@ -273,7 +269,6 @@ body.is-home #topbar {
   border: 0 !important;
   border-bottom: 2px solid rgba(255,255,255,.88) !important;
   border-radius: 0 !important;
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), 96.5% 100%, 3.5% 100%, 0 calc(100% - 8px)) !important;
   box-shadow: none !important;
   overflow: visible !important;
 }
@@ -339,4 +334,27 @@ body.is-home .topbar__icon svg { width: 24px !important; height: 24px !important
   body.is-home .topbar__icon.is-on,
   body.is-home #topbar-notif,
   body.is-home #topbar-search-btn { width: 36px !important; flex-basis: 36px !important; }
+}
+
+
+/* Authoritative chamfer trim: one pseudo-element on the single #topbar element.
+   Keep the content box/layout untouched; draw only a slim white angular rule. */
+body.is-home #topbar {
+  border-bottom: 0 !important;
+  overflow: visible !important;
+}
+body.is-home #topbar::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: -3px !important;
+  height: 8px !important;
+  background: #fff !important;
+  clip-path: polygon(0 0, 3.5% 100%, 96.5% 100%, 100% 0, 99.1% 0, 96.1% 70%, 3.9% 70%, .9% 0) !important;
+  -webkit-clip-path: polygon(0 0, 3.5% 100%, 96.5% 100%, 100% 0, 99.1% 0, 96.1% 70%, 3.9% 70%, .9% 0) !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  z-index: 61 !important;
 }
