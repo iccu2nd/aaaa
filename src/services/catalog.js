@@ -138,13 +138,13 @@ const all = async (query = '') => {
 };
 
 /**
- * Cuplikan chapter: deteksi wajah via pasangan mata + zona kulit,
- * crop mencakup rambut → dagu. Cepat (gambar kecil, max 4 kandidat).
+ * Cuplikan chapter — prioritaskan wajah/karakter, tolak balon teks.
+ * Cepat: resize kecil, max 5 kandidat, reject agresif panel putih/teks.
  */
 async function fetchImageBuffer(url) {
   const res = await axios.get(url, {
     responseType: 'arraybuffer',
-    timeout: 7000,
+    timeout: 6500,
     maxContentLength: 3 * 1024 * 1024,
     headers: {
       'User-Agent': THUMB_UA,
@@ -156,217 +156,222 @@ async function fetchImageBuffer(url) {
   return Buffer.from(res.data);
 }
 
-function lumAt(data, width, channels, x, y) {
-  const i = (y * width + x) * channels;
-  return 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-}
-
 function skinScore(r, g, b) {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   const lum = 0.299 * r + 0.587 * g + 0.114 * b;
   const sat = max === 0 ? 0 : (max - min) / max;
+  if (lum < 45 || lum > 235 || sat > 0.58) return 0;
   const dRG = r - g;
   const dRB = r - b;
-  if (lum < 50 || lum > 240 || sat > 0.55) return 0;
-  // fair
-  if (r > 140 && g > 100 && b > 80 && dRG > 3 && dRB > 10 && sat > 0.03 && sat < 0.4) return 3;
+  // fair / east-asian
+  if (r > 145 && g > 105 && b > 85 && dRG > 4 && dRB > 12 && sat > 0.04 && sat < 0.4) return 4;
   // medium
-  if (r > 95 && r > g && g >= b * 0.8 && lum > 70 && lum < 210 && sat > 0.06) return 2.6;
+  if (r > 100 && r > g && g >= b * 0.82 && lum > 70 && lum < 205 && sat > 0.07 && sat < 0.5) return 3.4;
   // warm
-  if (r > 70 && r > g + 5 && g > b && lum > 55 && lum < 170 && sat > 0.08) return 2.2;
+  if (r > 75 && r > g + 6 && g > b && lum > 55 && lum < 165 && sat > 0.09 && sat < 0.55) return 2.8;
+  // blush / lip zone
+  if (r > 165 && g > 115 && b > 115 && dRG > 8 && lum > 130 && lum < 225 && sat < 0.35) return 2.2;
   return 0;
 }
 
 /**
- * Cari pasangan mata (dua titik gelap horizontal di area kulit),
- * lalu perluas ke rambut (atas) dan dagu (bawah).
+ * Analisis satu panel.
+ * pageScore < 0 = tolak (teks/balon/putih).
+ * focus = object-position ke wajah.
  */
-function findFaceFocus(data, width, height, channels) {
-  // Downsample step for speed
-  const step = Math.max(1, Math.floor(Math.min(width, height) / 64));
-  const skinMap = [];
-  let white = 0;
-  let total = 0;
+function analyzePage(data, width, height, channels) {
+  const stepX = Math.max(1, Math.floor(width / 48));
+  const stepY = Math.max(1, Math.floor(height / 80));
 
-  for (let y = 0; y < height; y += step) {
-    for (let x = 0; x < width; x += step) {
+  let total = 0;
+  let white = 0;
+  let inkOnWhite = 0; // indikasi teks di balon
+  let skinW = 0;
+  let skinN = 0;
+  let colorN = 0;
+
+  // histogram Y untuk zona kulit terbaik
+  const bands = 20;
+  const skinBand = new Array(bands).fill(0);
+  const whiteBand = new Array(bands).fill(0);
+  const bandCount = new Array(bands).fill(0);
+  const skinXs = [];
+  const skinYs = [];
+
+  for (let y = 0; y < height; y += stepY) {
+    const bi = Math.min(bands - 1, Math.floor((y / height) * bands));
+    for (let x = 0; x < width; x += stepX) {
       const i = (y * width + x) * channels;
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
-      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
       const max = Math.max(r, g, b);
       const min = Math.min(r, g, b);
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
       const sat = max === 0 ? 0 : (max - min) / max;
       total += 1;
-      if (lum > 225 && sat < 0.1) {
+      bandCount[bi] += 1;
+
+      // putih / balon
+      if (lum > 215 && sat < 0.12) {
         white += 1;
+        whiteBand[bi] += 1;
+        // tinta teks: tetangga gelap di area putih
+        if (x + stepX < width) {
+          const j = (y * width + (x + stepX)) * channels;
+          const lum2 = 0.299 * data[j] + 0.587 * data[j + 1] + 0.114 * data[j + 2];
+          if (lum2 < 90) inkOnWhite += 1;
+        }
         continue;
       }
+
+      if (sat > 0.2 && lum > 40 && lum < 200) colorN += 1;
+
       const sk = skinScore(r, g, b);
-      if (sk > 0) skinMap.push({ x, y, sk, lum });
-    }
-  }
-
-  const whiteRatio = total ? white / total : 1;
-  if (whiteRatio > 0.58) return { pageScore: -1, focus: null };
-  if (skinMap.length < 8) return { pageScore: -0.5, focus: null };
-
-  // Local darkness: candidate eye points = darker than neighborhood, on/near skin
-  const eyePts = [];
-  const eyeStep = step * 2;
-  for (let y = Math.floor(height * 0.08); y < Math.floor(height * 0.72); y += eyeStep) {
-    for (let x = Math.floor(width * 0.1); x < Math.floor(width * 0.9); x += eyeStep) {
-      const L = lumAt(data, width, channels, x, y);
-      if (L > 95 || L < 8) continue;
-      // must be near skin
-      let nearSkin = false;
-      for (const s of skinMap) {
-        if (Math.abs(s.x - x) < width * 0.12 && Math.abs(s.y - y) < height * 0.1) {
-          nearSkin = true;
-          break;
-        }
-      }
-      if (!nearSkin) continue;
-      // darker than left/right neighbors (pupil/eyelash)
-      const Lx1 = x > eyeStep ? lumAt(data, width, channels, x - eyeStep, y) : L;
-      const Lx2 = x + eyeStep < width ? lumAt(data, width, channels, x + eyeStep, y) : L;
-      const Ly1 = y > eyeStep ? lumAt(data, width, channels, x, y - eyeStep) : L;
-      const Ly2 = y + eyeStep < height ? lumAt(data, width, channels, x, y + eyeStep) : L;
-      const around = (Lx1 + Lx2 + Ly1 + Ly2) / 4;
-      if (around - L < 12) continue;
-      eyePts.push({ x, y, depth: around - L });
-    }
-  }
-
-  // Pair eyes: similar Y, reasonable horizontal distance
-  let bestPair = null;
-  const minDist = width * 0.06;
-  const maxDist = width * 0.42;
-  for (let i = 0; i < eyePts.length; i += 1) {
-    for (let j = i + 1; j < eyePts.length; j += 1) {
-      const a = eyePts[i];
-      const b = eyePts[j];
-      const dy = Math.abs(a.y - b.y);
-      const dx = Math.abs(a.x - b.x);
-      if (dy > height * 0.06) continue;
-      if (dx < minDist || dx > maxDist) continue;
-      const score = a.depth + b.depth + dx * 0.02 - dy * 0.05;
-      // prefer upper half
-      const midY = (a.y + b.y) / 2;
-      const upperBoost = 1 + (1 - midY / height) * 0.4;
-      const final = score * upperBoost;
-      if (!bestPair || final > bestPair.score) {
-        bestPair = {
-          score: final,
-          x: (a.x + b.x) / 2,
-          y: midY,
-          eyeDist: dx,
-        };
+      if (sk > 0) {
+        skinW += sk;
+        skinN += 1;
+        skinBand[bi] += sk;
+        skinXs.push(x);
+        skinYs.push(y);
       }
     }
   }
 
-  if (bestPair) {
-    // Expand: rambut di atas mata, dagu di bawah
-    // eye line at pair.y; hair ~ 0.9*eyeDist above; chin ~ 1.35*eyeDist below
-    const faceH = bestPair.eyeDist * 2.4;
-    const faceCenterY = bestPair.y + bestPair.eyeDist * 0.25; // sedikit di bawah mata (tengah wajah)
-    const faceCenterX = bestPair.x;
+  if (!total) return { pageScore: -1, focus: null };
 
-    // clamp so hair+chin stay in frame for object-position
-    let posY = (faceCenterY / height) * 100;
-    let posX = (faceCenterX / width) * 100;
-    // bias sedikit ke atas supaya rambut ikut kelihatan di crop cover
-    posY = posY - (bestPair.eyeDist / height) * 15;
-    posY = Math.max(16, Math.min(52, posY));
-    posX = Math.max(22, Math.min(78, posX));
+  const whiteRatio = white / total;
+  const skinRatio = skinN / total;
+  const textHint = inkOnWhite / total;
+  const colorRatio = colorN / total;
 
-    const pageScore =
-      bestPair.score * 0.15 +
-      (1 - whiteRatio) * 3 +
-      Math.min(4, skinMap.length / 40);
+  // —— TOLAK panel balon teks / hampir putih ——
+  if (whiteRatio > 0.42) return { pageScore: -3, focus: null };
+  if (whiteRatio > 0.32 && textHint > 0.02) return { pageScore: -2.5, focus: null };
+  if (skinRatio < 0.02 && whiteRatio > 0.25) return { pageScore: -2, focus: null };
+  if (skinRatio < 0.015 && colorRatio < 0.08) return { pageScore: -1.5, focus: null };
 
-    return {
-      pageScore,
-      focus: { x: Math.round(posX), pos: Math.round(posY), score: bestPair.score },
-    };
+  // band terbaik untuk wajah (hindari kaki & header)
+  let bestBand = 3;
+  let bestBandS = -1;
+  const loB = Math.max(1, Math.floor(bands * 0.1));
+  const hiB = Math.min(bands - 2, Math.floor(bands * 0.65));
+  for (let i = loB; i <= hiB; i += 1) {
+    const n = Math.max(1, bandCount[i]);
+    const s = skinBand[i] / n - (whiteBand[i] / n) * 2;
+    if (s > bestBandS) {
+      bestBandS = s;
+      bestBand = i;
+    }
   }
 
-  // Fallback: pusat massa area kulit (bukan teks) — tetap usahakan rambut-dagu
+  // centroid kulit di sekitar best band (±2 band)
   let sx = 0;
   let sy = 0;
   let sw = 0;
-  for (const s of skinMap) {
-    // abaikan sepertiga bawah (kaki)
-    if (s.y > height * 0.75) continue;
-    if (s.y < height * 0.05) continue;
-    sx += s.x * s.sk;
-    sy += s.y * s.sk;
-    sw += s.sk;
+  const yLo = ((bestBand - 1.2) / bands) * height;
+  const yHi = ((bestBand + 2.2) / bands) * height;
+  for (let k = 0; k < skinXs.length; k += 1) {
+    const y = skinYs[k];
+    if (y < yLo || y > yHi) continue;
+    // skip ekstrem kiri/kanan sedikit
+    const x = skinXs[k];
+    sx += x;
+    sy += y;
+    sw += 1;
   }
-  if (sw < 1) return { pageScore: -0.2, focus: null };
+
+  // fallback: semua kulit di zona aman
+  if (sw < 4) {
+    sx = 0;
+    sy = 0;
+    sw = 0;
+    for (let k = 0; k < skinXs.length; k += 1) {
+      const y = skinYs[k];
+      if (y < height * 0.08 || y > height * 0.72) continue;
+      sx += skinXs[k];
+      sy += y;
+      sw += 1;
+    }
+  }
+
+  if (sw < 2) return { pageScore: -1, focus: null };
 
   const cx = sx / sw;
   const cy = sy / sw;
-  // geser ke atas sedikit untuk rambut
-  let posY = (cy / height) * 100 - 6;
-  let posX = (cx / width) * 100;
-  posY = Math.max(18, Math.min(50, posY));
-  posX = Math.max(24, Math.min(76, posX));
 
-  const pageScore = (1 - whiteRatio) * 2 + Math.min(3, skinMap.length / 50);
+  // geser ke atas sedikit (rambut)
+  let posY = (cy / height) * 100 - 5;
+  let posX = (cx / width) * 100;
+  posY = Math.max(16, Math.min(48, posY));
+  posX = Math.max(25, Math.min(75, posX));
+
+  // skor halaman: kulit tinggi, putih rendah, sedikit teks
+  const pageScore =
+    skinRatio * 28 +
+    Math.min(6, skinW / 40) +
+    colorRatio * 3 -
+    whiteRatio * 18 -
+    textHint * 40 +
+    (bestBandS > 0 ? bestBandS * 2 : 0);
+
+  if (pageScore < 0.8) return { pageScore: -0.5, focus: null };
+
   return {
     pageScore,
-    focus: { x: Math.round(posX), pos: Math.round(posY), score: pageScore },
+    focus: {
+      x: Math.round(posX),
+      pos: Math.round(posY),
+      score: pageScore,
+    },
   };
 }
 
 async function analyzeFocus(url) {
   try {
     const buf = await fetchImageBuffer(url);
-    // kecil & cepat; cukup untuk pasangan mata
     const { data, info } = await sharp(buf)
       .rotate()
-      .resize(80, 260, { fit: 'inside', withoutEnlargement: true })
+      .resize(72, 240, { fit: 'inside', withoutEnlargement: true })
       .removeAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true });
-
     const { width, height, channels } = info;
     if (!width || !height || channels < 3) return null;
-    return findFaceFocus(data, width, height, channels);
+    return analyzePage(data, width, height, channels);
   } catch {
     return null;
   }
 }
 
 function candidateIndexes(n, seed) {
+  // Skip intro watermark & ending credit lebih agresif
   let lo = 0;
   let hi = n - 1;
-  if (n >= 16) {
-    lo = Math.floor(n * 0.3);
+  if (n >= 20) {
+    lo = Math.floor(n * 0.32);
+    hi = Math.floor(n * 0.62);
+  } else if (n >= 12) {
+    lo = Math.floor(n * 0.28);
     hi = Math.floor(n * 0.65);
-  } else if (n >= 10) {
-    lo = Math.floor(n * 0.25);
-    hi = Math.floor(n * 0.68);
-  } else if (n >= 6) {
+  } else if (n >= 7) {
     lo = 2;
     hi = n - 3;
-  } else if (n >= 3) {
+  } else if (n >= 4) {
     lo = 1;
     hi = n - 2;
   }
   if (hi < lo) hi = lo;
   const span = hi - lo + 1;
   const picks = new Set();
-  const count = Math.min(4, span);
+  const count = Math.min(5, span);
   for (let s = 0; s < count; s += 1) {
-    picks.add(lo + Math.floor(((s + 0.5) * span) / count + (seed % 3)) % span);
+    picks.add(lo + Math.floor(((s + 0.35) * span) / count) % span);
   }
-  picks.add(lo + Math.floor(span / 2));
-  return [...picks].slice(0, 4);
+  // sedikit offset seed agar chapter beda tidak sama semua
+  picks.add(lo + ((Math.floor(span / 2) + (seed % Math.max(1, span))) % span));
+  return [...picks].slice(0, 5);
 }
 
 const thumb = async (chapterUrl) => {
@@ -379,9 +384,6 @@ const thumb = async (chapterUrl) => {
   for (const ch of String(chapterUrl)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
 
   const idxs = candidateIndexes(imgs.length, h);
-  let best = null;
-
-  // paralel max 4, timeout singkat sudah di axios
   const results = await Promise.all(
     idxs.map(async (i) => {
       const analysis = await analyzeFocus(imgs[i]);
@@ -389,13 +391,14 @@ const thumb = async (chapterUrl) => {
     }),
   );
 
+  let best = null;
   for (const row of results) {
     if (!row.analysis || !row.analysis.focus) continue;
-    if (row.analysis.pageScore < 0) continue;
+    if (row.analysis.pageScore < 0.8) continue;
     if (!best || row.analysis.pageScore > best.analysis.pageScore) best = row;
   }
 
-  if (best && best.analysis.focus) {
+  if (best) {
     return {
       status: true,
       data: {
@@ -406,7 +409,11 @@ const thumb = async (chapterUrl) => {
     };
   }
 
-  const mid = idxs[Math.floor(idxs.length / 2)] ?? idxs[0];
+  // fallback: coba index tengah-tengah chapter (bukan page 0)
+  const mid = Math.min(
+    imgs.length - 1,
+    Math.max(1, Math.floor(imgs.length * 0.4) + (h % Math.max(1, Math.floor(imgs.length * 0.15)))),
+  );
   return {
     status: true,
     data: { url: imgs[mid], pos: 28, x: 50 },

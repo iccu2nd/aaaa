@@ -2610,3 +2610,32 @@ body.is-detail .detail__body {
 .bottom-nav a[data-nav="search"][aria-current="page"] {
   color: var(--accent) !important;
 }
+
+.explore-toolbar__sort-ico {
+  display: grid; place-items: center;
+}
+.explore-toolbar__sort-ico svg,
+.explore-sort__opt svg {
+  width: 16px; height: 16px;
+  fill: none; stroke: currentColor; stroke-width: 1.75;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.explore-sort__opt {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.explore-sort__opt-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.explore-sort__opt-check {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  color: var(--muted);
+}
+.explore-sort__opt-check svg { width: 15px; height: 15px; }
+.explore-sort__opt.is-selected .explore-sort__opt-check { color: var(--white); }

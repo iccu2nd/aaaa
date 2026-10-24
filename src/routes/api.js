@@ -80,7 +80,7 @@ router.get('/explore', async (req, res) => {
 router.get(
   '/thumb',
   sourceUrl,
-  handler((r) => 't4:' + r.query.url, cfg.ttl.thumb, (r) => source.thumb(String(r.query.url))),
+  handler((r) => 't5:' + r.query.url, cfg.ttl.thumb, (r) => source.thumb(String(r.query.url))),
 );
 
 router.get(

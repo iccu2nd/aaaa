@@ -16,6 +16,9 @@ const icon = (name) => ({
   filter: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.3 7.2v5.4l-3.4 1.8v-7.2L4 5z"/></svg>',
   check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg>',
   close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>',
+  sort: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8h11M8 12h8M8 16h5"/><path d="M5 7v10M5 7l-1.5 2M5 7l1.5 2M5 17l-1.5-2M5 17l1.5-2"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l2.5 1.5"/></svg>',
+  fire: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c2 3 3 4.5 3 7a3 3 0 0 1-6 0c0-1.5.5-2.8 1.2-4C9 8 8 9.2 8 11.5A4.5 4.5 0 0 0 12.5 16c2.5 0 4.5-2 4.5-4.8 0-3.2-2-5.7-5-8.2z"/></svg>',
 })[name];
 const fmt = (n) => Number(n || 0).toLocaleString('id-ID');
 
@@ -58,12 +61,18 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
         <span class="explore-toolbar__label" id="explore-scope"></span>
         <div class="explore-sort">
           <button type="button" class="explore-toolbar__sort" id="sort-toggle" aria-haspopup="listbox" aria-expanded="false">
-            <span aria-hidden="true">↕</span>
+            <span class="explore-toolbar__sort-ico" aria-hidden="true">${icon('sort')}</span>
             <span id="sort-label">${sort === 'popular' ? 'Most popular' : 'Latest update'}</span>
           </button>
           <div class="explore-sort__menu" id="sort-menu" hidden role="listbox">
-            <button type="button" role="option" data-sort="latest" class="${sort === 'latest' ? 'is-selected' : ''}">Latest update ${sort === 'latest' ? '✓' : ''}</button>
-            <button type="button" role="option" data-sort="popular" class="${sort === 'popular' ? 'is-selected' : ''}">Most popular ${sort === 'popular' ? '✓' : ''}</button>
+            <button type="button" role="option" data-sort="latest" class="explore-sort__opt ${sort !== 'popular' ? 'is-selected' : ''}">
+              <span class="explore-sort__opt-main">${icon('clock')}<span>Latest update</span></span>
+              <span class="explore-sort__opt-check" aria-hidden="true">${sort !== 'popular' ? icon('check') : ''}</span>
+            </button>
+            <button type="button" role="option" data-sort="popular" class="explore-sort__opt ${sort === 'popular' ? 'is-selected' : ''}">
+              <span class="explore-sort__opt-main">${icon('fire')}<span>Most popular</span></span>
+              <span class="explore-sort__opt-check" aria-hidden="true">${sort === 'popular' ? icon('check') : ''}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -108,8 +117,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     if (currentQuery) params.set('q', currentQuery);
     if (currentGenres.length) params.set('genre', currentGenres.join(','));
     if (currentFormat) params.set('format', currentFormat);
-    if (sort === 'popular') params.set('sort', 'popular');
-    if (sort === 'title') params.set('sort', 'title');
+    params.set('sort', sort === 'popular' ? 'popular' : 'latest');
     const qs = params.toString();
     navigateTo(qs ? `/search?${qs}` : '/search');
   };
@@ -145,13 +153,18 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     }
     const sortLabel = root.querySelector('#sort-label');
     if (sortLabel) sortLabel.textContent = sort === 'popular' ? 'Most popular' : 'Latest update';
-    root.querySelectorAll('#sort-menu [data-sort]').forEach((b) => {
-      const on = b.dataset.sort === sort || (sort === 'latest' && b.dataset.sort === 'latest');
-      b.classList.toggle('is-selected', b.dataset.sort === (sort === 'title' ? 'latest' : sort));
-      b.textContent = b.dataset.sort === 'latest'
-        ? `Latest update${sort === 'latest' || sort === 'title' ? ' ✓' : ''}`
-        : `Most popular${sort === 'popular' ? ' ✓' : ''}`;
-    });
+    const menu = root.querySelector('#sort-menu');
+    if (menu) {
+      menu.innerHTML = `
+        <button type="button" role="option" data-sort="latest" class="explore-sort__opt ${sort !== 'popular' ? 'is-selected' : ''}">
+          <span class="explore-sort__opt-main">${icon('clock')}<span>Latest update</span></span>
+          <span class="explore-sort__opt-check">${sort !== 'popular' ? icon('check') : ''}</span>
+        </button>
+        <button type="button" role="option" data-sort="popular" class="explore-sort__opt ${sort === 'popular' ? 'is-selected' : ''}">
+          <span class="explore-sort__opt-main">${icon('fire')}<span>Most popular</span></span>
+          <span class="explore-sort__opt-check">${sort === 'popular' ? icon('check') : ''}</span>
+        </button>`;
+    }
   };
 
   const openSheet = () => {
@@ -231,27 +244,53 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     navigate();
   });
 
+  const closeSortMenu = () => {
+    if (!sortMenu) return;
+    sortMenu.hidden = true;
+    sortToggle?.setAttribute('aria-expanded', 'false');
+  };
+  const openSortMenu = () => {
+    if (!sortMenu) return;
+    sortMenu.hidden = false;
+    sortToggle?.setAttribute('aria-expanded', 'true');
+  };
+
   sortToggle?.addEventListener('click', (e) => {
+    e.preventDefault();
     e.stopPropagation();
-    const open = sortMenu.hidden;
-    sortMenu.hidden = !open;
-    sortToggle.setAttribute('aria-expanded', String(open));
+    if (sortMenu?.hidden) openSortMenu();
+    else closeSortMenu();
   });
+
+  // Event delegation — tetap jalan setelah paintQuick rebuild innerHTML
   sortMenu?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     const b = e.target.closest('[data-sort]');
     if (!b) return;
-    sort = b.dataset.sort === 'popular' ? 'popular' : 'latest';
-    sortMenu.hidden = true;
-    sortToggle.setAttribute('aria-expanded', 'false');
+    const next = b.dataset.sort === 'popular' ? 'popular' : 'latest';
+    closeSortMenu();
+    if (next === sort) return;
+    sort = next;
     paintQuick();
     navigate();
   });
-  document.addEventListener('click', () => {
-    if (sortMenu && !sortMenu.hidden) {
-      sortMenu.hidden = true;
-      sortToggle?.setAttribute('aria-expanded', 'false');
+
+  // Tutup menu hanya jika klik di luar
+  const onDocClick = (e) => {
+    if (!sortMenu || sortMenu.hidden) return;
+    if (e.target.closest('#sort-toggle') || e.target.closest('#sort-menu')) return;
+    closeSortMenu();
+  };
+  document.addEventListener('click', onDocClick);
+  // bersihkan saat page unmount (route change)
+  const obs = new MutationObserver(() => {
+    if (!root.isConnected) {
+      document.removeEventListener('click', onDocClick);
+      obs.disconnect();
     }
-  }, { once: false });
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
 
   async function loadResults() {
     io?.disconnect();

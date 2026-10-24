@@ -14,7 +14,7 @@ route(/^\/explore\/genre\/(.+)$/, (ctx, genre) => explore(ctx, '', genre));
 route(/^\/explore$/, (ctx) => explore(ctx));
 route(/^\/search$/, (ctx) => {
   const query = new URLSearchParams(location.search);
-  return explore(ctx, query.get('q') || '', query.get('genre') || '', query.get('sort') || 'popular', query.get('format') || '');
+  return explore(ctx, query.get('q') || '', query.get('genre') || '', query.get('sort') || 'latest', query.get('format') || '');
 });
 route(/^\/library$/, library);
 route(/^\/profile$/, profile);
