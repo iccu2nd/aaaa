@@ -2,7 +2,7 @@ import { esc, img, link } from '../utils.js';
 
 const starIcon = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8l-6.2 3.2L7 14.2 2 9.3l6.9-1L12 2z"/></svg>';
 const eyeIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-const userIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 19c0-3.4 3-5.5 7-5.5s7 2.1 7 5.5"/></svg>';
+const authorIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0 0-3L17.5 5.5a2.1 2.1 0 0 0-3 0L4 16v4z"/><path d="M13.5 6.5l4 4"/><path d="M4 20l3.2-.8"/></svg>';
 const bookIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21V5.5Z"/><path d="M4 6v15M8 7h8M8 11h8"/></svg>';
 
 function getRating(item) {
@@ -91,39 +91,54 @@ function getFormat(item) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+function chapterNum(label) {
+  const m = String(label || '').match(/(\d+(?:\.\d+)?)/);
+  return m ? Number(m[1]) : -1;
+}
+
+/** Ambil 2 chapter nomor terbesar (max), urut terbaru dulu. */
 function getChapterRows(item) {
   const rows = [];
   if (Array.isArray(item.chapters) && item.chapters.length) {
-    for (const ch of item.chapters.slice(0, 2)) {
+    for (const ch of item.chapters) {
       const label = normalizeChapterLabel(ch.chapter || ch.title || ch.name);
       if (!label) continue;
       rows.push({
         label,
         time: formatUpdateTime(ch.time || ch.updated_at || ch.date || ''),
+        num: chapterNum(label),
       });
     }
   }
   if (!rows.length) {
     const latest = item.latest_chapter ?? item.chapter;
     if (latest != null && latest !== '') {
+      const label = normalizeChapterLabel(latest);
       rows.push({
-        label: normalizeChapterLabel(latest),
+        label,
         time: formatUpdateTime(item.latest_chapter_time || ''),
+        num: chapterNum(label),
       });
     }
   }
-  // Pastikan selalu 2 baris bila nomor chapter diketahui (update sebelumnya)
-  if (rows.length === 1) {
-    const m = String(rows[0].label).match(/(\d+(?:\.\d+)?)/);
-    if (m) {
-      const n = Number(m[1]);
-      if (Number.isFinite(n) && n > 1) {
-        const prev = Number.isInteger(n) ? n - 1 : Math.round((n - 1) * 10) / 10;
-        rows.push({ label: `Chapter ${prev}`, time: '' });
-      }
-    }
+  // Urut nomor terbesar dulu, unik
+  rows.sort((a, b) => b.num - a.num);
+  const uniq = [];
+  const seen = new Set();
+  for (const r of rows) {
+    const key = r.num >= 0 ? r.num : r.label;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    uniq.push(r);
   }
-  return rows.slice(0, 2);
+  // Lengkapi ke 2 baris dari chapter max-1 bila hanya 1
+  if (uniq.length === 1 && uniq[0].num > 1) {
+    const prev = Number.isInteger(uniq[0].num)
+      ? uniq[0].num - 1
+      : Math.round((uniq[0].num - 1) * 10) / 10;
+    uniq.push({ label: `Chapter ${prev}`, time: '', num: prev });
+  }
+  return uniq.slice(0, 2).map(({ label, time }) => ({ label, time }));
 }
 
 /**
@@ -138,7 +153,7 @@ function metaHtml(item) {
   const views = formatViews(item);
   const format = getFormat(item);
   const parts = [
-    author ? `<span class="card__meta-row card__meta-row--author">${userIcon}<span>${esc(author)}</span></span>` : '',
+    author ? `<span class="card__meta-row card__meta-row--author">${authorIcon}<span>${esc(author)}</span></span>` : '',
     views ? `<span class="card__meta-row card__meta-row--views">${eyeIcon}<span>${esc(views)}</span></span>` : '',
     format ? `<span class="card__meta-row card__meta-row--format">${bookIcon}<span>${esc(format)}</span></span>` : '',
   ].filter(Boolean);
