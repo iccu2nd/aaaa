@@ -152,20 +152,25 @@ async function fetchImageBuffer(url) {
 }
 
 /**
- * Skor band horizontal: favor area yang mirip wajah/tubuh karakter.
- * - warna kulit / warna baju (mid-tone, saturasi sedang)
- * - detail (varian lokal) tinggi
- * - hindari putih polos (balon teks) & hitam polos (gutter)
+ * Deteksi area wajah/karakter (2D grid).
+ * Kombinasi: skin-tone multi-etnis + tepi/detail + hindari balon teks & gutter.
+ * Mengembalikan object-position x/y (%) yang mengarahkan crop ke wajah.
  */
-function scoreBands(data, width, height, channels) {
-  const bands = 24;
-  const scores = new Array(bands).fill(0);
-  const counts = new Array(bands).fill(0);
-  const rowH = height / bands;
+function analyzeGrid(data, width, height, channels) {
+  const cols = 12;
+  const rows = 20;
+  const scores = Array.from({ length: rows }, () => new Array(cols).fill(0));
+  const counts = Array.from({ length: rows }, () => new Array(cols).fill(0));
+  const edge = Array.from({ length: rows }, () => new Array(cols).fill(0));
 
+  const cellW = width / cols;
+  const cellH = height / rows;
+
+  // Pass 1: color / skin / midtone
   for (let y = 0; y < height; y += 1) {
-    const bi = Math.min(bands - 1, Math.floor(y / rowH));
+    const ry = Math.min(rows - 1, Math.floor(y / cellH));
     for (let x = 0; x < width; x += 1) {
+      const cx = Math.min(cols - 1, Math.floor(x / cellW));
       const i = (y * width + x) * channels;
       const r = data[i];
       const g = data[i + 1];
@@ -174,47 +179,144 @@ function scoreBands(data, width, height, channels) {
       const min = Math.min(r, g, b);
       const lum = 0.299 * r + 0.587 * g + 0.114 * b;
       const sat = max === 0 ? 0 : (max - min) / max;
+      const diffRG = r - g;
+      const diffRB = r - b;
 
-      // skip gutter / pure bg
-      if (lum < 12 || lum > 245) continue;
-      // skip very flat pale (speech bubble)
-      if (lum > 220 && sat < 0.08) continue;
+      // gutter / pure bg
+      if (lum < 10 || lum > 248) continue;
+      // speech bubble / white panel
+      if (lum > 225 && sat < 0.07) continue;
 
       let s = 0;
-      // skin-ish: R dominant, mid brightness
-      if (r > 70 && r > g && g > b * 0.75 && lum > 55 && lum < 230 && sat > 0.08 && sat < 0.65) {
-        s += 3.2;
-      }
-      // hair / dark clothing near face
-      if (lum > 20 && lum < 90 && sat < 0.35) s += 0.6;
-      // saturated mid-tone (clothes, eyes, accent)
-      if (sat > 0.18 && lum > 40 && lum < 200) s += 1.1;
-      // general mid detail preference
-      if (lum > 40 && lum < 210) s += 0.35;
 
-      scores[bi] += s;
-      counts[bi] += 1;
+      // --- multi skin ranges (manhwa: light east-asian, tan, warm) ---
+      // light / fair
+      if (
+        r > 140 && g > 100 && b > 80 &&
+        diffRG > 5 && diffRB > 15 &&
+        lum > 110 && lum < 235 && sat > 0.05 && sat < 0.45
+      ) s += 4.0;
+      // medium
+      if (
+        r > 95 && r < 210 && g > 60 && b > 40 &&
+        r > g && g >= b * 0.85 &&
+        lum > 70 && lum < 200 && sat > 0.08 && sat < 0.55
+      ) s += 3.5;
+      // deeper / warm
+      if (
+        r > 70 && r < 170 && g > 40 && b > 25 &&
+        r > g + 8 && g > b &&
+        lum > 50 && lum < 160 && sat > 0.1 && sat < 0.6
+      ) s += 3.0;
+
+      // hair / dark features near face
+      if (lum > 15 && lum < 75 && sat < 0.3) s += 0.55;
+      // saturated mid (eyes, clothes near bust-up)
+      if (sat > 0.2 && lum > 35 && lum < 190) s += 0.9;
+      // general living midtone
+      if (lum > 45 && lum < 205 && sat > 0.04) s += 0.25;
+
+      scores[ry][cx] += s;
+      counts[ry][cx] += 1;
+
+      // simple horizontal edge (detail)
+      if (x + 1 < width) {
+        const j = (y * width + (x + 1)) * channels;
+        const dl =
+          Math.abs(r - data[j]) +
+          Math.abs(g - data[j + 1]) +
+          Math.abs(b - data[j + 2]);
+        if (dl > 40) edge[ry][cx] += 1;
+      }
     }
   }
 
-  // normalize + smooth with neighbors (faces span multiple bands)
-  const norm = scores.map((s, i) => (counts[i] ? s / counts[i] : 0));
-  const smooth = norm.map((_, i) => {
-    const a = norm[Math.max(0, i - 1)] || 0;
-    const b = norm[i] || 0;
-    const c = norm[Math.min(bands - 1, i + 1)] || 0;
-    return a * 0.2 + b * 0.6 + c * 0.2;
-  });
-  return smooth;
+  // normalize + blend edge
+  const grid = Array.from({ length: rows }, () => new Array(cols).fill(0));
+  for (let ry = 0; ry < rows; ry += 1) {
+    for (let cx = 0; cx < cols; cx += 1) {
+      const n = counts[ry][cx] || 1;
+      const color = scores[ry][cx] / n;
+      const ed = edge[ry][cx] / n;
+      grid[ry][cx] = color + Math.min(2.2, ed * 0.08);
+    }
+  }
+
+  // smooth 3x3
+  const smooth = Array.from({ length: rows }, () => new Array(cols).fill(0));
+  for (let ry = 0; ry < rows; ry += 1) {
+    for (let cx = 0; cx < cols; cx += 1) {
+      let sum = 0;
+      let wsum = 0;
+      for (let dy = -1; dy <= 1; dy += 1) {
+        for (let dx = -1; dx <= 1; dx += 1) {
+          const yy = ry + dy;
+          const xx = cx + dx;
+          if (yy < 0 || yy >= rows || xx < 0 || xx >= cols) continue;
+          const w = dy === 0 && dx === 0 ? 2.5 : 1;
+          sum += grid[yy][xx] * w;
+          wsum += w;
+        }
+      }
+      smooth[ry][cx] = sum / wsum;
+    }
+  }
+
+  // cari peak di zona wajah tipikal (bukan footer/header)
+  const rowLo = Math.max(1, Math.floor(rows * 0.08));
+  const rowHi = Math.min(rows - 2, Math.floor(rows * 0.72)); // wajah jarang di kaki
+  const colLo = 1;
+  const colHi = cols - 2;
+
+  let best = { s: -1, r: rowLo, c: Math.floor(cols / 2) };
+  for (let ry = rowLo; ry <= rowHi; ry += 1) {
+    for (let cx = colLo; cx <= colHi; cx += 1) {
+      // slight preference upper-center (close-up faces)
+      const bias = 1 + (1 - Math.abs(cx - (cols - 1) / 2) / cols) * 0.08;
+      const val = smooth[ry][cx] * bias;
+      if (val > best.s) best = { s: val, r: ry, c: cx };
+    }
+  }
+
+  if (best.s <= 0.05) return null;
+
+  // expand cluster around peak for more stable center
+  const thresh = best.s * 0.78;
+  let r0 = best.r;
+  let r1 = best.r;
+  let c0 = best.c;
+  let c1 = best.c;
+  for (let ry = rowLo; ry <= rowHi; ry += 1) {
+    for (let cx = colLo; cx <= colHi; cx += 1) {
+      if (smooth[ry][cx] >= thresh && Math.abs(ry - best.r) <= 3 && Math.abs(cx - best.c) <= 3) {
+        if (ry < r0) r0 = ry;
+        if (ry > r1) r1 = ry;
+        if (cx < c0) c0 = cx;
+        if (cx > c1) c1 = cx;
+      }
+    }
+  }
+
+  // bias sedikit ke atas cluster (mata/wajah di atas centroid tubuh)
+  const faceRow = r0 + (r1 - r0) * 0.32;
+  const faceCol = (c0 + c1) / 2;
+
+  const y = Math.round(((faceRow + 0.5) / rows) * 100);
+  const x = Math.round(((faceCol + 0.5) / cols) * 100);
+
+  return {
+    x: Math.max(20, Math.min(80, x)),
+    pos: Math.max(16, Math.min(58, y)),
+    score: best.s,
+  };
 }
 
 async function analyzeFocus(url) {
   try {
     const buf = await fetchImageBuffer(url);
-    // sample kecil supaya cepat
     const { data, info } = await sharp(buf)
-      .rotate() // respect EXIF
-      .resize(48, 160, { fit: 'inside', withoutEnlargement: true })
+      .rotate()
+      .resize(72, 240, { fit: 'inside', withoutEnlargement: true })
       .removeAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true });
@@ -222,39 +324,7 @@ async function analyzeFocus(url) {
     const { width, height, channels } = info;
     if (!width || !height || channels < 3) return null;
 
-    const bands = scoreBands(data, width, height, channels);
-    // hindari 10% paling atas & 15% paling bawah (langit / kaki / credit)
-    const lo = Math.max(1, Math.floor(bands.length * 0.1));
-    const hi = Math.min(bands.length - 2, Math.floor(bands.length * 0.85));
-
-    let peak = 0;
-    for (let i = lo; i <= hi; i += 1) {
-      if (bands[i] > peak) peak = bands[i];
-    }
-    if (peak <= 0) return null;
-
-    // Ambil rentang band yang mendekati peak (area karakter), lalu pakai pusatnya
-    // supaya fokus di tengah wajah/tubuh, bukan di tepi area skor tinggi.
-    const thresh = peak * 0.72;
-    let left = lo;
-    let right = hi;
-    for (let i = lo; i <= hi; i += 1) {
-      if (bands[i] >= thresh) {
-        left = i;
-        break;
-      }
-    }
-    for (let i = hi; i >= lo; i -= 1) {
-      if (bands[i] >= thresh) {
-        right = i;
-        break;
-      }
-    }
-    // Bias sedikit ke atas dalam rentang (wajah biasanya di atas torso)
-    const bestI = left + (right - left) * 0.35;
-    const pos = Math.round(((bestI + 0.5) / bands.length) * 100);
-    const clamped = Math.max(18, Math.min(58, pos));
-    return { pos: clamped, score: peak };
+    return analyzeGrid(data, width, height, channels);
   } catch {
     return null;
   }
@@ -315,7 +385,7 @@ const thumb = async (chapterUrl) => {
   if (best) {
     return {
       status: true,
-      data: { url: imgs[best.i], pos: best.focus.pos, x: 50 },
+      data: { url: imgs[best.i], pos: best.focus.pos, x: best.focus.x ?? 50 },
     };
   }
 

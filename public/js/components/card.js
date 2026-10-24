@@ -42,6 +42,30 @@ function normalizeChapterLabel(ch) {
   return s.replace(/^ch\.?\s*/i, 'Chapter ');
 }
 
+/** Nomor total chapter (untuk badge cover). */
+function getChapterTotalNum(item) {
+  const candidates = [
+    item?.total_chapter,
+    item?.total_chapters,
+    item?.chapter_count,
+    item?.chapters_count,
+    item?.latest_chapter,
+  ];
+  for (const raw of candidates) {
+    const n = Number(raw);
+    if (Number.isFinite(n) && n > 0) return Math.round(n);
+  }
+  if (item?.chapter) {
+    const m = String(item.chapter).match(/(\d+(?:\.\d+)?)/);
+    if (m) return Math.round(Number(m[1]));
+  }
+  if (Array.isArray(item?.chapters) && item.chapters[0]) {
+    const m = String(item.chapters[0].chapter || '').match(/(\d+(?:\.\d+)?)/);
+    if (m) return Math.round(Number(m[1]));
+  }
+  return null;
+}
+
 function getChapterRows(item) {
   const rows = [];
   if (Array.isArray(item.chapters) && item.chapters.length) {
@@ -66,30 +90,13 @@ function getChapterRows(item) {
   return rows;
 }
 
-function getTotalChapter(item) {
-  const raw =
-    item?.total_chapter ??
-    item?.total_chapters ??
-    item?.chapter_count ??
-    item?.chapters_count ??
-    (item?.latest_chapter != null ? item.latest_chapter : null);
-  const n = Number(raw);
-  if (Number.isFinite(n) && n > 0) return `${Math.round(n)} chapter`;
-  if (item?.chapter) {
-    const m = String(item.chapter).match(/(\d+)/);
-    if (m) return `${m[1]} chapter`;
-  }
-  return '';
-}
-
+/** Stats di bawah judul: rating + views saja (total chapter pindah ke badge cover). */
 function statsHtml(item) {
   const rate = getRating(item);
   const views = formatViews(item);
-  const total = getTotalChapter(item);
   const parts = [
     rate ? `<span class="card__stat card__stat--rate">${starIcon}<b>${esc(rate)}</b></span>` : '',
     views ? `<span class="card__stat card__stat--views">${eyeIcon}<b>${esc(views)}</b></span>` : '',
-    total ? `<span class="card__stat card__stat--ch">${esc(total)}</span>` : '',
   ].filter(Boolean);
   return parts.length ? `<div class="card__stats">${parts.join('')}</div>` : '';
 }
@@ -107,11 +114,24 @@ function chaptersHtml(item) {
     .join('')}</div>`;
 }
 
+function coverBadges(item) {
+  const total = getChapterTotalNum(item);
+  const rate = getRating(item);
+  const left = total != null
+    ? `<span class="card__ch-total">Ch. ${esc(String(total))}</span>`
+    : '';
+  const right = rate
+    ? `<span class="card__rate-badge">${starIcon} ${esc(rate)}</span>`
+    : '';
+  return left + right;
+}
+
 /** Kartu grid (explore / search). */
 export const card = (c) => `
   <a class="card" href="${link('detail', c.url)}">
     <div class="card__cover">
       <img loading="lazy" decoding="async" src="${esc(img(c.poster))}" alt="">
+      ${coverBadges(c)}
     </div>
     <div class="card__body">
       <div class="card__title">${esc(c.title)}</div>
@@ -124,16 +144,13 @@ export const cardGrid = (items) =>
   items.length ? `<div class="grid">${items.map(card).join('')}</div>` : '<div class="state">Tidak ada hasil.</div>';
 
 /** Kartu horizontal rail (home Update / rekomendasi). */
-export const railCard = (item) => {
-  const rate = getRating(item);
-  return `
+export const railCard = (item) => `
     <a class="rail-card" href="${link('detail', item.url)}">
       <div class="rail-card__cover">
         <img loading="lazy" decoding="async" src="${esc(img(item.poster))}" alt="">
-        ${rate ? `<span class="rail-card__rate">${starIcon} ${esc(rate)}</span>` : ''}
+        ${coverBadges(item)}
       </div>
       <div class="rail-card__title">${esc(item.title)}</div>
       ${statsHtml(item)}
       ${chaptersHtml(item)}
     </a>`;
-};
