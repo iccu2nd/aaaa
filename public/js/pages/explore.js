@@ -1,7 +1,7 @@
 import { navigate as navigateTo } from '../router.js';
 import { api } from '../api.js';
 import { richCard as card } from '../components/card.js';
-import { esc } from '../utils.js';
+import { esc, link, img } from '../utils.js';
 
 const SIZE = 24;
 const GENRES = ['Action','Adaptation','Adult','Adventure','Comedy','Cooking','Crime','Drama','Ecchi','Fantasy','Harem','Historical','Horror','Isekai','Martial Arts','Mature','Mystery','Psychological','Reincarnation','Revenge','Romance','School Life','Sci-fi','Seinen','Shoujo','Shounen','Slice of Life','Sports','Supernatural','Thriller','Tragedy'];
@@ -182,17 +182,141 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     backdrop.hidden = true;
   };
 
+  const RECENT_KEY = 'rimwa:recent-search';
+  const readRecent = () => {
+    try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]').filter(Boolean).slice(0, 8); }
+    catch { return []; }
+  };
+  const pushRecent = (term) => {
+    const t = String(term || '').trim();
+    if (!t) return;
+    const next = [t, ...readRecent().filter((x) => x.toLowerCase() !== t.toLowerCase())].slice(0, 8);
+    try { localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+  };
+  const clearRecent = () => {
+    try { localStorage.removeItem(RECENT_KEY); } catch { /* ignore */ }
+  };
+
+  const listRow = (c) => {
+    const type = c.type || c.format || c.source || 'Manhwa';
+    const ch = c.latest_chapter != null ? `Ch. ${c.latest_chapter}` : (c.chapter || '');
+    const cover = c.poster || c.cover || c.thumbnail || '';
+    return `<a class="search-hit" href="${link('detail', c.url)}">
+      <img class="search-hit__cover" src="${esc(img(cover, 120))}" alt="" loading="lazy" decoding="async">
+      <span class="search-hit__body">
+        <span class="search-hit__title">${esc(c.title || '')}</span>
+        <span class="search-hit__meta">${esc(type)}${ch ? ` · ${esc(ch)}` : ''}</span>
+      </span>
+      <span class="search-hit__chev" aria-hidden="true">›</span>
+    </a>`;
+  };
+
+  const paintEmpty = () => {
+    const recent = readRecent();
+    const browse = [
+      { id: 'manhwa', label: 'Manhwa' },
+      { id: 'manhua', label: 'Manhua' },
+      { id: 'manga', label: 'Manga' },
+      { id: 'completed', label: 'Completed' },
+    ];
+    grid.className = 'search-panel';
+    grid.innerHTML = `
+      <div class="search-empty">
+        <div class="search-empty__head">
+          <h2>Recent searches</h2>
+          ${recent.length ? '<button type="button" class="search-empty__clear" id="recent-clear">Clear all</button>' : ''}
+        </div>
+        ${recent.length
+          ? `<ul class="search-recent">${recent.map((t) => `
+              <li>
+                <button type="button" class="search-recent__item" data-recent="${esc(t)}">
+                  <span class="search-recent__ico" aria-hidden="true">◷</span>
+                  <span>${esc(t)}</span>
+                </button>
+                <button type="button" class="search-recent__x" data-recent-remove="${esc(t)}" aria-label="Hapus">×</button>
+              </li>`).join('')}</ul>`
+          : '<p class="search-empty__hint">Belum ada pencarian. Coba ketik judul di atas.</p>'}
+        <p class="search-empty__browse-label">Browse instead</p>
+        <div class="search-empty__chips">
+          ${browse.map((b) => `<button type="button" class="explore-chip" data-browse="${b.id}">${b.label}</button>`).join('')}
+        </div>
+      </div>`;
+    end.textContent = '';
+    count.hidden = true;
+    root.querySelector('#recent-clear')?.addEventListener('click', () => { clearRecent(); paintEmpty(); });
+    root.querySelectorAll('[data-recent]').forEach((b) => {
+      b.addEventListener('click', () => {
+        searchInput.value = b.dataset.recent || '';
+        searchClear.hidden = !searchInput.value;
+        currentQuery = searchInput.value.trim();
+        navigate();
+      });
+    });
+    root.querySelectorAll('[data-recent-remove]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const term = b.dataset.recentRemove;
+        const next = readRecent().filter((x) => x !== term);
+        try { localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+        paintEmpty();
+      });
+    });
+    root.querySelectorAll('[data-browse]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const id = b.dataset.browse || '';
+        if (id === 'completed') {
+          currentGenres = [];
+          currentFormat = '';
+          // status filter not always available — treat as format clear + sort popular
+          sort = 'popular';
+        } else {
+          currentFormat = id;
+        }
+        currentQuery = '';
+        searchInput.value = '';
+        searchClear.hidden = true;
+        paintQuick();
+        navigate();
+      });
+    });
+  };
+
+  let debounceTimer = 0;
   searchForm.addEventListener('submit', (e) => {
     e.preventDefault();
     currentQuery = searchInput.value.trim();
+    if (currentQuery) pushRecent(currentQuery);
     navigate();
   });
-  searchInput.addEventListener('input', () => { searchClear.hidden = !searchInput.value; });
+  searchInput.addEventListener('input', () => {
+    searchClear.hidden = !searchInput.value;
+    const next = searchInput.value.trim();
+    window.clearTimeout(debounceTimer);
+    // live search tanpa reload halaman — debounce pendek
+    debounceTimer = window.setTimeout(() => {
+      if (next === currentQuery) return;
+      currentQuery = next;
+      if (currentQuery.length >= 2) pushRecent(currentQuery);
+      // update URL diam-diam agar back/share tetap benar
+      const params = new URLSearchParams();
+      if (currentQuery) params.set('q', currentQuery);
+      if (currentGenres.length) params.set('genre', currentGenres.join(','));
+      if (currentFormat) params.set('format', currentFormat);
+      params.set('sort', sort === 'popular' ? 'popular' : 'latest');
+      const qs = params.toString();
+      const path = qs ? `/explore?${qs}` : '/explore';
+      try { history.replaceState(history.state, '', path); } catch { /* ignore */ }
+      loadResults();
+    }, 160);
+  });
   searchClear.addEventListener('click', () => {
     searchInput.value = '';
     searchClear.hidden = true;
     currentQuery = '';
     navigate();
+  });
+  // auto-focus saat dibuka dari ikon search home
+  requestAnimationFrame(() => {
+    if (!q) searchInput.focus({ preventScroll: true });
   });
 
   root.querySelector('#format-row')?.addEventListener('click', (e) => {
@@ -301,7 +425,25 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     pages = 1;
     loading = false;
     paintQuick();
-    grid.innerHTML = '<div class="explore-skeleton loading-surface"></div>'.repeat(9);
+
+    const isQuery = currentQuery.trim().length >= 2;
+    const isBare = !isQuery && !currentGenres.length && !currentFormat;
+
+    // Mode kosong: recent searches + browse chips (UI tidak kosong)
+    if (isBare) {
+      paintEmpty();
+      // tetap tampilkan grid rekomendasi di bawah
+      grid.insertAdjacentHTML('beforeend', '<div class="search-suggest-label">Popular now</div><div class="grid explore-grid" id="ex-suggest"></div>');
+    }
+
+    if (isQuery) {
+      grid.className = 'search-hits';
+      grid.innerHTML = '<div class="search-hit search-hit--skel loading-surface"></div>'.repeat(6);
+    } else if (!isBare) {
+      grid.className = 'grid explore-grid';
+      grid.innerHTML = '<div class="explore-skeleton loading-surface"></div>'.repeat(9);
+    }
+
     end.textContent = '';
     count.hidden = true;
     const url = (n) =>
@@ -309,6 +451,15 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
     try {
       const first = await api(url(1));
       if (!alive() || myRequest !== requestId) return;
+
+      if (isBare) {
+        const target = root.querySelector('#ex-suggest') || grid;
+        target.innerHTML = (first.items || []).slice(0, 12).map(card).join('')
+          || '<p class="search-empty__hint">Belum ada rekomendasi.</p>';
+        count.hidden = true;
+        return;
+      }
+
       grid.innerHTML = '';
       if (!first.items?.length) {
         end.textContent = currentGenres.length
@@ -320,7 +471,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
       }
       const add = (data) => {
         const items = (data.items || []).filter((c) => c?.url && !seen.has(c.url) && seen.add(c.url));
-        grid.insertAdjacentHTML('beforeend', items.map(card).join(''));
+        grid.insertAdjacentHTML('beforeend', items.map(isQuery ? listRow : card).join(''));
         count.textContent = `${fmt(data.total)} judul`;
         count.hidden = false;
       };

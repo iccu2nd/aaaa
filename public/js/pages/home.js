@@ -59,11 +59,16 @@ function getViews(item) {
 
 function spotlight(item) {
   if (!item) return '';
-  const blurb = item.status || (item.meta || '').split(' · ')[0] || 'Pilihan untukmu';
+  const statusRaw = String(item.status || (item.meta || '').split(' · ')[0] || '').trim();
+  const status = /complete|selesai|tamat/i.test(statusRaw) ? 'Completed' : (statusRaw || 'Ongoing');
   const rate = getRating(item);
   const chapter = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || '');
   const views = getViews(item);
-  const facts = [rate ? `${starIcon}<span>${esc(rate)}</span>` : '', chapter ? esc(chapter) : '', views ? `${eyeIcon}<span>${esc(views)} pembaca</span>` : ''].filter(Boolean);
+  const facts = [
+    rate ? `${starIcon}<span>${esc(rate)}</span>` : '',
+    chapter ? esc(chapter) : '',
+    views ? `${eyeIcon}<span>${esc(views)} pembaca</span>` : '',
+  ].filter(Boolean);
   return `
     <a class="spotlight" data-spotlight href="${link('detail', item.url)}" aria-label="Lihat ${esc(item.title)}">
       <div class="spotlight__bg" style="background-image:url('${esc(img(item.poster, 240))}')"></div>
@@ -74,7 +79,7 @@ function spotlight(item) {
             <span class="spotlight__label" data-spotlight-label>#1</span>
           </div>
           <h1 class="spotlight__title">${esc(item.title)}</h1>
-          <p class="spotlight__desc">${esc(blurb)}</p>
+          <p class="spotlight__desc" data-spotlight-status>${esc(status)}</p>
           <div class="spotlight__facts">${facts.map((fact) => `<span class="spotlight__fact">${fact}</span>`).join('')}</div>
           <span class="spotlight__cta">Baca sekarang <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </div>
@@ -235,7 +240,10 @@ function startSpotlightRotation(items, root, alive) {
       if (bg) bg.style.backgroundImage = `url("${bgUrl.replace(/["\\]/g, '')}")`;
       if (cover) { cover.src = nextUrl; cover.alt = item.title || ''; }
       if (title) title.textContent = item.title || '';
-      if (desc) desc.textContent = item.status || (item.meta || '').split(' · ')[0] || 'Pilihan untukmu';
+      if (desc) {
+        const statusRaw = String(item.status || (item.meta || '').split(' · ')[0] || '').trim();
+        desc.textContent = /complete|selesai|tamat/i.test(statusRaw) ? 'Completed' : (statusRaw || 'Ongoing');
+      }
       if (factsEl) {
         const rate = getRating(item);
         const chapter = item.latest_chapter != null ? `Ch. ${item.latest_chapter}` : (item.chapter || item.chapters?.[0]?.chapter || '');

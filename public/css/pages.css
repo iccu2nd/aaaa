@@ -1850,69 +1850,66 @@ body.is-detail .detail__body {
 }
 .spotlight__badge {
   margin: 0;
-  padding: 4px 10px 4px 8px;
+  padding: 3px 9px;
   border-radius: 999px;
-  background: rgba(255,255,255,.12);
-  border: 1px solid rgba(255,255,255,.14);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.12);
   color: #F2F2F4;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .1em;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
 }
-.spotlight__badge::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 6px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 0 0 rgba(255,255,255,.6);
-  animation: sp-pulse 2s ease-out infinite;
-}
+.spotlight__badge::before { display: none; }
 .spotlight__label {
   margin: 0;
   font-size: 12px !important;
   font-weight: 700 !important;
-  color: rgba(255,255,255,.5);
+  color: rgba(255,255,255,.45);
   font-variant-numeric: tabular-nums;
 }
 .spotlight__title {
-  font-size: clamp(26px, 7.4vw, 36px) !important;
-  line-height: 1.08 !important;
-  letter-spacing: -.045em !important;
-  margin: 0 0 10px !important;
+  font-size: clamp(28px, 8vw, 40px) !important;
+  line-height: 1.05 !important;
+  letter-spacing: -.04em !important;
+  margin: 0 0 8px !important;
   color: #fff;
-  text-shadow: 0 2px 24px rgba(0,0,0,.55);
+  text-shadow: 0 2px 18px rgba(0,0,0,.5);
   -webkit-line-clamp: 3;
 }
 .spotlight__desc {
-  color: rgba(255,255,255,.68) !important;
+  color: rgba(255,255,255,.62) !important;
   margin-bottom: 12px !important;
+  font-size: 13px !important;
 }
-.spotlight__facts { gap: 6px; margin-bottom: 16px; }
-.spotlight__facts span {
-  padding: 4px 9px;
-  border-radius: 8px;
-  background: rgba(255,255,255,.09);
-  border: 1px solid rgba(255,255,255,.08);
+.spotlight__facts { gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.spotlight__facts span,
+.spotlight__fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.1);
   color: #EDEDF0;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 .spotlight__facts span + span::before { content: none; margin: 0; }
 .spotlight__cta {
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
-  padding: 10px 18px 10px 20px;
-  background: #F2F2F4;
+  padding: 11px 18px 11px 20px;
+  border-radius: 999px;
+  background: #F5F5F7;
   color: #0B0B0C;
   font-weight: 700;
-  box-shadow: 0 8px 24px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.4) inset;
+  font-size: 14px;
+  box-shadow: 0 8px 22px rgba(0,0,0,.35);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  transition: transform .2s var(--ease-spring), box-shadow .2s ease;
+  transition: transform .18s ease, box-shadow .18s ease;
 }
 .spotlight:active .spotlight__cta { transform: scale(.96); }
 .spotlight:hover .spotlight__cta svg { transform: translateX(3px); }
@@ -2777,3 +2774,86 @@ body.is-detail .detail__body {
   line-height: 1.4;
 }
 .profile-settings__status { color: var(--muted); }
+
+/* ===== Search empty + live hits (mirip referensi) ===== */
+.search-panel { display: block; }
+.search-empty { padding: 4px 2px 8px; }
+.search-empty__head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 8px 0 12px;
+}
+.search-empty__head h2 {
+  margin: 0; font-size: 15px; font-weight: 700; color: var(--white);
+}
+.search-empty__clear {
+  border: 0; background: none; color: #6cb6ff; font-size: 13px; font-weight: 600;
+  padding: 4px 0; -webkit-tap-highlight-color: transparent;
+}
+.search-empty__hint {
+  margin: 0 0 18px; color: var(--dim); font-size: 13px; line-height: 1.45;
+}
+.search-empty__browse-label {
+  margin: 18px 0 10px; font-size: 12px; font-weight: 600;
+  color: var(--dim); text-transform: none; letter-spacing: 0;
+}
+.search-empty__chips {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px;
+}
+.search-recent { list-style: none; margin: 0 0 8px; padding: 0; }
+.search-recent li {
+  display: flex; align-items: center; gap: 4px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.search-recent__item {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 4px; border: 0; background: none; color: var(--white);
+  font-size: 14px; text-align: left; -webkit-tap-highlight-color: transparent;
+}
+.search-recent__item span:last-child {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.search-recent__ico {
+  width: 20px; color: var(--dim); font-size: 15px; flex: 0 0 auto;
+}
+.search-recent__x {
+  width: 36px; height: 40px; border: 0; background: none;
+  color: var(--dim); font-size: 20px; line-height: 1;
+}
+.search-suggest-label {
+  margin: 8px 0 12px; font-size: 15px; font-weight: 700; color: var(--white);
+}
+
+.search-hits {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.search-hit {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 4px; color: inherit; text-decoration: none;
+  border-radius: 12px; -webkit-tap-highlight-color: transparent;
+}
+.search-hit:active { background: rgba(255,255,255,.04); }
+.search-hit__cover {
+  width: 48px; height: 64px; border-radius: 8px; object-fit: cover;
+  background: #1b1b1f; flex: 0 0 auto;
+}
+.search-hit__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.search-hit__title {
+  font-size: 14px; font-weight: 600; color: var(--white);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.search-hit__meta { font-size: 12px; color: var(--dim); }
+.search-hit__chev { color: var(--dim); font-size: 20px; flex: 0 0 auto; opacity: .55; }
+.search-hit--skel { height: 72px; border-radius: 12px; margin-bottom: 6px; }
+
+/* Search bar di explore: lebih lembut, tanpa kotak keras */
+.explore-page .explore-search {
+  background: rgba(120,120,128,.16);
+  border: none;
+  height: 44px;
+}
+.explore-page .explore-search:focus-within {
+  background: rgba(120,120,128,.22);
+  border: none;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08);
+}

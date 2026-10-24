@@ -436,22 +436,44 @@ body.is-search #app {
 .topbar__actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   pointer-events: auto;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 .topbar__icon {
   width: 40px;
   height: 40px;
   display: grid;
   place-items: center;
-  color: var(--white);
+  color: #fff;
   background: transparent !important;
+  background-color: transparent !important;
   border: none !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.45));
+  outline: none !important;
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,0.55));
+  -webkit-tap-highlight-color: transparent;
 }
-.topbar__icon:active { opacity: 0.65; }
+.topbar__icon::before,
+.topbar__icon::after {
+  display: none !important;
+  content: none !important;
+}
+.topbar__icon:hover,
+.topbar__icon:active,
+.topbar__icon:focus {
+  background: transparent !important;
+  background-color: transparent !important;
+  opacity: 0.75;
+}
+.topbar__icon svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+}
 
 /* Hanya di Home */
 body:not(.is-home) .topbar {
