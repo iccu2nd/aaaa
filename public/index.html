@@ -20,11 +20,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
-  <link rel="stylesheet" href="/css/base.css?v=63">
-  <link rel="stylesheet" href="/css/layout.css?v=63">
-  <link rel="stylesheet" href="/css/components.css?v=63">
-  <link rel="stylesheet" href="/css/pages.css?v=63">
-  <link rel="stylesheet" href="/css/perf.css?v=63">
+  <link rel="stylesheet" href="/css/base.css?v=64">
+  <link rel="stylesheet" href="/css/layout.css?v=64">
+  <link rel="stylesheet" href="/css/components.css?v=64">
+  <link rel="stylesheet" href="/css/pages.css?v=64">
+  <link rel="stylesheet" href="/css/perf.css?v=64">
   <link rel="modulepreload" href="/js/main.js">
   <link rel="modulepreload" href="/js/router.js">
   <link rel="modulepreload" href="/js/state.js">
@@ -49,9 +49,17 @@
 <body>
   <header class="topbar" id="topbar">
     <a class="topbar__logo" href="/" aria-label="Komikta Home">
-      <img src="/icons/komikta-mask.png" alt="" width="34" height="42" decoding="async">
-      <span class="topbar__wordmark">Komikta</span>
+      <img class="topbar__mask" src="/icons/komikta-mask.png" alt="" width="30" height="40" decoding="async">
+      <img class="topbar__wordmark" src="/icons/komikta-wordmark.png" alt="Komikta" width="112" height="58" decoding="async">
     </a>
+    <div class="topbar__actions" aria-label="Aksi cepat">
+      <a class="topbar__icon" id="topbar-search-btn" href="/search" aria-label="Cari komik" title="Cari komik">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.5 4.5"></path></svg>
+      </a>
+      <button class="topbar__icon" id="topbar-notif" type="button" aria-label="Notifikasi" title="Notifikasi">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
+      </button>
+    </div>
   </header>
 
   <main id="app" class="container"></main>

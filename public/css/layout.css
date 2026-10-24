@@ -835,3 +835,115 @@ body.is-home .topbar__wordmark::first-letter { color: #fff !important; }
   body.is-home .topbar__logo img { width: 34px !important; height: 44px !important; }
   body.is-home .topbar__wordmark { font-size: 23px !important; }
 }
+
+
+/* Komikta graffiti wordmark + restored quick actions */
+body.is-home .topbar,
+body.is-home #topbar {
+  box-sizing: border-box !important;
+  min-height: calc(58px + env(safe-area-inset-top, 0px)) !important;
+  padding: calc(5px + env(safe-area-inset-top, 0px)) 14px 5px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  background: rgba(0, 0, 0, .97) !important;
+  border-bottom: 1px solid rgba(255,255,255,.16) !important;
+}
+body.is-home .topbar__logo {
+  display: inline-flex !important;
+  flex: 0 1 auto !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  width: auto !important;
+  height: 46px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
+}
+body.is-home .topbar__mask {
+  display: block !important;
+  flex: 0 0 28px !important;
+  width: 28px !important;
+  height: 38px !important;
+  object-fit: contain !important;
+  filter: none !important;
+}
+body.is-home .topbar__wordmark {
+  display: block !important;
+  flex: 0 1 auto !important;
+  width: 96px !important;
+  height: 50px !important;
+  max-width: min(30vw, 112px) !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  text-shadow: none !important;
+}
+body.is-home .topbar__actions {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 5px !important;
+  margin: 0 0 0 auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+body.is-home .topbar__icon,
+body.is-home .topbar__icon:visited,
+body.is-home #topbar-search-btn,
+body.is-home #topbar-notif {
+  display: inline-flex !important;
+  flex: 0 0 38px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  padding: 0 !important;
+  color: #fff !important;
+  background: rgba(255,255,255,.055) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 11px !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  -webkit-tap-highlight-color: transparent;
+}
+body.is-home .topbar__icon svg {
+  display: block !important;
+  width: 19px !important;
+  height: 19px !important;
+}
+body.is-home .topbar__icon:hover,
+body.is-home .topbar__icon:active,
+body.is-home .topbar__icon.is-on {
+  color: #fff !important;
+  background: rgba(255,255,255,.13) !important;
+  border-color: rgba(255,255,255,.28) !important;
+  opacity: 1 !important;
+}
+@media (min-width: 720px) {
+  body.is-home .topbar,
+  body.is-home #topbar {
+    min-height: calc(66px + env(safe-area-inset-top, 0px)) !important;
+    padding-left: max(24px, calc((100vw - 1120px) / 2)) !important;
+    padding-right: max(24px, calc((100vw - 1120px) / 2)) !important;
+  }
+  body.is-home .topbar__logo { height: 52px !important; gap: 9px !important; }
+  body.is-home .topbar__mask { flex-basis: 32px !important; width: 32px !important; height: 44px !important; }
+  body.is-home .topbar__wordmark { width: 116px !important; height: 58px !important; max-width: 116px !important; }
+  body.is-home .topbar__actions { gap: 8px !important; }
+  body.is-home .topbar__icon,
+  body.is-home #topbar-search-btn,
+  body.is-home #topbar-notif { flex-basis: 40px !important; width: 40px !important; height: 40px !important; }
+}
