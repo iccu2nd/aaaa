@@ -250,6 +250,47 @@ function findArt(data, w, h, ch = 3, ratioWH = 1.45) {
 
 const THUMB_RATIO = 1.45;
 
+/** Skor "momen dramatis" sebuah jendela: kontras, warna pekat, cahaya/efek berwarna, gelap-terang yang kuat. */
+function epicScore(data, w, h, ch, x0, y0, x1, y1) {
+  const xa = Math.max(0, Math.floor(x0));
+  const xb = Math.min(w - 1, Math.ceil(x1));
+  const ya = Math.max(0, Math.floor(y0));
+  const yb = Math.min(h - 1, Math.ceil(y1));
+  let n = 0;
+  let sum = 0;
+  let sum2 = 0;
+  let satSum = 0;
+  let satN = 0;
+  let glow = 0;
+  let dark = 0;
+  for (let y = ya; y <= yb; y += 2) {
+    for (let x = xa; x <= xb; x += 2) {
+      const i = (y * w + x) * ch;
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      const sat = max === 0 ? 0 : (max - min) / max;
+      n += 1;
+      sum += lum;
+      sum2 += lum * lum;
+      if (lum > 40) { satSum += sat; satN += 1; }
+      if (lum > 150 && sat > 0.45) glow += 1;
+      if (lum < 60) dark += 1;
+    }
+  }
+  if (!n) return 0;
+  const mean = sum / n;
+  const std = Math.sqrt(Math.max(0, sum2 / n - mean * mean));
+  const contrast = Math.min(1, std / 80);
+  const sat = satN ? satSum / satN : 0;
+  const darkR = dark / n;
+  const drama = darkR > 0.2 && darkR < 0.75 ? 1 : 0.5;
+  return 0.35 * contrast + 0.2 * Math.min(1, sat / 0.5) + 0.25 * Math.min(1, glow / n / 0.1) + 0.2 * drama;
+}
+
 /** Seberapa "kotor" sebuah crop: porsi putih/balon dan tinta teks di atas putih. */
 function cropDirt(data, w, h, ch = 3) {
   const cls = classify(data, w, h, ch);
@@ -274,4 +315,4 @@ function cropRect(iw, ih, f, isFace) {
   return { left, top, width: Math.round(cw), height: Math.round(chh) };
 }
 
-module.exports = { cropDirt, THUMB_RATIO, cropRect, ANALYZE_WIDTH, FACE_MIN_SCORE, findFace, findArt, skinScore };
+module.exports = { epicScore, cropDirt, THUMB_RATIO, cropRect, ANALYZE_WIDTH, FACE_MIN_SCORE, findFace, findArt, skinScore };

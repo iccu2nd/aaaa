@@ -158,7 +158,7 @@ async function fetchImageBuffer(url) {
   return Buffer.from(res.data);
 }
 
-async function analyzeFocus(url) {
+async function analyzeFocus(url, shared) {
   try {
     const buf = await fetchImageBuffer(url);
     const { data, info } = await sharp(buf, { limitInputPixels: 80e6 })
@@ -171,7 +171,7 @@ async function analyzeFocus(url) {
     if (!width || !height || channels < 3) return null;
     return {
       buf,
-      model: await humanFace.detectFace(buf).catch(() => null),
+      model: await humanFace.detectFace(buf, shared).catch(() => null),
       face: findFace(data, width, height, channels),
       art: findArt(data, width, height, channels),
     };
@@ -219,13 +219,15 @@ const thumbImage = async (chapterUrl) => {
   };
 
   const used = new Set();
+  const shared = { best: 0 };
+  const started = Date.now();
   const analyze = async (idxs) => {
     idxs.forEach((i) => used.add(i));
-    return Promise.all(idxs.map(async (i) => ({ i, a: await analyzeFocus(imgs[i]) })));
+    return Promise.all(idxs.map(async (i) => ({ i, a: await analyzeFocus(imgs[i], shared) })));
   };
 
   const cands = collect(await analyze(candidateIndexes(imgs.length)));
-  if (!cands.some((c) => c.face)) {
+  if (!cands.some((c) => c.face) && Date.now() - started < 5000) {
     const more = candidateIndexes(imgs.length, true, used);
     if (more.length) cands.push(...collect(await analyze(more)));
   }

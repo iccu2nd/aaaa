@@ -3,12 +3,15 @@
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
+const { epicScore, THUMB_RATIO } = require('./faceFocus');
 
-const PAGE_WIDTH = 384;
+const PAGE_WIDTH = 320;
+const MAX_TILES = 18;
+const STOP_SCORE = 1.0;
 const MIN_BOX_SCORE = 0.3;
 const MIN_FACE_FRAC = 0.05;
 
-const VERSION = 'v18-trace-wasm';
+const VERSION = 'v19-epic-fast';
 let loading = null;
 let failedAt = 0;
 let state = { ready: false, error: null };
@@ -208,7 +211,7 @@ async function detectTile(human, rgb, size) {
  * memindai jendela persegi yang saling tumpang tindih.
  * @returns {Promise<{score:number,fx:number,fy:number,fw:number,fh:number}|null>}
  */
-async function detectFace(buf) {
+async function detectFace(buf, shared = { best: 0 }) {
   const human = await getHuman();
   if (!human) return null;
   const { data, info } = await sharp(buf, { limitInputPixels: 80e6 })
@@ -222,7 +225,7 @@ async function detectFace(buf) {
   if (!w || !h) return null;
 
   const tile = Math.min(w, h);
-  const stride = Math.max(1, Math.round(tile * 0.45));
+  const stride = Math.max(1, Math.round(tile * 0.6));
   const tops = [];
   for (let y = 0; y + tile <= h; y += stride) tops.push(y);
   if (!tops.length || tops[tops.length - 1] + tile < h) tops.push(Math.max(0, h - tile));
@@ -231,7 +234,10 @@ async function detectFace(buf) {
 
   return serial(async () => {
     let best = null;
-    for (const top of tops.slice(0, 40)) {
+    const step = Math.max(1, Math.ceil(tops.length / MAX_TILES));
+    for (let ti = 0; ti < tops.length; ti += step) {
+      if (shared.best >= STOP_SCORE) break;
+      const top = tops[ti];
       const rgb = new Int32Array(tile * tile * 3);
       const src = data.subarray(top * w * 3, (top + tile) * w * 3);
       for (let i = 0; i < src.length; i += 1) rgb[i] = src[i];
@@ -241,10 +247,16 @@ async function detectFace(buf) {
         const conf = f.boxScore || f.score || 0;
         const frac = bw / w;
         if (conf < MIN_BOX_SCORE || frac < MIN_FACE_FRAC) continue;
-        const score = conf * (0.5 + 0.5 * Math.min(1, frac / 0.2));
+        const cx = bx + bw / 2;
+        const cy = top + by + bh / 2;
+        const ww = Math.min(w, Math.max(w * 0.3, bw / 0.48));
+        const wh = ww / THUMB_RATIO;
+        const epic = epicScore(data, w, h, 3, cx - ww / 2, cy - wh / 2, cx + ww / 2, cy + wh / 2);
+        const score = conf * (0.5 + 0.5 * Math.min(1, frac / 0.2)) * (0.8 + 0.4 * epic);
         if (!best || score > best.score) {
           best = {
             score,
+            epic,
             fx: (bx + bw / 2) / w,
             fy: (top + by + bh / 2) / h,
             fw: bw / w,
@@ -253,6 +265,7 @@ async function detectFace(buf) {
         }
       }
     }
+    if (best) shared.best = Math.max(shared.best, best.score);
     return best;
   });
 }
