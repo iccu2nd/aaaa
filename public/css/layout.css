@@ -558,3 +558,50 @@ body.is-home .topbar__actions {
   margin-left: auto;
   background: transparent !important;
 }
+
+/* Logo + icon atas: background hitam bulat */
+body.is-home .topbar__logo {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: #000 !important;
+  background-color: #000 !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
+}
+body.is-home .topbar__logo img {
+  width: 22px !important;
+  height: 22px !important;
+  object-fit: contain !important;
+  filter: none !important;
+}
+body.is-home .topbar__actions {
+  gap: 6px !important;
+}
+body.is-home .topbar__icon,
+body.is-home .topbar__icon.is-on,
+body.is-home #topbar-notif,
+body.is-home #topbar-search-btn {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: #000 !important;
+  background-color: #000 !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35) !important;
+  filter: none !important;
+}
+body.is-home .topbar__icon:hover,
+body.is-home .topbar__icon:active,
+body.is-home .topbar__icon:focus {
+  background: #111 !important;
+  background-color: #111 !important;
+  opacity: 1 !important;
+}
+body.is-home .topbar__icon svg {
+  width: 18px !important;
+  height: 18px !important;
+}

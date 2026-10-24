@@ -11,7 +11,7 @@ const voratoon = require('./voratoon');
 const axios = require('axios');
 const sharp = require('sharp');
 const humanFace = require('./humanFace');
-const { ANALYZE_WIDTH, FACE_MIN_SCORE, findFace, findArt, cropRect, cropDirt, THUMB_RATIO } = require('./faceFocus');
+const { cropRect, cropDirt, THUMB_RATIO } = require('./faceFocus');
 
 const THUMB_UA =
   'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 Chrome/124.0.0.0 Mobile Safari/537.36';
@@ -158,28 +158,12 @@ async function fetchImageBuffer(url) {
   return Buffer.from(res.data);
 }
 
-/** Hanya detektor model (tier 0). Cadangan warna/area hanya jika model tidak siap. */
-async function analyzeFocus(url, shared, { modelOnly = true } = {}) {
+/** Hanya detektor npm @vladmandic/human (BlazeFace). Tanpa cadangan warna/area. */
+async function analyzeFocus(url, shared) {
   try {
     const buf = await fetchImageBuffer(url);
     const model = await humanFace.detectFace(buf, shared).catch(() => null);
-    if (modelOnly && model) return { buf, model, face: null, art: null };
-
-    // Cadangan cepat bila model kosong/tidak aktif (warna + area bersih)
-    const { data, info } = await sharp(buf, { limitInputPixels: 80e6 })
-      .rotate()
-      .resize({ width: ANALYZE_WIDTH })
-      .removeAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
-    const { width, height, channels } = info;
-    if (!width || !height || channels < 3) return model ? { buf, model, face: null, art: null } : null;
-    return {
-      buf,
-      model,
-      face: findFace(data, width, height, channels),
-      art: findArt(data, width, height, channels),
-    };
+    return { buf, model };
   } catch {
     return null;
   }
@@ -198,7 +182,7 @@ function candidateIndexes(n, wide = false, skip = new Set()) {
     hi = Math.max(lo, n - 1 - tail);
   }
   const span = hi - lo + 1;
-  const count = Math.min(wide ? 4 : 2, span); // cepat: 2 halaman dulu, max +4
+  const count = Math.min(wide ? 6 : 3, span); // 3 tengah dulu, +6 bila perlu
   const picks = [];
   for (let k = 0; k < count; k += 1) {
     const i = lo + Math.floor(((k + 0.5) * span) / count);
@@ -213,19 +197,15 @@ const thumbImage = async (chapterUrl) => {
   const imgs = (r.data.images || []).filter(Boolean);
   if (!imgs.length) return { status: false, message: 'Tidak ada gambar' };
 
-  const modelReady = !!(await humanFace.getHuman().catch(() => null));
+  // Pastikan model npm siap; tanpa cadangan warna/area
+  const human = await humanFace.getHuman().catch(() => null);
+  if (!human) return { status: false, message: 'Detektor wajah tidak tersedia' };
+
   const collect = (rows) => {
     const out = [];
     for (const row of rows) {
-      if (!row.a) continue;
-      if (row.a.model) out.push({ tier: 0, by: 'model', row, f: row.a.model, face: true });
-      // Cadangan hanya jika model tidak aktif / tidak menemukan wajah
-      if (!modelReady || !row.a.model) {
-        if (row.a.face && row.a.face.score >= FACE_MIN_SCORE) {
-          out.push({ tier: 1, by: 'warna', row, f: row.a.face, face: true });
-        }
-        if (row.a.art) out.push({ tier: 2, by: 'area', row, f: row.a.art, face: false });
-      }
+      if (!row.a?.model) continue;
+      out.push({ by: 'model', row, f: row.a.model, face: true });
     }
     return out;
   };
@@ -235,25 +215,24 @@ const thumbImage = async (chapterUrl) => {
   const started = Date.now();
   const analyze = async (idxs) => {
     idxs.forEach((i) => used.add(i));
-    return Promise.all(
-      idxs.map(async (i) => ({ i, a: await analyzeFocus(imgs[i], shared, { modelOnly: modelReady }) })),
-    );
+    return Promise.all(idxs.map(async (i) => ({ i, a: await analyzeFocus(imgs[i], shared) })));
   };
 
-  // 2 halaman tengah dulu; berhenti dini jika sudah ada wajah model bersih
+  // 3 halaman tengah, lalu perluas bila belum ketemu
   let cands = collect(await analyze(candidateIndexes(imgs.length)));
-  const hasModel = () => cands.some((c) => c.by === 'model');
-  if (!hasModel() && Date.now() - started < 3500) {
+  if (!cands.length && Date.now() - started < 6000) {
     const more = candidateIndexes(imgs.length, true, used);
     if (more.length) cands = cands.concat(collect(await analyze(more)));
   }
-  if (!cands.length) return { status: false, message: 'Gambar tidak bisa dianalisis' };
-  cands.sort((x, y) => x.tier - y.tier || y.f.score - x.f.score);
+
+  // Hanya crop dari wajah model. Jika tidak ada → gagal (jangan pakai warna/area).
+  if (!cands.length) return { status: false, message: 'Wajah tidak terdeteksi' };
+  cands.sort((x, y) => y.f.score - x.f.score);
 
   let chosen = null;
   for (const c of cands.slice(0, 6)) {
     const meta = await sharp(c.row.a.buf).metadata();
-    const rect = cropRect(meta.width, meta.height, c.f, c.face);
+    const rect = cropRect(meta.width, meta.height, c.f, true);
     const base = sharp(c.row.a.buf).rotate().extract(rect);
     const probe = await base.clone().resize(120).removeAlpha().raw().toBuffer({ resolveWithObject: true });
     const d = cropDirt(probe.data, probe.info.width, probe.info.height, probe.info.channels);
@@ -264,10 +243,10 @@ const thumbImage = async (chapterUrl) => {
 
   const out = await chosen.base
     .resize(240, Math.round(240 / THUMB_RATIO), { fit: 'cover' })
-    .webp({ quality: 72 })
+    .webp({ quality: 74 })
     .toBuffer();
   const { c } = chosen;
-  return { status: true, data: out, face: c.face, by: c.by, score: c.f.score, page: c.row.i, rect: chosen.rect };
+  return { status: true, data: out, face: true, by: 'model', score: c.f.score, page: c.row.i, rect: chosen.rect };
 };
 
 const detail = async (url) => {

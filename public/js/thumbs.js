@@ -33,7 +33,7 @@ function load(el) {
       el.classList.remove('loading-surface');
       resolve();
     };
-    im.src = '/api/thumbimg?v=5&url=' + encodeURIComponent(url);
+    im.src = '/api/thumbimg?v=6&url=' + encodeURIComponent(url);
     el.appendChild(im);
   });
 }

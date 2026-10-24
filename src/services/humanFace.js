@@ -5,13 +5,13 @@ const path = require('path');
 const sharp = require('sharp');
 const { epicScore, THUMB_RATIO } = require('./faceFocus');
 
-const PAGE_WIDTH = 320;
-const MAX_TILES = 18;
-const STOP_SCORE = 1.0;
-const MIN_BOX_SCORE = 0.3;
-const MIN_FACE_FRAC = 0.05;
+const PAGE_WIDTH = 416;
+const MAX_TILES = 24;
+const STOP_SCORE = 1.15;
+const MIN_BOX_SCORE = 0.22;
+const MIN_FACE_FRAC = 0.04;
 
-const VERSION = 'v19-epic-fast';
+const VERSION = 'v20-accurate';
 let loading = null;
 let failedAt = 0;
 let state = { ready: false, error: null };
@@ -129,7 +129,7 @@ async function attempt(backend, humanRoot, wasmRoot) {
       filter: off,
       face: {
         enabled: true,
-        detector: { rotation: false, maxDetected: 4, minConfidence: 0.2, return: false },
+        detector: { rotation: false, maxDetected: 6, minConfidence: 0.15, return: false },
         mesh: off,
         iris: off,
         description: off,
@@ -225,7 +225,7 @@ async function detectFace(buf, shared = { best: 0 }) {
   if (!w || !h) return null;
 
   const tile = Math.min(w, h);
-  const stride = Math.max(1, Math.round(tile * 0.6));
+  const stride = Math.max(1, Math.round(tile * 0.45)); // lebih rapat = lebih akurat
   const tops = [];
   for (let y = 0; y + tile <= h; y += stride) tops.push(y);
   if (!tops.length || tops[tops.length - 1] + tile < h) tops.push(Math.max(0, h - tile));
@@ -252,7 +252,7 @@ async function detectFace(buf, shared = { best: 0 }) {
         const ww = Math.min(w, Math.max(w * 0.3, bw / 0.48));
         const wh = ww / THUMB_RATIO;
         const epic = epicScore(data, w, h, 3, cx - ww / 2, cy - wh / 2, cx + ww / 2, cy + wh / 2);
-        const score = conf * (0.5 + 0.5 * Math.min(1, frac / 0.2)) * (0.8 + 0.4 * epic);
+        const score = conf * conf * (0.45 + 0.55 * Math.min(1, frac / 0.18)) * (0.75 + 0.45 * epic);
         if (!best || score > best.score) {
           best = {
             score,
