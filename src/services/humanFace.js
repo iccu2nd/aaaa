@@ -82,6 +82,24 @@ function installFileFetch(prefixes) {
   globalThis.__rimwaFileFetch = true;
 }
 
+/* eslint-disable no-unused-vars */
+function traceAssets() {
+  const w = path.join(__dirname, '../../node_modules/@tensorflow/tfjs-backend-wasm/dist');
+  fs.readFileSync(path.join(__dirname, '../../node_modules/@tensorflow/tfjs-backend-wasm/dist/tfjs-backend-wasm.wasm'));
+  fs.readFileSync(path.join(__dirname, '../../node_modules/@tensorflow/tfjs-backend-wasm/dist/tfjs-backend-wasm-simd.wasm'));
+  fs.readFileSync(path.join(__dirname, '../../node_modules/@tensorflow/tfjs-backend-wasm/dist/tfjs-backend-wasm-threaded-simd.wasm'));
+  fs.readFileSync(path.join(__dirname, '../../node_modules/@vladmandic/human/models/blazeface.json'));
+  fs.readFileSync(path.join(__dirname, '../../node_modules/@vladmandic/human/models/blazeface.bin'));
+  fs.readdirSync(path.join(__dirname, '../../node_modules/@vladmandic/human/models'));
+  fs.readdirSync(w);
+}
+
+function registerCpu() {
+  try {
+    require('@tensorflow/tfjs-backend-cpu');
+  } catch { /* tidak terpasang */ }
+}
+
 async function attempt(backend, humanRoot, wasmRoot) {
   const logs = [];
   const saved = { warn: console.warn, error: console.error, log: console.log };
@@ -92,6 +110,7 @@ async function attempt(backend, humanRoot, wasmRoot) {
   console.error = grab;
   console.log = grab;
   try {
+    if (backend === 'cpu') registerCpu();
     const mod = require(path.join(humanRoot, 'dist', 'human.node-wasm.js'));
     const Human = mod.default || mod.Human || mod;
     const off = { enabled: false };
