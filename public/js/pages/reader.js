@@ -111,6 +111,11 @@ export async function reader({ root, alive }, url) {
           <input id="reader-continuous" type="checkbox" role="switch" checked>
           <i class="rs-switch" aria-hidden="true"></i>
         </label>
+        <label class="rs-row rs-row--sep" for="reader-focus">
+          <span class="rs-row__text"><b>Mode fokus</b><small>Semua menu disembunyikan. Ketuk cepat 4× untuk keluar</small></span>
+          <input id="reader-focus" type="checkbox" role="switch">
+          <i class="rs-switch" aria-hidden="true"></i>
+        </label>
         <div class="rs-speed">
           <div class="rs-speed__head"><label for="reader-speed">Kecepatan</label><output id="reader-speed-value" for="reader-speed">1.0×</output></div>
           <input id="reader-speed" class="reader-settings__range" type="range" min="0.5" max="3" step="0.1" value="1" aria-label="Kecepatan auto-scroll">
@@ -222,7 +227,14 @@ export async function reader({ root, alive }, url) {
     speedValue.textContent = label;
   }
 
+  let focus = false;
+  const closeSettings = () => {
+    settings.hidden = true;
+    settingsBtn.setAttribute('aria-expanded', 'false');
+    settingsBtn.classList.remove('is-active');
+  };
   const showUI = () => {
+    if (focus) return;
     uiVisible = true;
     top.classList.add('is-visible');
     bottom.classList.add('is-visible');
@@ -231,6 +243,42 @@ export async function reader({ root, alive }, url) {
     uiVisible = false;
     top.classList.remove('is-visible');
     bottom.classList.remove('is-visible');
+    closeSettings();
+  };
+
+  const toast = document.createElement('div');
+  toast.className = 'reader-toast';
+  toast.setAttribute('role', 'status');
+  readerEl.append(toast);
+  let toastTimer = 0;
+  const say = (title, sub = '', ms = 1600) => {
+    toast.innerHTML = `<b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}`;
+    toast.classList.add('is-on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('is-on'), ms);
+  };
+  const focusInput = document.getElementById('reader-focus');
+  let taps = [];
+  const setFocus = (on) => {
+    focus = on;
+    focusInput.checked = on;
+    readerEl.classList.toggle('is-focus', on);
+    taps = [];
+    if (on) {
+      hideUI();
+      say('Mode fokus aktif', 'Ketuk cepat 4× untuk keluar', 2800);
+    } else {
+      say('Mode fokus nonaktif');
+      showUI();
+    }
+  };
+  focusInput.addEventListener('change', () => setFocus(focusInput.checked));
+  const focusTap = () => {
+    const now = Date.now();
+    taps = taps.filter((t) => now - t < 1200);
+    taps.push(now);
+    if (taps.length >= 4) { setFocus(false); return; }
+    if (taps.length >= 2) say(`Ketuk ${4 - taps.length}× lagi`, '', 900);
   };
 
   const openDrawer = () => {
@@ -358,8 +406,9 @@ export async function reader({ root, alive }, url) {
   });
 
   readerEl.addEventListener('click', (e) => {
+    if (focus) { focusTap(); return; }
     if (e.target.closest('a, button, .reader__end, .reader-drawer, .reader-settings')) return;
-    if (scrolling) return;
+    if (scrolling && !autoScrolling) return;
     if (uiVisible) hideUI();
     else showUI();
   });
@@ -500,7 +549,7 @@ export async function reader({ root, alive }, url) {
     progressSaveTimer = setTimeout(updateReadingProgress, 180);
     syncSeg();
     const y = window.scrollY;
-    if (Math.abs(y - lastScrollY) > 4) {
+    if (Math.abs(y - lastScrollY) > 4 && !autoScrolling) {
       scrolling = true;
       if (uiVisible) hideUI();
       clearTimeout(scrollTimer);
@@ -516,6 +565,7 @@ export async function reader({ root, alive }, url) {
     document.removeEventListener('visibilitychange', onVisibilityChange);
     window.removeEventListener('rimwa:routechange', cleanup);
     clearTimeout(scrollTimer);
+    clearTimeout(toastTimer);
     clearTimeout(progressSaveTimer);
     updateReadingProgress();
     sentinelIO?.disconnect();
