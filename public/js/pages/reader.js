@@ -423,7 +423,18 @@ export async function reader({ root, alive }, url) {
       const divider = document.createElement('div');
       divider.className = 'reader__divider';
       divider.setAttribute('role', 'separator');
-      divider.innerHTML = `<div class="reader__divider-current"><span class="reader__divider-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><span class="reader__divider-copy"><small>Chapter selesai</small><strong>${esc(from.title || 'Chapter')}</strong></span></div><span class="reader__divider-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span><div class="reader__divider-next"><small>Berikutnya</small><strong>${esc(title)}</strong><span class="reader__divider-chevron" aria-hidden="true">›</span></div><span class="reader__divider-note">Terus gulir untuk membaca</span>`;
+      const split = (t) => { const m = String(t || '').match(/^([^:]+):\s*(.+)$/); return m ? { main: m[1].trim(), sub: m[2].trim() } : { main: String(t || 'Chapter berikutnya').trim(), sub: '' }; };
+      const done = split(from.title);
+      const up = split(title);
+      divider.innerHTML = `
+        <div class="reader__divider-done"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>${esc(done.main)} selesai</span></div>
+        <div class="reader__divider-arrows" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 8l6 6 6-6"/></svg><svg viewBox="0 0 24 24"><path d="M6 8l6 6 6-6"/></svg><svg viewBox="0 0 24 24"><path d="M6 8l6 6 6-6"/></svg></div>
+        <div class="reader__divider-card">
+          <span class="reader__divider-tag">Chapter berikutnya</span>
+          <strong class="reader__divider-main">${esc(up.main)}</strong>
+          ${up.sub ? `<span class="reader__divider-sub">${esc(up.sub)}</span>` : ''}
+        </div>`;
+      dividerIO.observe(divider);
       const frag = document.createDocumentFragment();
       frag.append(divider);
       (nd.images || []).forEach((src, index) => {
@@ -447,6 +458,9 @@ export async function reader({ root, alive }, url) {
       watch();
     }
   };
+  const dividerIO = new IntersectionObserver((entries) => {
+    entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('is-in'); dividerIO.unobserve(en.target); } });
+  }, { rootMargin: '0px 0px -12% 0px' });
   let sentinelIO = null;
   const watch = () => {
     sentinelIO?.disconnect();
@@ -505,6 +519,7 @@ export async function reader({ root, alive }, url) {
     clearTimeout(progressSaveTimer);
     updateReadingProgress();
     sentinelIO?.disconnect();
+    dividerIO.disconnect();
     stopAutoScroll();
   };
   document.addEventListener('visibilitychange', onVisibilityChange);

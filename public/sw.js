@@ -1,5 +1,5 @@
 /* Komikta Service Worker — cache gambar, API, aset; mendukung chapter offline */
-const V = 'v81';
+const V = 'v82';
 const STATIC = `rimwa-static-${V}`;
 const IMG = `rimwa-img-${V}`;
 const API = `rimwa-api-${V}`;

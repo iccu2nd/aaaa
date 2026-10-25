@@ -585,54 +585,55 @@ img.is-pending { opacity: 0; }
 .rs-hint { margin: 8px 0 0; }
 #reader-sentinel { height: 1px; }
 .reader__end[hidden] { display: none !important; }
-/* Chapter transition — Design 1: a clear, horizontal chapter handoff. */
 .reader__divider {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 58px minmax(0, 1fr);
-  grid-template-areas: "current icon next" "note note note";
+  position: relative;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
-  width: min(100% - 32px, 820px);
-  box-sizing: border-box;
-  margin: 30px auto;
-  padding: 24px clamp(16px, 4vw, 36px) 20px;
-  color: #f5f6fa;
-  background: linear-gradient(145deg, rgba(17,22,32,.97), rgba(10,13,20,.98));
-  border: 1px solid rgba(145,168,210,.2);
-  border-radius: 28px;
-  box-shadow: 0 12px 34px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.035);
+  gap: 18px;
+  padding: 72px 20px 64px;
+  background: radial-gradient(ellipse 80% 60% at 50% 55%, #1b1b21 0%, #0a0a0c 70%);
+  border-top: 2px solid #fff;
+  border-bottom: 1px solid rgba(255,255,255,.1);
   text-align: center;
 }
-.reader__divider-current, .reader__divider-next { display:flex; align-items:center; gap:14px; min-width:0; text-align:left; }
-.reader__divider-current { grid-area:current; }
-.reader__divider-next { grid-area:next; position:relative; padding-right:16px; }
-.reader__divider-check { display:grid; flex:0 0 48px; width:48px; height:48px; place-items:center; border:2px solid #6898ff; border-radius:50%; color:#f5f8ff; box-shadow:0 0 16px rgba(66,128,255,.22); }
-.reader__divider-check svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
-.reader__divider-copy, .reader__divider-next { display:flex; flex-direction:column; gap:4px; }
-.reader__divider-copy small, .reader__divider-next small { color:#a7b0c4; font-size:12px; font-weight:500; letter-spacing:.015em; text-transform:none; }
-.reader__divider-copy strong, .reader__divider-next strong { display:block; max-width:100%; color:#f5f6fa; font-size:clamp(16px,2.5vw,21px); font-weight:700; line-height:1.3; overflow-wrap:anywhere; }
-.reader__divider-icon { grid-area:icon; display:grid; place-items:center; width:54px; height:54px; margin:0 auto; border:1px solid rgba(143,174,239,.5); border-radius:50%; color:#f4f7ff; background:rgba(35,55,92,.24); box-shadow:0 0 18px rgba(62,122,255,.14); }
-.reader__divider-icon svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-.reader__divider-chevron { position:absolute; top:50%; right:0; transform:translateY(-50%); color:#c9d7f7; font-size:30px; line-height:1; }
-.reader__divider-note { grid-area:note; display:flex; align-items:center; justify-content:center; gap:14px; margin-top:2px; color:#9ba6bd; font-size:13px; }
-.reader__divider-note::before, .reader__divider-note::after { content:""; width:min(12vw,58px); height:1px; background:rgba(137,161,207,.42); }
-@media (max-width:520px) {
-  .reader__divider { grid-template-columns:minmax(0,1fr) 42px minmax(0,1fr); gap:10px; width:calc(100% - 24px); margin:22px auto; padding:20px 14px 17px; border-radius:22px; }
-  .reader__divider-current, .reader__divider-next { gap:9px; }
-  .reader__divider-check { flex-basis:38px; width:38px; height:38px; border-width:1.5px; }
-  .reader__divider-check svg { width:19px; height:19px; }
-  .reader__divider-icon { width:40px; height:40px; }
-  .reader__divider-icon svg { width:20px; height:20px; }
-  .reader__divider-copy small, .reader__divider-next small { font-size:10.5px; }
-  .reader__divider-copy strong, .reader__divider-next strong { font-size:15px; }
-  .reader__divider-next { padding-right:10px; }
-  .reader__divider-chevron { font-size:24px; }
-  .reader__divider-note { font-size:11.5px; gap:9px; }
+.reader__divider::before {
+  content: '';
+  position: absolute;
+  top: -2px; left: 50%;
+  width: 46%; height: 2px;
+  transform: translateX(-50%);
+  background: #fff;
+  box-shadow: 0 0 12px 1px rgba(255,255,255,.4);
 }
-@media (max-width:360px) {
-  .reader__divider { grid-template-columns:minmax(0,1fr) 34px minmax(0,1fr); gap:7px; padding-inline:10px; }
-  .reader__divider-check { flex-basis:32px; width:32px; height:32px; }
-  .reader__divider-icon { width:32px; height:32px; }
-  .reader__divider-copy strong, .reader__divider-next strong { font-size:13px; }
-  .reader__divider-copy small, .reader__divider-next small { font-size:9.5px; }
+.reader__divider-done { display: inline-flex; align-items: center; gap: 8px; color: #b4b4bb; font-size: 14px; font-weight: 500; }
+.reader__divider-done svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.reader__divider-arrows { display: flex; flex-direction: column; align-items: center; margin: -4px 0; }
+.reader__divider-arrows svg { width: 26px; height: 26px; margin-top: -9px; fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; opacity: .25; animation: rdArrow 1.5s ease-in-out infinite; }
+.reader__divider-arrows svg:nth-child(2) { animation-delay: .2s; }
+.reader__divider-arrows svg:nth-child(3) { animation-delay: .4s; }
+@keyframes rdArrow { 0%, 100% { opacity: .2; transform: translateY(-2px); } 45% { opacity: 1; transform: translateY(3px); } }
+.reader__divider-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(100%, 420px);
+  padding: 22px 20px 24px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 18px;
+  background: rgba(255,255,255,.05);
+  box-shadow: 0 10px 40px rgba(0,0,0,.5);
+}
+.reader__divider-tag { padding: 5px 12px; border-radius: 999px; background: #fff; color: #0a0a0c; font-size: 12.5px; font-weight: 700; }
+.reader__divider-main { margin-top: 6px; color: #fff; font-size: 26px; font-weight: 700; line-height: 1.15; letter-spacing: -.02em; }
+.reader__divider-sub { color: #d0d0d6; font-size: 16px; font-weight: 500; line-height: 1.35; }
+.reader__divider.is-in .reader__divider-done,
+.reader__divider.is-in .reader__divider-card { animation: rdRise .6s cubic-bezier(.2, .8, .2, 1) both; }
+.reader__divider.is-in .reader__divider-card { animation-delay: .12s; }
+@keyframes rdRise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .reader__divider-arrows svg { animation: none; opacity: .8; }
+  .reader__divider.is-in .reader__divider-done,
+  .reader__divider.is-in .reader__divider-card { animation: none; }
 }
