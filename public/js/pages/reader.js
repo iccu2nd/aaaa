@@ -98,12 +98,12 @@ export async function reader({ root, alive }, url) {
         ${next ? `<a class="reader__icon reader__icon--lg" href="${link('read', next.url)}" aria-label="Next chapter">${ICO.next}</a>` : `<span class="reader__icon reader__icon--lg is-disabled" aria-label="Tidak ada chapter berikutnya">${ICO.next}</span>`}
       </div>
       <div class="reader-settings" id="reader-settings" hidden>
-        <label class="reader-settings__toggle" for="reader-smooth">
-          <span class="reader-settings__toggle-text"><b>Mode halus</b><small>Gerak mulus, tidak patah-patah</small></span>
-          <input id="reader-smooth" type="checkbox" role="switch">
-          <i class="reader-settings__switch" aria-hidden="true"></i>
-        </label>
-        <div class="reader-settings__title">Kecepatan auto-scroll</div>
+        <div class="reader-settings__title">Mode auto-scroll</div>
+        <div class="reader-settings__modes" id="reader-modes" role="radiogroup" aria-label="Mode auto-scroll">
+          <button type="button" role="radio" data-mode="smooth" aria-checked="true"><b>Halus</b><small>Mengalir terus</small></button>
+          <button type="button" role="radio" data-mode="swipe" aria-checked="false"><b>Swipe</b><small>Seperti geser jari</small></button>
+        </div>
+        <div class="reader-settings__title reader-settings__title--sp">Kecepatan</div>
         <div class="reader-settings__range-wrap">
           <input id="reader-speed" class="reader-settings__range" type="range" min="0.5" max="3" step="0.1" value="1" aria-label="Kecepatan auto-scroll">
           <div class="reader-settings__range-labels"><span>0.5×</span><output id="reader-speed-value" for="reader-speed">1.0×</output><span>3×</span></div>
@@ -175,17 +175,26 @@ export async function reader({ root, alive }, url) {
   let autoPos = 0;
   let smoothDelta = 16.7;
   let smoothVel = 0;
-  const smoothInput = document.getElementById('reader-smooth');
-  let smoothMode = false;
-  try { smoothMode = localStorage.getItem('rimwa:auto-smooth') === '1'; } catch { /* storage may be unavailable */ }
-  if (smoothInput) {
-    smoothInput.checked = smoothMode;
-    smoothInput.addEventListener('change', () => {
-      smoothMode = smoothInput.checked;
-      smoothVel = 0;
-      try { localStorage.setItem('rimwa:auto-smooth', smoothMode ? '1' : '0'); } catch { /* storage may be unavailable */ }
-    });
-  }
+  const modesBox = document.getElementById('reader-modes');
+  let mode = 'smooth';
+  try { if (localStorage.getItem('rimwa:auto-mode') === 'swipe') mode = 'swipe'; } catch { /* storage may be unavailable */ }
+  const swipe = { active: false, start: 0, from: 0, dist: 0, dur: 0, wait: 0 };
+  const paintModes = () => modesBox?.querySelectorAll('[data-mode]').forEach((b) => {
+    const on = b.dataset.mode === mode;
+    b.classList.toggle('is-selected', on);
+    b.setAttribute('aria-checked', String(on));
+  });
+  paintModes();
+  modesBox?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-mode]');
+    if (!b) return;
+    mode = b.dataset.mode === 'swipe' ? 'swipe' : 'smooth';
+    smoothVel = 0;
+    swipe.active = false;
+    swipe.wait = 0;
+    try { localStorage.setItem('rimwa:auto-mode', mode); } catch { /* storage may be unavailable */ }
+    paintModes();
+  });
 
   if (speedInput) {
     speedInput.value = String(initialSpeed);
@@ -239,20 +248,35 @@ export async function reader({ root, alive }, url) {
     if (!previousFrameTime) previousFrameTime = time;
     const raw = Math.min(time - previousFrameTime, 64);
     previousFrameTime = time;
-    let delta = raw;
-    let speed = autoScrollSpeed;
-    if (smoothMode) {
-      smoothDelta += (raw - smoothDelta) * 0.12;
-      delta = smoothDelta;
-      smoothVel += (autoScrollSpeed - smoothVel) * Math.min(1, raw / 350);
-      speed = smoothVel;
-    }
     const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     if (maxY <= 0 || window.scrollY >= maxY - 2) { stopAutoScroll(); return; }
-    if (Math.abs(window.scrollY - autoPos) > 4) autoPos = window.scrollY;
-    autoPos = Math.min(maxY, autoPos + speed * delta / 1000);
     const dpr = window.devicePixelRatio || 1;
-    window.scrollTo({ top: smoothMode ? Math.round(autoPos * dpr) / dpr : autoPos, behavior: 'instant' });
+    if (Math.abs(window.scrollY - autoPos) > 4 && !swipe.active) autoPos = window.scrollY;
+    if (mode === 'swipe') {
+      if (!swipe.active) {
+        swipe.wait -= raw;
+        if (swipe.wait <= 0) {
+          const dist = Math.min(window.innerHeight * 0.55, maxY - autoPos);
+          const period = dist / autoScrollSpeed;
+          swipe.dist = dist;
+          swipe.dur = Math.min(650, period * 700);
+          swipe.wait = Math.max(0, period * 1000 - swipe.dur);
+          swipe.from = autoPos;
+          swipe.start = time;
+          swipe.active = true;
+        }
+      } else {
+        const t = Math.min(1, (time - swipe.start) / swipe.dur);
+        autoPos = swipe.from + swipe.dist * (1 - Math.pow(1 - t, 3));
+        window.scrollTo({ top: Math.round(autoPos * dpr) / dpr, behavior: 'instant' });
+        if (t >= 1) swipe.active = false;
+      }
+    } else {
+      smoothDelta += (raw - smoothDelta) * 0.12;
+      smoothVel += (autoScrollSpeed - smoothVel) * Math.min(1, raw / 350);
+      autoPos = Math.min(maxY, autoPos + smoothVel * smoothDelta / 1000);
+      window.scrollTo({ top: Math.round(autoPos * dpr) / dpr, behavior: 'instant' });
+    }
     if (window.scrollY >= maxY - 2) { stopAutoScroll(); return; }
     autoScrollFrame = requestAnimationFrame(autoScrollTick);
   };
@@ -266,6 +290,8 @@ export async function reader({ root, alive }, url) {
     autoBtn.classList.add('is-active');
     previousFrameTime = 0;
     smoothVel = 0;
+    swipe.active = false;
+    swipe.wait = 0;
     autoPos = window.scrollY;
     autoScrollFrame = requestAnimationFrame(autoScrollTick);
   });
