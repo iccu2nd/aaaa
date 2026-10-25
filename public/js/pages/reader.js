@@ -9,6 +9,7 @@ const ICO = {
   next: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   list: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
   close: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+  focus: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg>`,
   settings: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`,
   play: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.1 5.2a1 1 0 0 1 0 1.8l-9.1 5.2a1 1 0 0 1-1.6-.9V5.8Z"/></svg>`,
   pause: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>`,
@@ -93,7 +94,7 @@ export async function reader({ root, alive }, url) {
         ${navPrev(prev)}
         <button type="button" class="reader__icon reader__icon--lg" id="btn-reader-settings" aria-label="Pengaturan auto-scroll" aria-expanded="false">${ICO.settings}</button>
         <button type="button" class="reader__icon reader__icon--lg reader__autoscroll" id="btn-autoscroll" aria-label="Mulai auto-scroll" aria-pressed="false">${ICO.play}</button>
-        <button type="button" class="reader__icon reader__icon--lg" id="btn-list-2" aria-label="Daftar chapter">${ICO.list}</button>
+        <button type="button" class="reader__icon reader__icon--lg" id="btn-focus" aria-label="Mode fokus">${ICO.focus}</button>
         ${navNext(next)}
       </div>
       <div class="reader-settings" id="reader-settings" hidden>
@@ -109,11 +110,6 @@ export async function reader({ root, alive }, url) {
         <label class="rs-row rs-row--sep" for="reader-continuous">
           <span class="rs-row__text"><b>Sambung chapter</b><small>Chapter berikutnya lanjut di bawah, tanpa pindah halaman</small></span>
           <input id="reader-continuous" type="checkbox" role="switch" checked>
-          <i class="rs-switch" aria-hidden="true"></i>
-        </label>
-        <label class="rs-row rs-row--sep" for="reader-focus">
-          <span class="rs-row__text"><b>Mode fokus</b><small>Layar penuh tanpa menu. Ketuk cepat 4× untuk keluar</small></span>
-          <input id="reader-focus" type="checkbox" role="switch">
           <i class="rs-switch" aria-hidden="true"></i>
         </label>
         <div class="rs-speed">
@@ -257,9 +253,9 @@ export async function reader({ root, alive }, url) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toast.classList.remove('is-on'), ms);
   };
-  const focusInput = document.getElementById('reader-focus');
-  let taps = [];
   let fsEntered = false;
+  let focusPushed = false;
+  let swallowPop = false;
   const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
   const enterFs = () => {
     const el = document.documentElement;
@@ -276,32 +272,32 @@ export async function reader({ root, alive }, url) {
     if (!fsEl()) return;
     try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch { /* ignore */ }
   };
-  const onFsChange = () => { if (!fsEl() && fsEntered && focus) setFocus(false); };
-  document.addEventListener('fullscreenchange', onFsChange);
-  document.addEventListener('webkitfullscreenchange', onFsChange);
-  const setFocus = (on) => {
+  const setFocus = (on, { fromPop = false } = {}) => {
+    if (focus === on) return;
     focus = on;
-    focusInput.checked = on;
     readerEl.classList.toggle('is-focus', on);
-    taps = [];
     if (on) {
       hideUI();
       enterFs();
-      say('Mode fokus aktif', 'Ketuk cepat 4× untuk keluar', 2800);
+      try { window.history.pushState({ focus: 1 }, '', location.href); focusPushed = true; } catch { /* ignore */ }
+      say('Mode fokus aktif', 'Tekan tombol kembali untuk keluar', 2800);
     } else {
       leaveFs();
+      if (focusPushed && !fromPop) { swallowPop = true; window.history.back(); }
+      focusPushed = false;
       say('Mode fokus nonaktif');
       showUI();
     }
   };
-  focusInput.addEventListener('change', () => setFocus(focusInput.checked));
-  const focusTap = () => {
-    const now = Date.now();
-    taps = taps.filter((t) => now - t < 1200);
-    taps.push(now);
-    if (taps.length >= 4) { setFocus(false); return; }
-    if (taps.length >= 2) say(`Ketuk ${4 - taps.length}× lagi`, '', 900);
+  const onPop = (e) => {
+    if (swallowPop) { swallowPop = false; e.stopImmediatePropagation(); return; }
+    if (focus && focusPushed) { e.stopImmediatePropagation(); setFocus(false, { fromPop: true }); }
   };
+  window.addEventListener('popstate', onPop, true);
+  const onFsChange = () => { if (!fsEl() && fsEntered && focus) setFocus(false); };
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+  document.getElementById('btn-focus').addEventListener('click', (e) => { e.stopPropagation(); setFocus(true); });
 
   const openDrawer = () => {
     drawer.hidden = false;
@@ -317,7 +313,6 @@ export async function reader({ root, alive }, url) {
   };
 
   document.getElementById('btn-list').addEventListener('click', (e) => { e.stopPropagation(); openDrawer(); });
-  document.getElementById('btn-list-2').addEventListener('click', (e) => { e.stopPropagation(); openDrawer(); });
 
   const stopAutoScroll = () => {
     autoScrolling = false;
@@ -428,7 +423,7 @@ export async function reader({ root, alive }, url) {
   });
 
   readerEl.addEventListener('click', (e) => {
-    if (focus) { focusTap(); return; }
+    if (focus) return;
     if (e.target.closest('a, button, .reader__end, .reader-drawer, .reader-settings')) return;
     if (scrolling && !autoScrolling) return;
     if (uiVisible) hideUI();
@@ -588,6 +583,7 @@ export async function reader({ root, alive }, url) {
     window.removeEventListener('rimwa:routechange', cleanup);
     clearTimeout(scrollTimer);
     clearTimeout(toastTimer);
+    window.removeEventListener('popstate', onPop, true);
     document.removeEventListener('fullscreenchange', onFsChange);
     document.removeEventListener('webkitfullscreenchange', onFsChange);
     leaveFs();
