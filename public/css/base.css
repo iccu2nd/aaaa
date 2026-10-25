@@ -60,7 +60,7 @@ html {
   height: 100%;
   overflow-x: hidden;
   scroll-behavior: smooth;
-  overscroll-behavior-y: none;
+  /* Website: biarkan default → pull-to-refresh browser tetap jalan */
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -81,7 +81,6 @@ body {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
-  overscroll-behavior-y: contain;
   touch-action: manipulation;
 }
 /* Izinkan seleksi teks di konten panjang */
@@ -92,17 +91,23 @@ p, .detail__syn, .state, article, .reader__pages {
 body.is-reader {
   padding-bottom: 0;
   padding-top: 0;
+  /* Reader: cegah pull-to-refresh mengganggu baca (web & app) */
   overscroll-behavior-y: none;
 }
 
-/* Mode app terpasang (PWA / TWA) — hilangkan “rasa browser” */
-html.is-app,
+/*
+ * Hanya di APK / PWA terpasang: matikan overscroll & pull-to-refresh.
+ * Di browser biasa (website) fitur refresh tetap ada.
+ */
+html.is-app {
+  overscroll-behavior: none;
+}
 html.is-app body {
   overscroll-behavior: none;
 }
 @media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
   html { overscroll-behavior: none; }
-  body { overscroll-behavior-y: none; }
+  body { overscroll-behavior: none; }
 }
 
 a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transparent; }
