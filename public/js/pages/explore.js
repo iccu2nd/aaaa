@@ -1,11 +1,10 @@
 import { navigate as navigateTo } from '../router.js';
 import { api } from '../api.js';
-import { richCardAt } from '../components/card.js';
+import { card as exploreCard } from '../components/card.js';
 import { esc, link, img } from '../utils.js';
-import { stage, fillRest } from '../images.js';
+import { stage } from '../images.js';
 
 const SIZE = 18;
-const card = (c) => richCardAt(c, 240);
 const GENRES = ['Action','Adaptation','Adult','Adventure','Comedy','Cooking','Crime','Drama','Ecchi','Fantasy','Harem','Historical','Horror','Isekai','Martial Arts','Mature','Mystery','Psychological','Reincarnation','Revenge','Romance','School Life','Sci-fi','Seinen','Shoujo','Shounen','Slice of Life','Sports','Supernatural','Thriller','Tragedy'];
 const FORMATS = [
   { id: '', label: 'All' },
@@ -371,17 +370,16 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
         return;
       }
       const useList = isQuery;
-      const add = async (data, first = 9, reset = false) => {
+      const add = async (data, first = 6, reset = false) => {
         const items = (data.items || []).filter((c) => c?.url && !seen.has(c.url) && seen.add(c.url));
-        const box = await stage(items.map(useList ? listRow : card).join(''), { first, timeout: 2200 });
+        const box = await stage(items.map(useList ? listRow : exploreCard).join(''), { first, timeout: 1200 });
         if (!alive() || myRequest !== requestId) return;
         if (reset) grid.innerHTML = '';
         grid.append(...box.childNodes);
         count.textContent = `${fmt(data.total)} judul`;
         count.hidden = false;
-        fillRest(grid, () => alive() && myRequest === requestId);
       };
-      await add(first, 9, true);
+      await add(first, 6, true);
       if (!alive() || myRequest !== requestId) return;
       page = 1;
       pages = first.pages || 1;
@@ -393,7 +391,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
         try {
           const data = await api(url(page + 1));
           if (!alive() || myRequest !== requestId) return;
-          await add(data, 6);
+          await add(data, 0);
           page += 1;
           pages = data.pages || pages;
           end.textContent = '';
@@ -403,7 +401,7 @@ export async function explore({ root, alive }, q = '', genre = '', sortMode = 'l
         } finally {
           loading = false;
         }
-      }, { rootMargin: '450px 0px' });
+      }, { rootMargin: '900px 0px' });
       io.observe(end);
     } catch (e) {
       if (!alive() || myRequest !== requestId) return;

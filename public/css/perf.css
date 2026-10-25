@@ -81,8 +81,9 @@ body.chrome-collapsed {
 
 .explore-grid > .card {
   content-visibility: auto;
-  contain-intrinsic-size: auto 236px;
-  transition: transform 0.12s ease !important;
+  contain-intrinsic-size: auto 210px;
+  contain: layout paint style;
+  transition: none !important;
 }
 
 /* ===== Spotlight (final, ringkas & rapi di HP) ===== */
@@ -469,7 +470,6 @@ body .spotlight .spotlight__fact { color: rgba(255,255,255,.9); font-weight: 600
 }
 
 /* ===== Topbar + bottom-nav: hilang saat scroll turun, muncul saat scroll naik ===== */
-.bottom-nav,
 #topbar {
   will-change: transform;
   transition: transform .26s cubic-bezier(.2, .8, .2, 1) !important;
@@ -478,10 +478,6 @@ body .spotlight .spotlight__fact { color: rgba(255,255,255,.9); font-weight: 600
   background: rgba(5, 5, 7, .98) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-}
-body.nav-away .bottom-nav {
-  transform: translate3d(0, calc(100% + 8px), 0) !important;
-  pointer-events: none;
 }
 body.nav-away #topbar {
   transform: translate3d(0, -110%, 0) !important;
@@ -498,3 +494,41 @@ body.chrome-collapsed { padding-bottom: calc(var(--nav-h) + var(--safe-b) + 8px)
   transition: opacity .25s ease;
 }
 img.is-pending { opacity: 0; }
+
+
+.bottom-nav { transform: none !important; opacity: 1 !important; pointer-events: auto !important; transition: none !important; will-change: auto; }
+
+.explore-grid > .card:hover { transform: none; }
+.explore-grid .card__format-badge,
+.explore-grid .card__ch-total,
+.explore-grid .card__rate-badge {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+.explore-grid .card__cover { box-shadow: none !important; }
+.explore-grid img.is-pending { opacity: 1; }
+.explore-grid .card__cover img { transition: none; }
+.explore-grid { content-visibility: visible; overflow-anchor: none; }
+
+.detail__hero-actions { top: calc(12px + env(safe-area-inset-top, 0px)); left: 14px; right: 14px; }
+.detail__icon-btn {
+  width: 46px !important;
+  height: 46px !important;
+}
+.detail__icon-btn svg { width: 26px !important; height: 26px !important; }
+
+.card__format-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(9, 9, 11, .82);
+  color: #f2f2f4;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  pointer-events: none;
+}
+.card__ch-line { padding: 3px 1px 0; font-size: 11px; color: var(--muted); }
