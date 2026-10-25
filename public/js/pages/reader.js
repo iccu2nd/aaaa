@@ -98,6 +98,11 @@ export async function reader({ root, alive }, url) {
         ${next ? `<a class="reader__icon reader__icon--lg" href="${link('read', next.url)}" aria-label="Next chapter">${ICO.next}</a>` : `<span class="reader__icon reader__icon--lg is-disabled" aria-label="Tidak ada chapter berikutnya">${ICO.next}</span>`}
       </div>
       <div class="reader-settings" id="reader-settings" hidden>
+        <label class="reader-settings__toggle" for="reader-smooth">
+          <span class="reader-settings__toggle-text"><b>Mode halus</b><small>Gerak mulus, tidak patah-patah</small></span>
+          <input id="reader-smooth" type="checkbox" role="switch">
+          <i class="reader-settings__switch" aria-hidden="true"></i>
+        </label>
         <div class="reader-settings__title">Kecepatan auto-scroll</div>
         <div class="reader-settings__range-wrap">
           <input id="reader-speed" class="reader-settings__range" type="range" min="0.5" max="3" step="0.1" value="1" aria-label="Kecepatan auto-scroll">
@@ -168,6 +173,19 @@ export async function reader({ root, alive }, url) {
   const readerDirection = 'down';
   let previousFrameTime = 0;
   let autoPos = 0;
+  let smoothDelta = 16.7;
+  let smoothVel = 0;
+  const smoothInput = document.getElementById('reader-smooth');
+  let smoothMode = false;
+  try { smoothMode = localStorage.getItem('rimwa:auto-smooth') === '1'; } catch { /* storage may be unavailable */ }
+  if (smoothInput) {
+    smoothInput.checked = smoothMode;
+    smoothInput.addEventListener('change', () => {
+      smoothMode = smoothInput.checked;
+      smoothVel = 0;
+      try { localStorage.setItem('rimwa:auto-smooth', smoothMode ? '1' : '0'); } catch { /* storage may be unavailable */ }
+    });
+  }
 
   if (speedInput) {
     speedInput.value = String(initialSpeed);
@@ -219,13 +237,22 @@ export async function reader({ root, alive }, url) {
   const autoScrollTick = (time) => {
     if (!autoScrolling) return;
     if (!previousFrameTime) previousFrameTime = time;
-    const delta = Math.min(time - previousFrameTime, 64);
+    const raw = Math.min(time - previousFrameTime, 64);
     previousFrameTime = time;
+    let delta = raw;
+    let speed = autoScrollSpeed;
+    if (smoothMode) {
+      smoothDelta += (raw - smoothDelta) * 0.12;
+      delta = smoothDelta;
+      smoothVel += (autoScrollSpeed - smoothVel) * Math.min(1, raw / 350);
+      speed = smoothVel;
+    }
     const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     if (maxY <= 0 || window.scrollY >= maxY - 2) { stopAutoScroll(); return; }
     if (Math.abs(window.scrollY - autoPos) > 4) autoPos = window.scrollY;
-    autoPos = Math.min(maxY, autoPos + autoScrollSpeed * delta / 1000);
-    window.scrollTo({ top: autoPos, behavior: 'instant' });
+    autoPos = Math.min(maxY, autoPos + speed * delta / 1000);
+    const dpr = window.devicePixelRatio || 1;
+    window.scrollTo({ top: smoothMode ? Math.round(autoPos * dpr) / dpr : autoPos, behavior: 'instant' });
     if (window.scrollY >= maxY - 2) { stopAutoScroll(); return; }
     autoScrollFrame = requestAnimationFrame(autoScrollTick);
   };
@@ -238,6 +265,7 @@ export async function reader({ root, alive }, url) {
     autoBtn.setAttribute('aria-pressed', 'true');
     autoBtn.classList.add('is-active');
     previousFrameTime = 0;
+    smoothVel = 0;
     autoPos = window.scrollY;
     autoScrollFrame = requestAnimationFrame(autoScrollTick);
   });
