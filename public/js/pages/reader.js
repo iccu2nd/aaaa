@@ -29,19 +29,15 @@ export async function reader({ root, alive }, url) {
   const s = state.series;
   const list = s ? s.chapters : [];
   const i = list.findIndex((c) => c.url === url || c.chapter_id === d.chapter_id);
-
-  let prev = null;
-  let next = null;
-  if (d.prev_chapter_id) {
-    prev = { url: `https://shinigami.id/chapter/${d.prev_chapter_id}` };
-  } else if (i >= 0 && i < list.length - 1) {
-    prev = list[i + 1];
-  }
-  if (d.next_chapter_id) {
-    next = { url: `https://shinigami.id/chapter/${d.next_chapter_id}` };
-  } else if (i > 0) {
-    next = list[i - 1];
-  }
+  const neighbors = (dd, u) => {
+    const k = list.findIndex((c) => c.url === u || (dd.chapter_id && c.chapter_id === dd.chapter_id));
+    const prevC = dd.prev_chapter_id ? { url: `https://shinigami.id/chapter/${dd.prev_chapter_id}` } : (k >= 0 && k < list.length - 1 ? list[k + 1] : null);
+    const nextC = dd.next_chapter_id ? { url: `https://shinigami.id/chapter/${dd.next_chapter_id}` } : (k > 0 ? list[k - 1] : null);
+    return { prev: prevC, next: nextC, title: (list[k] || {}).title || dd.title };
+  };
+  const first = neighbors(d, url);
+  const prev = first.prev;
+  const next = first.next;
 
   if (s) {
     const prevHist = history.lastFor(s.url);
@@ -67,6 +63,11 @@ export async function reader({ root, alive }, url) {
       }).join('')
     : '<div class="state">Daftar chapter tidak tersedia. Buka dari halaman detail dulu.</div>';
 
+  const navPrev = (p) => p ? `<a id="nav-prev" class="reader__icon reader__icon--lg" href="${link('read', p.url)}" aria-label="Previous chapter">${ICO.prev}</a>` : `<span id="nav-prev" class="reader__icon reader__icon--lg is-disabled" aria-label="Tidak ada chapter sebelumnya">${ICO.prev}</span>`;
+  const navNext = (n) => n ? `<a id="nav-next" class="reader__icon reader__icon--lg" href="${link('read', n.url)}" aria-label="Next chapter">${ICO.next}</a>` : `<span id="nav-next" class="reader__icon reader__icon--lg is-disabled" aria-label="Tidak ada chapter berikutnya">${ICO.next}</span>`;
+  const endPrev = (p) => p ? `<a id="end-prev" class="reader__end-nav" href="${link('read', p.url)}">${ICO.prev}<span>Previous</span></a>` : `<span id="end-prev" class="reader__end-nav is-disabled" aria-disabled="true">${ICO.prev}<span>Previous</span></span>`;
+  const endNext = (n) => n ? `<a id="end-next" class="reader__end-nav reader__end-nav--next" href="${link('read', n.url)}"><span>Next</span>${ICO.next}</a>` : s ? `<a id="end-next" class="reader__end-nav reader__end-nav--next" href="${backHref}"><span>Back to detail</span>${ICO.next}</a>` : `<span id="end-next" class="reader__end-nav reader__end-nav--next is-disabled" aria-disabled="true"><span>Next</span>${ICO.next}</span>`;
+
   root.innerHTML = `
     <div class="reader" id="reader">
       <div class="reader__ui reader__top" id="reader-top">
@@ -83,31 +84,33 @@ export async function reader({ root, alive }, url) {
         }).join('')}
       </div>
 
+      <div id="reader-sentinel" aria-hidden="true"></div>
       <div class="reader__end" id="reader-end" aria-label="Navigasi chapter">
-        <div class="reader__end-actions">
-          ${prev ? `<a class="reader__end-nav" href="${link('read', prev.url)}">${ICO.prev}<span>Previous</span></a>` : '<span class="reader__end-nav is-disabled" aria-disabled="true">'+ICO.prev+'<span>Previous</span></span>'}
-          ${next ? `<a class="reader__end-nav reader__end-nav--next" href="${link('read', next.url)}"><span>Next</span>${ICO.next}</a>` : s ? `<a class="reader__end-nav reader__end-nav--next" href="${backHref}"><span>Back to detail</span>${ICO.next}</a>` : '<span class="reader__end-nav reader__end-nav--next is-disabled" aria-disabled="true"><span>Next</span>'+ICO.next+'</span>'}
-        </div>
+        <div class="reader__end-actions">${endPrev(prev)}${endNext(next)}</div>
       </div>
 
       <div class="reader__ui reader__bottom" id="reader-bottom">
-        ${prev ? `<a class="reader__icon reader__icon--lg" href="${link('read', prev.url)}" aria-label="Previous chapter">${ICO.prev}</a>` : `<span class="reader__icon reader__icon--lg is-disabled" aria-label="Tidak ada chapter sebelumnya">${ICO.prev}</span>`}
+        ${navPrev(prev)}
         <button type="button" class="reader__icon reader__icon--lg" id="btn-reader-settings" aria-label="Pengaturan auto-scroll" aria-expanded="false">${ICO.settings}</button>
         <button type="button" class="reader__icon reader__icon--lg reader__autoscroll" id="btn-autoscroll" aria-label="Mulai auto-scroll" aria-pressed="false">${ICO.play}</button>
         <button type="button" class="reader__icon reader__icon--lg" id="btn-list-2" aria-label="Daftar chapter">${ICO.list}</button>
-        ${next ? `<a class="reader__icon reader__icon--lg" href="${link('read', next.url)}" aria-label="Next chapter">${ICO.next}</a>` : `<span class="reader__icon reader__icon--lg is-disabled" aria-label="Tidak ada chapter berikutnya">${ICO.next}</span>`}
+        ${navNext(next)}
       </div>
       <div class="reader-settings" id="reader-settings" hidden>
-        <div class="rs-seg" id="reader-modes" role="radiogroup" aria-label="Mode auto-scroll" data-mode="smooth">
-          <i class="rs-seg__thumb" aria-hidden="true"></i>
-          <button type="button" role="radio" data-mode="smooth" aria-checked="true">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c2.5-5 5.5-5 9 0s6.5 5 9 0"/></svg>Halus
-          </button>
-          <button type="button" role="radio" data-mode="swipe" aria-checked="false">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6M7 11l5-5 5 5"/></svg>Swipe
-          </button>
+        <div class="rs-row">
+          <span class="rs-row__label">Mode baca</span>
+          <div class="rs-step" id="reader-modes" role="group" aria-label="Mode auto-scroll">
+            <button type="button" id="mode-prev" aria-label="Mode sebelumnya"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+            <output id="mode-label" aria-live="polite">Halus</output>
+            <button type="button" id="mode-next" aria-label="Mode berikutnya"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+          </div>
         </div>
         <p class="rs-hint" id="reader-mode-hint">Menggulir terus tanpa berhenti.</p>
+        <label class="rs-row rs-row--sep" for="reader-continuous">
+          <span class="rs-row__text"><b>Sambung chapter</b><small>Chapter berikutnya lanjut di bawah, tanpa pindah halaman</small></span>
+          <input id="reader-continuous" type="checkbox" role="switch" checked>
+          <i class="rs-switch" aria-hidden="true"></i>
+        </label>
         <div class="rs-speed">
           <div class="rs-speed__head"><label for="reader-speed">Kecepatan</label><output id="reader-speed-value" for="reader-speed">1.0×</output></div>
           <input id="reader-speed" class="reader-settings__range" type="range" min="0.5" max="3" step="0.1" value="1" aria-label="Kecepatan auto-scroll">
@@ -180,33 +183,34 @@ export async function reader({ root, alive }, url) {
   let autoPos = 0;
   let smoothDelta = 16.7;
   let smoothVel = 0;
-  const modesBox = document.getElementById('reader-modes');
+  const MODES = [
+    { id: 'smooth', label: 'Halus', hint: 'Menggulir terus tanpa berhenti.' },
+    { id: 'swipe', label: 'Swipe', hint: 'Bergeser per layar seperti jari, lalu jeda sebentar.' },
+  ];
   let mode = 'smooth';
   try { if (localStorage.getItem('rimwa:auto-mode') === 'swipe') mode = 'swipe'; } catch { /* storage may be unavailable */ }
   const swipe = { active: false, start: 0, from: 0, dist: 0, dur: 0, wait: 0 };
-  const HINTS = { smooth: 'Menggulir terus tanpa berhenti.', swipe: 'Bergeser per layar seperti jari, lalu jeda sebentar.' };
-  const paintModes = () => {
-    if (!modesBox) return;
-    modesBox.dataset.mode = mode;
-    modesBox.querySelectorAll('button[data-mode]').forEach((b) => {
-      const on = b.dataset.mode === mode;
-      b.classList.toggle('is-selected', on);
-      b.setAttribute('aria-checked', String(on));
-    });
-    const hint = document.getElementById('reader-mode-hint');
-    if (hint) hint.textContent = HINTS[mode];
+  const paintMode = () => {
+    const m = MODES.find((x) => x.id === mode) || MODES[0];
+    document.getElementById('mode-label').textContent = m.label;
+    document.getElementById('reader-mode-hint').textContent = m.hint;
   };
-  paintModes();
-  modesBox?.addEventListener('click', (e) => {
-    const b = e.target.closest('button[data-mode]');
-    if (!b) return;
-    mode = b.dataset.mode === 'swipe' ? 'swipe' : 'smooth';
+  const stepMode = () => {
+    mode = mode === 'smooth' ? 'swipe' : 'smooth';
     smoothVel = 0;
     swipe.active = false;
     swipe.wait = 0;
     try { localStorage.setItem('rimwa:auto-mode', mode); } catch { /* storage may be unavailable */ }
-    paintModes();
-  });
+    paintMode();
+  };
+  paintMode();
+  document.getElementById('mode-prev').addEventListener('click', (e) => { e.stopPropagation(); stepMode(); });
+  document.getElementById('mode-next').addEventListener('click', (e) => { e.stopPropagation(); stepMode(); });
+
+  let continuous = true;
+  try { continuous = localStorage.getItem('rimwa:continuous') !== '0'; } catch { /* storage may be unavailable */ }
+  const continuousInput = document.getElementById('reader-continuous');
+  continuousInput.checked = continuous;
 
   if (speedInput) {
     speedInput.value = String(initialSpeed);
@@ -261,7 +265,11 @@ export async function reader({ root, alive }, url) {
     const raw = Math.min(time - previousFrameTime, 64);
     previousFrameTime = time;
     const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-    if (maxY <= 0 || window.scrollY >= maxY - 2) { stopAutoScroll(); return; }
+    if (maxY <= 0 || window.scrollY >= maxY - 2) {
+      if (hasMore()) { autoScrollFrame = requestAnimationFrame(autoScrollTick); return; }
+      stopAutoScroll();
+      return;
+    }
     const dpr = window.devicePixelRatio || 1;
     if (Math.abs(window.scrollY - autoPos) > 4 && !swipe.active) autoPos = window.scrollY;
     if (mode === 'swipe') {
@@ -269,13 +277,17 @@ export async function reader({ root, alive }, url) {
         swipe.wait -= raw;
         if (swipe.wait <= 0) {
           const dist = Math.min(window.innerHeight * 0.55, maxY - autoPos);
-          const period = dist / autoScrollSpeed;
-          swipe.dist = dist;
-          swipe.dur = Math.min(650, period * 700);
-          swipe.wait = Math.max(0, period * 1000 - swipe.dur);
-          swipe.from = autoPos;
-          swipe.start = time;
-          swipe.active = true;
+          if (dist < 1) {
+            swipe.wait = 200;
+          } else {
+            const period = dist / autoScrollSpeed;
+            swipe.dist = dist;
+            swipe.dur = Math.min(650, period * 700);
+            swipe.wait = Math.max(0, period * 1000 - swipe.dur);
+            swipe.from = autoPos;
+            swipe.start = time;
+            swipe.active = true;
+          }
         }
       } else {
         const t = Math.min(1, (time - swipe.start) / swipe.dur);
@@ -289,7 +301,7 @@ export async function reader({ root, alive }, url) {
       autoPos = Math.min(maxY, autoPos + smoothVel * smoothDelta / 1000);
       window.scrollTo({ top: Math.round(autoPos * dpr) / dpr, behavior: 'instant' });
     }
-    if (window.scrollY >= maxY - 2) { stopAutoScroll(); return; }
+    if (window.scrollY >= maxY - 2 && !hasMore()) { stopAutoScroll(); return; }
     autoScrollFrame = requestAnimationFrame(autoScrollTick);
   };
   autoBtn.addEventListener('click', (e) => {
@@ -353,12 +365,105 @@ export async function reader({ root, alive }, url) {
   });
 
   let progressSaveTimer = null;
+  const pagesEl = document.getElementById('reader-pages');
+  const endEl = document.getElementById('reader-end');
+  const sentinel = document.getElementById('reader-sentinel');
+  const topTitle = readerEl.querySelector('.reader__top-title');
+  const segs = [{ url, title: d.title, el: null, prev, next }];
+  let curIdx = 0;
+  let loadingNext = false;
+  let loadFailed = false;
+  const hasMore = () => continuous && !!segs[segs.length - 1].next && !loadFailed;
+  const segTop = (k) => (k === 0 ? 0 : segs[k].el.getBoundingClientRect().top + window.scrollY);
+  const segEnd = (k) => (k + 1 < segs.length ? segTop(k + 1) : document.documentElement.scrollHeight);
+  const syncEnd = () => { endEl.hidden = hasMore(); };
   const updateReadingProgress = () => {
-    const maxY = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-    const ratio = Math.max(0, Math.min(1, window.scrollY / maxY));
+    const top0 = segTop(curIdx);
+    const span = Math.max(1, segEnd(curIdx) - top0 - window.innerHeight);
+    const ratio = Math.max(0, Math.min(1, (window.scrollY - top0) / span));
     progressFill.style.transform = `scaleX(${ratio})`;
-    readingProgress.set(url, ratio);
+    readingProgress.set(segs[curIdx].url, ratio);
   };
+  const setCurrent = (k) => {
+    if (k === curIdx) return;
+    updateReadingProgress();
+    curIdx = k;
+    const seg = segs[k];
+    if (topTitle) topTitle.textContent = seg.title || '';
+    try { window.history.replaceState(window.history.state, '', link('read', seg.url)); } catch { /* ignore */ }
+    document.getElementById('nav-prev').outerHTML = navPrev(seg.prev);
+    document.getElementById('nav-next').outerHTML = navNext(seg.next);
+    drawer.querySelectorAll('.reader-drawer__item').forEach((a) => {
+      const on = a.getAttribute('href') === link('read', seg.url);
+      a.classList.toggle('is-active', on);
+    });
+    if (s) {
+      const prevHist = history.lastFor(s.url);
+      const readList = Array.from(new Set([seg.url, ...((prevHist && prevHist.read) || [])])).slice(0, 500);
+      history.push({ url: s.url, title: s.title, poster: s.poster, chapterUrl: seg.url, chapterTitle: seg.title, read: readList });
+    }
+    updateReadingProgress();
+  };
+  const syncSeg = () => {
+    const edge = window.innerHeight * 0.35;
+    for (let k = segs.length - 1; k > 0; k -= 1) {
+      if (segs[k].el.getBoundingClientRect().top <= edge) { setCurrent(k); return; }
+    }
+    setCurrent(0);
+  };
+  const appendNext = async () => {
+    if (loadingNext || !hasMore() || !alive()) return;
+    loadingNext = true;
+    const from = segs[segs.length - 1];
+    try {
+      const nd = await api('/api/read?url=' + encodeURIComponent(from.next.url));
+      if (!alive()) return;
+      const nb = neighbors(nd, from.next.url);
+      const title = nb.title || nd.title || '';
+      const divider = document.createElement('div');
+      divider.className = 'reader__divider';
+      divider.setAttribute('role', 'separator');
+      divider.innerHTML = `<span class="reader__divider-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span><span class="reader__divider-done">${esc(from.title || 'Chapter')} selesai</span><span class="reader__divider-next"><small>Lanjut ke</small>${esc(title)}</span>`;
+      const frag = document.createDocumentFragment();
+      frag.append(divider);
+      (nd.images || []).forEach((src, index) => {
+        const im = document.createElement('img');
+        im.className = 'reader__page';
+        im.loading = index < 3 ? 'eager' : 'lazy';
+        im.decoding = 'async';
+        im.alt = '';
+        im.src = img(src);
+        frag.append(im);
+      });
+      pagesEl.append(frag);
+      segs.push({ url: from.next.url, title, el: divider, prev: nb.prev, next: nb.next });
+      endEl.querySelector('.reader__end-actions').innerHTML = endPrev(nb.prev) + endNext(nb.next);
+    } catch {
+      loadFailed = true;
+      setTimeout(() => { loadFailed = false; syncEnd(); watch(); }, 4000);
+    } finally {
+      loadingNext = false;
+      syncEnd();
+      watch();
+    }
+  };
+  let sentinelIO = null;
+  const watch = () => {
+    sentinelIO?.disconnect();
+    if (!hasMore() || !alive()) return;
+    sentinelIO = new IntersectionObserver((entries) => {
+      if (entries.some((x) => x.isIntersecting)) appendNext();
+    }, { rootMargin: '0px 0px 2600px 0px' });
+    sentinelIO.observe(sentinel);
+  };
+  continuousInput.addEventListener('change', () => {
+    continuous = continuousInput.checked;
+    try { localStorage.setItem('rimwa:continuous', continuous ? '1' : '0'); } catch { /* storage may be unavailable */ }
+    syncEnd();
+    watch();
+  });
+  syncEnd();
+  watch();
   const restoreReadingProgress = () => {
     if (!savedProgress || savedProgress < 0.01) return;
     const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
@@ -379,6 +484,7 @@ export async function reader({ root, alive }, url) {
   const onScroll = () => {
     clearTimeout(progressSaveTimer);
     progressSaveTimer = setTimeout(updateReadingProgress, 180);
+    syncSeg();
     const y = window.scrollY;
     if (Math.abs(y - lastScrollY) > 4) {
       scrolling = true;
@@ -398,6 +504,7 @@ export async function reader({ root, alive }, url) {
     clearTimeout(scrollTimer);
     clearTimeout(progressSaveTimer);
     updateReadingProgress();
+    sentinelIO?.disconnect();
     stopAutoScroll();
   };
   document.addEventListener('visibilitychange', onVisibilityChange);
