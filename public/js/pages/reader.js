@@ -167,6 +167,7 @@ export async function reader({ root, alive }, url) {
   // Default reading mode is always top-to-bottom. Direction preferences are intentionally removed.
   const readerDirection = 'down';
   let previousFrameTime = 0;
+  let autoPos = 0;
 
   if (speedInput) {
     speedInput.value = String(initialSpeed);
@@ -222,7 +223,9 @@ export async function reader({ root, alive }, url) {
     previousFrameTime = time;
     const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     if (maxY <= 0 || window.scrollY >= maxY - 2) { stopAutoScroll(); return; }
-    window.scrollBy(0, autoScrollSpeed * delta / 1000);
+    if (Math.abs(window.scrollY - autoPos) > 4) autoPos = window.scrollY;
+    autoPos = Math.min(maxY, autoPos + autoScrollSpeed * delta / 1000);
+    window.scrollTo({ top: autoPos, behavior: 'instant' });
     if (window.scrollY >= maxY - 2) { stopAutoScroll(); return; }
     autoScrollFrame = requestAnimationFrame(autoScrollTick);
   };
@@ -235,6 +238,7 @@ export async function reader({ root, alive }, url) {
     autoBtn.setAttribute('aria-pressed', 'true');
     autoBtn.classList.add('is-active');
     previousFrameTime = 0;
+    autoPos = window.scrollY;
     autoScrollFrame = requestAnimationFrame(autoScrollTick);
   });
   settingsBtn.addEventListener('click', (e) => {
