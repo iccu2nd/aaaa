@@ -98,15 +98,20 @@ export async function reader({ root, alive }, url) {
         ${next ? `<a class="reader__icon reader__icon--lg" href="${link('read', next.url)}" aria-label="Next chapter">${ICO.next}</a>` : `<span class="reader__icon reader__icon--lg is-disabled" aria-label="Tidak ada chapter berikutnya">${ICO.next}</span>`}
       </div>
       <div class="reader-settings" id="reader-settings" hidden>
-        <div class="reader-settings__title">Mode auto-scroll</div>
-        <div class="reader-settings__modes" id="reader-modes" role="radiogroup" aria-label="Mode auto-scroll">
-          <button type="button" role="radio" data-mode="smooth" aria-checked="true"><b>Halus</b><small>Mengalir terus</small></button>
-          <button type="button" role="radio" data-mode="swipe" aria-checked="false"><b>Swipe</b><small>Seperti geser jari</small></button>
+        <div class="rs-seg" id="reader-modes" role="radiogroup" aria-label="Mode auto-scroll" data-mode="smooth">
+          <i class="rs-seg__thumb" aria-hidden="true"></i>
+          <button type="button" role="radio" data-mode="smooth" aria-checked="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c2.5-5 5.5-5 9 0s6.5 5 9 0"/></svg>Halus
+          </button>
+          <button type="button" role="radio" data-mode="swipe" aria-checked="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6M7 11l5-5 5 5"/></svg>Swipe
+          </button>
         </div>
-        <div class="reader-settings__title reader-settings__title--sp">Kecepatan</div>
-        <div class="reader-settings__range-wrap">
+        <p class="rs-hint" id="reader-mode-hint">Menggulir terus tanpa berhenti.</p>
+        <div class="rs-speed">
+          <div class="rs-speed__head"><label for="reader-speed">Kecepatan</label><output id="reader-speed-value" for="reader-speed">1.0×</output></div>
           <input id="reader-speed" class="reader-settings__range" type="range" min="0.5" max="3" step="0.1" value="1" aria-label="Kecepatan auto-scroll">
-          <div class="reader-settings__range-labels"><span>0.5×</span><output id="reader-speed-value" for="reader-speed">1.0×</output><span>3×</span></div>
+          <div class="rs-speed__scale"><span>Pelan</span><span>Cepat</span></div>
         </div>
       </div>
 
@@ -179,14 +184,21 @@ export async function reader({ root, alive }, url) {
   let mode = 'smooth';
   try { if (localStorage.getItem('rimwa:auto-mode') === 'swipe') mode = 'swipe'; } catch { /* storage may be unavailable */ }
   const swipe = { active: false, start: 0, from: 0, dist: 0, dur: 0, wait: 0 };
-  const paintModes = () => modesBox?.querySelectorAll('[data-mode]').forEach((b) => {
-    const on = b.dataset.mode === mode;
-    b.classList.toggle('is-selected', on);
-    b.setAttribute('aria-checked', String(on));
-  });
+  const HINTS = { smooth: 'Menggulir terus tanpa berhenti.', swipe: 'Bergeser per layar seperti jari, lalu jeda sebentar.' };
+  const paintModes = () => {
+    if (!modesBox) return;
+    modesBox.dataset.mode = mode;
+    modesBox.querySelectorAll('button[data-mode]').forEach((b) => {
+      const on = b.dataset.mode === mode;
+      b.classList.toggle('is-selected', on);
+      b.setAttribute('aria-checked', String(on));
+    });
+    const hint = document.getElementById('reader-mode-hint');
+    if (hint) hint.textContent = HINTS[mode];
+  };
   paintModes();
   modesBox?.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-mode]');
+    const b = e.target.closest('button[data-mode]');
     if (!b) return;
     mode = b.dataset.mode === 'swipe' ? 'swipe' : 'smooth';
     smoothVel = 0;
