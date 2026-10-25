@@ -601,3 +601,64 @@ img.is-pending { opacity: 0; }
 .reader__divider-done { color: #8e8e96; font-size: 12.5px; }
 .reader__divider-next { color: #fff; font-size: 18px; font-weight: 700; line-height: 1.3; letter-spacing: -.01em; }
 .reader__divider-next small { display: block; margin-bottom: 2px; color: #8e8e96; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; }
+
+/* Reader settings refresh: compact, readable and consistent with RiMwa's monochrome UI. */
+.reader-settings {
+  width: min(420px, calc(100vw - 28px)) !important;
+  max-width: 420px !important;
+  padding: 20px 18px 18px !important;
+  background: rgba(25,25,29,.98) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 18px 55px rgba(0,0,0,.48) !important;
+  backdrop-filter: blur(18px);
+}
+.rs-row__label { font-size: 15px; }
+.rs-row--sep { margin-top: 18px; padding-top: 17px; }
+.rs-row__text b { font-size: 15px; }
+.rs-row__text small { font-size: 13px; line-height: 1.45; }
+.rs-speed { margin-top: 18px; padding-top: 16px; }
+.rs-speed__head label, .rs-speed__head output { font-size: 15px; }
+.rs-speed__scale { font-size: 12px; }
+.rs-brightness { margin-top: 17px; }
+.reader__divider {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 270px;
+  justify-content: center;
+  gap: 9px;
+  padding: 48px 22px 52px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.09), transparent 58%), #101013;
+  border-top: 1px solid rgba(255,255,255,.14);
+  border-bottom: 1px solid rgba(255,255,255,.14);
+}
+.reader__divider::before {
+  content: '';
+  position: absolute;
+  inset: 16px 12px;
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 22px;
+  pointer-events: none;
+  z-index: -1;
+}
+.reader__divider-kicker {
+  color: #c7c7ce;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.reader__divider-done { font-size: 14px; color: #8e8e96; }
+.reader__divider-icon {
+  width: 42px; height: 42px; margin: 7px 0 8px;
+  color: #fff; border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.07);
+  animation: chapter-nudge 1.8s ease-in-out infinite;
+}
+.reader__divider-icon svg { width: 20px; height: 20px; }
+.reader__divider-next { max-width: 560px; font-size: clamp(20px, 4.5vw, 27px); line-height: 1.3; }
+.reader__divider-next small { margin-bottom: 7px; font-size: 12px; letter-spacing: .1em; }
+.reader__divider-note { margin-top: 5px; color: #9a9aa3; font-size: 13px; }
+@keyframes chapter-nudge { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .reader__divider-icon { animation: none; } }
