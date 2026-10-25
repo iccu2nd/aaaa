@@ -3,17 +3,16 @@
   "name": "Komikta",
   "short_name": "Komikta",
   "description": "Baca komik, manhwa & manga online — cepat, rapi, offline-ready",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait-primary",
   "background_color": "#000000",
   "theme_color": "#000000",
   "lang": "id",
-  "categories": [
-    "books",
-    "entertainment"
-  ],
+  "dir": "ltr",
+  "categories": ["books", "entertainment"],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -40,5 +39,25 @@
       "purpose": "maskable"
     }
   ],
-  "prefer_related_applications": false
+  "shortcuts": [
+    {
+      "name": "Library",
+      "short_name": "Library",
+      "description": "Buka library & riwayat baca",
+      "url": "/library?source=shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Explore",
+      "short_name": "Explore",
+      "description": "Jelajahi katalog komik",
+      "url": "/explore?source=shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false,
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  }
 }

@@ -282,11 +282,26 @@ export async function reader({ root, alive }, url) {
       try { window.history.pushState({ focus: 1 }, '', location.href); focusPushed = true; } catch { /* ignore */ }
       say('Mode fokus aktif', 'Tekan tombol kembali untuk keluar', 2800);
     } else {
+      // Exit fullscreen often resets scroll to top (esp. mobile Chrome). Save & restore.
+      const y = window.scrollY || document.documentElement.scrollTop || 0;
       leaveFs();
       if (focusPushed && !fromPop) { swallowPop = true; window.history.back(); }
       focusPushed = false;
       say('Mode fokus nonaktif');
       showUI();
+      const restore = () => {
+        window.scrollTo(0, y);
+        document.documentElement.scrollTop = y;
+        document.body.scrollTop = y;
+      };
+      restore();
+      requestAnimationFrame(() => {
+        restore();
+        requestAnimationFrame(restore);
+      });
+      // Some browsers apply the jump after a short delay
+      setTimeout(restore, 50);
+      setTimeout(restore, 150);
     }
   };
   const onPop = (e) => {
@@ -294,7 +309,10 @@ export async function reader({ root, alive }, url) {
     if (focus && focusPushed) { e.stopImmediatePropagation(); setFocus(false, { fromPop: true }); }
   };
   window.addEventListener('popstate', onPop, true);
-  const onFsChange = () => { if (!fsEl() && fsEntered && focus) setFocus(false); };
+  const onFsChange = () => {
+    // System exit (gesture / notification shade) — same path as back button so scroll is restored
+    if (!fsEl() && fsEntered && focus) setFocus(false, { fromPop: true });
+  };
   document.addEventListener('fullscreenchange', onFsChange);
   document.addEventListener('webkitfullscreenchange', onFsChange);
   document.getElementById('btn-focus').addEventListener('click', (e) => { e.stopPropagation(); setFocus(true); });
