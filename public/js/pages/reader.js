@@ -100,8 +100,8 @@ export async function reader({ root, alive }, url) {
       <div class="reader-settings" id="reader-settings" hidden>
         <div class="reader-settings__title">Kecepatan auto-scroll</div>
         <div class="reader-settings__range-wrap">
-          <input id="reader-speed" class="reader-settings__range" type="range" min="0.5" max="2" step="0.05" value="1" aria-label="Kecepatan auto-scroll">
-          <div class="reader-settings__range-labels"><span>0.5×</span><output id="reader-speed-value" for="reader-speed">1.0×</output><span>2×</span></div>
+          <input id="reader-speed" class="reader-settings__range" type="range" min="0.5" max="3" step="0.1" value="1" aria-label="Kecepatan auto-scroll">
+          <div class="reader-settings__range-labels"><span>0.5×</span><output id="reader-speed-value" for="reader-speed">1.0×</output><span>3×</span></div>
         </div>
       </div>
 
@@ -162,18 +162,18 @@ export async function reader({ root, alive }, url) {
   let autoScrolling = false;
   const speedInput = document.getElementById('reader-speed');
   const speedValue = document.getElementById('reader-speed-value');
-  const initialSpeed = Math.min(2, Math.max(0.5, Number(localStorage.getItem('rimwa:auto-speed')) || 1));
-  let autoScrollSpeed = 60 * initialSpeed;
+  const initialSpeed = Math.min(3, Math.max(0.5, Number(localStorage.getItem('rimwa:auto-speed')) || 1));
+  let autoScrollSpeed = 220 * initialSpeed;
   // Default reading mode is always top-to-bottom. Direction preferences are intentionally removed.
   const readerDirection = 'down';
   let previousFrameTime = 0;
 
   if (speedInput) {
     speedInput.value = String(initialSpeed);
-    speedInput.style.setProperty('--speed-progress', `${((initialSpeed - 0.5) / 1) * 100}%`);
+    speedInput.style.setProperty('--speed-progress', `${((initialSpeed - 0.5) / 2.5) * 100}%`);
   }
   if (speedValue) {
-    const label = `${initialSpeed.toFixed(2).replace(/0$/, '')}×`;
+    const label = `${initialSpeed.toFixed(1)}×`;
     if ('value' in speedValue) speedValue.value = label;
     speedValue.textContent = label;
   }
@@ -218,7 +218,7 @@ export async function reader({ root, alive }, url) {
   const autoScrollTick = (time) => {
     if (!autoScrolling) return;
     if (!previousFrameTime) previousFrameTime = time;
-    const delta = Math.min(time - previousFrameTime, 50);
+    const delta = Math.min(time - previousFrameTime, 64);
     previousFrameTime = time;
     const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     if (maxY <= 0 || window.scrollY >= maxY - 2) { stopAutoScroll(); return; }
@@ -247,15 +247,15 @@ export async function reader({ root, alive }, url) {
   });
   if (speedInput) {
     speedInput.addEventListener('input', () => {
-      const multiplier = Math.min(2, Math.max(0.5, Number(speedInput.value) || 1));
-      autoScrollSpeed = 60 * multiplier;
+      const multiplier = Math.min(3, Math.max(0.5, Number(speedInput.value) || 1));
+      autoScrollSpeed = 220 * multiplier;
       try { localStorage.setItem('rimwa:auto-speed', String(multiplier)); } catch { /* storage may be unavailable */ }
-      const label = `${multiplier.toFixed(2).replace(/0$/, '')}×`;
+      const label = `${multiplier.toFixed(1)}×`;
       if (speedValue) {
         if ('value' in speedValue) speedValue.value = label;
         speedValue.textContent = label;
       }
-      speedInput.style.setProperty('--speed-progress', `${((multiplier - 0.5) / 1) * 100}%`);
+      speedInput.style.setProperty('--speed-progress', `${((multiplier - 0.5) / 2.5) * 100}%`);
       if (autoScrolling) {
         cancelAnimationFrame(autoScrollFrame);
         previousFrameTime = 0;
