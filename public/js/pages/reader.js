@@ -107,15 +107,10 @@ export async function reader({ root, alive }, url) {
         </div>
         <p class="rs-hint" id="reader-mode-hint">Menggulir terus tanpa berhenti.</p>
         <label class="rs-row rs-row--sep" for="reader-continuous">
-          <span class="rs-row__text"><b>Sambung chapter</b><small>Lanjutkan ke chapter berikutnya secara otomatis</small></span>
+          <span class="rs-row__text"><b>Sambung chapter</b><small>Chapter berikutnya lanjut di bawah, tanpa pindah halaman</small></span>
           <input id="reader-continuous" type="checkbox" role="switch" checked>
           <i class="rs-switch" aria-hidden="true"></i>
         </label>
-        <div class="rs-speed rs-brightness">
-          <div class="rs-speed__head"><label for="reader-brightness">Brightness</label><output id="reader-brightness-value" for="reader-brightness">100%</output></div>
-          <input id="reader-brightness" class="reader-settings__range" type="range" min="50" max="120" step="1" value="100" aria-label="Brightness">
-          <div class="rs-speed__scale"><span>Redup</span><span>Terang</span></div>
-        </div>
         <div class="rs-speed">
           <div class="rs-speed__head"><label for="reader-speed">Kecepatan</label><output id="reader-speed-value" for="reader-speed">1.0×</output></div>
           <input id="reader-speed" class="reader-settings__range" type="range" min="0.5" max="3" step="0.1" value="1" aria-label="Kecepatan auto-scroll">
@@ -226,24 +221,6 @@ export async function reader({ root, alive }, url) {
     if ('value' in speedValue) speedValue.value = label;
     speedValue.textContent = label;
   }
-  const brightnessInput = document.getElementById('reader-brightness');
-  const brightnessValue = document.getElementById('reader-brightness-value');
-  let readerBrightness = 100;
-  try { readerBrightness = Math.min(120, Math.max(50, Number(localStorage.getItem('rimwa:brightness')) || 100)); } catch { /* storage may be unavailable */ }
-  const applyBrightness = () => {
-    document.querySelectorAll('#reader-pages img').forEach((image) => { image.style.filter = `brightness(${readerBrightness / 100})`; });
-    if (brightnessInput) {
-      brightnessInput.value = String(readerBrightness);
-      brightnessInput.style.setProperty('--speed-progress', `${((readerBrightness - 50) / 70) * 100}%`);
-    }
-    if (brightnessValue) { brightnessValue.value = `${readerBrightness}%`; brightnessValue.textContent = `${readerBrightness}%`; }
-  };
-  brightnessInput?.addEventListener('input', () => {
-    readerBrightness = Number(brightnessInput.value);
-    applyBrightness();
-    try { localStorage.setItem('rimwa:brightness', String(readerBrightness)); } catch { /* storage may be unavailable */ }
-  });
-  applyBrightness();
 
   const showUI = () => {
     uiVisible = true;
@@ -446,7 +423,7 @@ export async function reader({ root, alive }, url) {
       const divider = document.createElement('div');
       divider.className = 'reader__divider';
       divider.setAttribute('role', 'separator');
-      divider.innerHTML = `<span class="reader__divider-kicker">Chapter selesai</span><span class="reader__divider-done">${esc(from.title || 'Chapter')} selesai</span><span class="reader__divider-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span><span class="reader__divider-next"><small>Berikutnya</small>${esc(title)}</span><span class="reader__divider-note">Terus gulir untuk membaca</span>`;
+      divider.innerHTML = `<div class="reader__divider-current"><span class="reader__divider-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><span class="reader__divider-copy"><small>Chapter selesai</small><strong>${esc(from.title || 'Chapter')}</strong></span></div><span class="reader__divider-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span><div class="reader__divider-next"><small>Berikutnya</small><strong>${esc(title)}</strong><span class="reader__divider-chevron" aria-hidden="true">›</span></div><span class="reader__divider-note">Terus gulir untuk membaca</span>`;
       const frag = document.createDocumentFragment();
       frag.append(divider);
       (nd.images || []).forEach((src, index) => {
@@ -456,7 +433,6 @@ export async function reader({ root, alive }, url) {
         im.decoding = 'async';
         im.alt = '';
         im.src = img(src);
-        im.style.filter = `brightness(${readerBrightness / 100})`;
         frag.append(im);
       });
       pagesEl.append(frag);

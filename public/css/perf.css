@@ -585,80 +585,54 @@ img.is-pending { opacity: 0; }
 .rs-hint { margin: 8px 0 0; }
 #reader-sentinel { height: 1px; }
 .reader__end[hidden] { display: none !important; }
+/* Chapter transition — Design 1: a clear, horizontal chapter handoff. */
 .reader__divider {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 58px minmax(0, 1fr);
+  grid-template-areas: "current icon next" "note note note";
   align-items: center;
-  gap: 6px;
-  padding: 56px 24px 48px;
-  background: #0b0b0d;
-  border-top: 1px solid rgba(255,255,255,.08);
-  border-bottom: 1px solid rgba(255,255,255,.08);
+  gap: 16px;
+  width: min(100% - 32px, 820px);
+  box-sizing: border-box;
+  margin: 30px auto;
+  padding: 24px clamp(16px, 4vw, 36px) 20px;
+  color: #f5f6fa;
+  background: linear-gradient(145deg, rgba(17,22,32,.97), rgba(10,13,20,.98));
+  border: 1px solid rgba(145,168,210,.2);
+  border-radius: 28px;
+  box-shadow: 0 12px 34px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.035);
   text-align: center;
 }
-.reader__divider-icon { display: grid; place-items: center; width: 34px; height: 34px; margin-bottom: 8px; border-radius: 50%; border: 1px solid rgba(255,255,255,.18); color: #d6d6da; }
-.reader__divider-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.reader__divider-done { color: #8e8e96; font-size: 12.5px; }
-.reader__divider-next { color: #fff; font-size: 18px; font-weight: 700; line-height: 1.3; letter-spacing: -.01em; }
-.reader__divider-next small { display: block; margin-bottom: 2px; color: #8e8e96; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; }
-
-/* Reader settings refresh: compact, readable and consistent with RiMwa's monochrome UI. */
-.reader-settings {
-  width: min(420px, calc(100vw - 28px)) !important;
-  max-width: 420px !important;
-  padding: 20px 18px 18px !important;
-  background: rgba(25,25,29,.98) !important;
-  border: 1px solid rgba(255,255,255,.12) !important;
-  border-radius: 24px !important;
-  box-shadow: 0 18px 55px rgba(0,0,0,.48) !important;
-  backdrop-filter: blur(18px);
+.reader__divider-current, .reader__divider-next { display:flex; align-items:center; gap:14px; min-width:0; text-align:left; }
+.reader__divider-current { grid-area:current; }
+.reader__divider-next { grid-area:next; position:relative; padding-right:16px; }
+.reader__divider-check { display:grid; flex:0 0 48px; width:48px; height:48px; place-items:center; border:2px solid #6898ff; border-radius:50%; color:#f5f8ff; box-shadow:0 0 16px rgba(66,128,255,.22); }
+.reader__divider-check svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+.reader__divider-copy, .reader__divider-next { display:flex; flex-direction:column; gap:4px; }
+.reader__divider-copy small, .reader__divider-next small { color:#a7b0c4; font-size:12px; font-weight:500; letter-spacing:.015em; text-transform:none; }
+.reader__divider-copy strong, .reader__divider-next strong { display:block; max-width:100%; color:#f5f6fa; font-size:clamp(16px,2.5vw,21px); font-weight:700; line-height:1.3; overflow-wrap:anywhere; }
+.reader__divider-icon { grid-area:icon; display:grid; place-items:center; width:54px; height:54px; margin:0 auto; border:1px solid rgba(143,174,239,.5); border-radius:50%; color:#f4f7ff; background:rgba(35,55,92,.24); box-shadow:0 0 18px rgba(62,122,255,.14); }
+.reader__divider-icon svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.reader__divider-chevron { position:absolute; top:50%; right:0; transform:translateY(-50%); color:#c9d7f7; font-size:30px; line-height:1; }
+.reader__divider-note { grid-area:note; display:flex; align-items:center; justify-content:center; gap:14px; margin-top:2px; color:#9ba6bd; font-size:13px; }
+.reader__divider-note::before, .reader__divider-note::after { content:""; width:min(12vw,58px); height:1px; background:rgba(137,161,207,.42); }
+@media (max-width:520px) {
+  .reader__divider { grid-template-columns:minmax(0,1fr) 42px minmax(0,1fr); gap:10px; width:calc(100% - 24px); margin:22px auto; padding:20px 14px 17px; border-radius:22px; }
+  .reader__divider-current, .reader__divider-next { gap:9px; }
+  .reader__divider-check { flex-basis:38px; width:38px; height:38px; border-width:1.5px; }
+  .reader__divider-check svg { width:19px; height:19px; }
+  .reader__divider-icon { width:40px; height:40px; }
+  .reader__divider-icon svg { width:20px; height:20px; }
+  .reader__divider-copy small, .reader__divider-next small { font-size:10.5px; }
+  .reader__divider-copy strong, .reader__divider-next strong { font-size:15px; }
+  .reader__divider-next { padding-right:10px; }
+  .reader__divider-chevron { font-size:24px; }
+  .reader__divider-note { font-size:11.5px; gap:9px; }
 }
-.rs-row__label { font-size: 15px; }
-.rs-row--sep { margin-top: 18px; padding-top: 17px; }
-.rs-row__text b { font-size: 15px; }
-.rs-row__text small { font-size: 13px; line-height: 1.45; }
-.rs-speed { margin-top: 18px; padding-top: 16px; }
-.rs-speed__head label, .rs-speed__head output { font-size: 15px; }
-.rs-speed__scale { font-size: 12px; }
-.rs-brightness { margin-top: 17px; }
-.reader__divider {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  min-height: 270px;
-  justify-content: center;
-  gap: 9px;
-  padding: 48px 22px 52px;
-  background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.09), transparent 58%), #101013;
-  border-top: 1px solid rgba(255,255,255,.14);
-  border-bottom: 1px solid rgba(255,255,255,.14);
+@media (max-width:360px) {
+  .reader__divider { grid-template-columns:minmax(0,1fr) 34px minmax(0,1fr); gap:7px; padding-inline:10px; }
+  .reader__divider-check { flex-basis:32px; width:32px; height:32px; }
+  .reader__divider-icon { width:32px; height:32px; }
+  .reader__divider-copy strong, .reader__divider-next strong { font-size:13px; }
+  .reader__divider-copy small, .reader__divider-next small { font-size:9.5px; }
 }
-.reader__divider::before {
-  content: '';
-  position: absolute;
-  inset: 16px 12px;
-  border: 1px solid rgba(255,255,255,.06);
-  border-radius: 22px;
-  pointer-events: none;
-  z-index: -1;
-}
-.reader__divider-kicker {
-  color: #c7c7ce;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .13em;
-  text-transform: uppercase;
-}
-.reader__divider-done { font-size: 14px; color: #8e8e96; }
-.reader__divider-icon {
-  width: 42px; height: 42px; margin: 7px 0 8px;
-  color: #fff; border: 1px solid rgba(255,255,255,.22);
-  background: rgba(255,255,255,.07);
-  animation: chapter-nudge 1.8s ease-in-out infinite;
-}
-.reader__divider-icon svg { width: 20px; height: 20px; }
-.reader__divider-next { max-width: 560px; font-size: clamp(20px, 4.5vw, 27px); line-height: 1.3; }
-.reader__divider-next small { margin-bottom: 7px; font-size: 12px; letter-spacing: .1em; }
-.reader__divider-note { margin-top: 5px; color: #9a9aa3; font-size: 13px; }
-@keyframes chapter-nudge { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
-@media (prefers-reduced-motion: reduce) { .reader__divider-icon { animation: none; } }
