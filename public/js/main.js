@@ -8,6 +8,8 @@ import { reader } from './pages/reader.js';
 import { update } from './pages/update.js';
 import { initChrome } from './chrome.js';
 
+document.addEventListener('contextmenu', (e) => { if (e.target.closest?.('img, picture')) e.preventDefault(); });
+
 route(/^\/$/, home);
 route(/^\/update$/, update); // legacy route; updates remain accessible from Home
 route(/^\/explore\/genre\/(.+)$/, (ctx, genre) => {

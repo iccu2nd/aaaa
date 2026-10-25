@@ -679,3 +679,11 @@ img.is-pending { opacity: 0; }
 .reader-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 .reader-toast b { font-size: 14px; font-weight: 600; }
 .reader-toast span { color: #b4b4bb; font-size: 12.5px; }
+
+#app img {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.reader__page { pointer-events: none; }
