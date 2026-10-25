@@ -112,7 +112,7 @@ export async function reader({ root, alive }, url) {
           <i class="rs-switch" aria-hidden="true"></i>
         </label>
         <label class="rs-row rs-row--sep" for="reader-focus">
-          <span class="rs-row__text"><b>Mode fokus</b><small>Semua menu disembunyikan. Ketuk cepat 4× untuk keluar</small></span>
+          <span class="rs-row__text"><b>Mode fokus</b><small>Layar penuh tanpa menu. Ketuk cepat 4× untuk keluar</small></span>
           <input id="reader-focus" type="checkbox" role="switch">
           <i class="rs-switch" aria-hidden="true"></i>
         </label>
@@ -259,6 +259,26 @@ export async function reader({ root, alive }, url) {
   };
   const focusInput = document.getElementById('reader-focus');
   let taps = [];
+  let fsEntered = false;
+  const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+  const enterFs = () => {
+    const el = document.documentElement;
+    const fn = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!fn || fsEl()) return;
+    try {
+      const r = fn.call(el, { navigationUI: 'hide' });
+      if (r && r.then) r.then(() => { fsEntered = true; }).catch(() => {});
+      else fsEntered = true;
+    } catch { /* fullscreen unavailable */ }
+  };
+  const leaveFs = () => {
+    fsEntered = false;
+    if (!fsEl()) return;
+    try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch { /* ignore */ }
+  };
+  const onFsChange = () => { if (!fsEl() && fsEntered && focus) setFocus(false); };
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
   const setFocus = (on) => {
     focus = on;
     focusInput.checked = on;
@@ -266,8 +286,10 @@ export async function reader({ root, alive }, url) {
     taps = [];
     if (on) {
       hideUI();
+      enterFs();
       say('Mode fokus aktif', 'Ketuk cepat 4× untuk keluar', 2800);
     } else {
+      leaveFs();
       say('Mode fokus nonaktif');
       showUI();
     }
@@ -566,6 +588,9 @@ export async function reader({ root, alive }, url) {
     window.removeEventListener('rimwa:routechange', cleanup);
     clearTimeout(scrollTimer);
     clearTimeout(toastTimer);
+    document.removeEventListener('fullscreenchange', onFsChange);
+    document.removeEventListener('webkitfullscreenchange', onFsChange);
+    leaveFs();
     clearTimeout(progressSaveTimer);
     updateReadingProgress();
     sentinelIO?.disconnect();
