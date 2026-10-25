@@ -688,31 +688,19 @@ img.is-pending { opacity: 0; }
 }
 .reader__page { pointer-events: none; }
 
-/* —— Native app polish —— */
-#app {
-  animation: app-in 0.22s var(--ease-ios, cubic-bezier(0.25, 0.1, 0.25, 1)) both;
-}
-@keyframes app-in {
-  from { opacity: 0.92; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
-}
-html.is-app .bottom-nav {
-  border-top-color: rgba(255, 255, 255, 0.06);
-}
+
+/* —— Native app polish (tidak mengunci scroll website) —— */
 @media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
   .bottom-nav {
     border-top-color: rgba(255, 255, 255, 0.06);
   }
 }
-/* Kurangi highlight “web” di tombol/nav */
+html.is-app .bottom-nav {
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
 .bottom-nav a,
 .reader__icon,
 .topbar__icon,
 .profile-menu__item {
   -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-/* Smooth scroll di reader tetap native */
-body.is-reader {
-  -webkit-overflow-scrolling: touch;
 }
